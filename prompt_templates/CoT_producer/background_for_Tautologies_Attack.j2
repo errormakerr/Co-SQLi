@@ -1,0 +1,23 @@
+Tautologies Attack
+Attack Principle: Construct conditions that are always true to bypass authentication or access control
+Feature Detection:
+Simple tautologies:
+1=1, 'a'='a', 2>1, 1<2
+'x'='x', "a"="a"
+Complex tautologies (require in-depth calculation analysis):
+Nested calculations: (SELECT COUNT() FROM table) = (SELECT COUNT() FROM table)
+Mathematical identities: ABS(-1)=1, LENGTH('a')=1
+Subquery tautologies: (SELECT 1)=1
+Diversified comparison operators:
+LIKE '%' (matches any string)
+REGEXP '.*', RLIKE '.' (regex matches anything)
+BETWEEN 0 AND 99999999 (range includes everything)
+IN (1,1), NOT IN (NULL)
+OR logical connection:
+Key point: Tautologies must be led by OR
+Focus on analyzing whether the expression after OR is a tautology
+Check for: ... OR [tautology] pattern
+Judgment Points:
+Whether OR-connected tautology conditions exist
+Whether tautology conditions cause WHERE clause to become ineffective
+Whether original access control logic is bypassed

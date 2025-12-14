@@ -1,0 +1,1174 @@
+[
+    {
+        "database_name": "information_schema",
+        "tables": [
+            {
+                "table_name": "SCHEMATA",
+                "columns": [
+                    {
+                        "column_name": "CATALOG_NAME",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "SCHEMA_NAME",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "DEFAULT_CHARACTER_SET_NAME",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "DEFAULT_COLLATION_NAME",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "SQL_PATH",
+                        "data_type": "null"
+                    },
+                    {
+                        "column_name": "DEFAULT_ENCRYPTION",
+                        "data_type": "enum"
+                    }
+                ]
+            },
+            {
+                "table_name": "TABLES",
+                "columns": [
+                    {
+                        "column_name": "TABLE_CATALOG",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "TABLE_SCHEMA",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "TABLE_NAME",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "TABLE_TYPE",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "ENGINE",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "VERSION",
+                        "data_type": "bigint"
+                    },
+                    {
+                        "column_name": "ROW_FORMAT",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "TABLE_ROWS",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "AVG_ROW_LENGTH",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "DATA_LENGTH",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "MAX_DATA_LENGTH",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "INDEX_LENGTH",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "DATA_FREE",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "AUTO_INCREMENT",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "CREATE_TIME",
+                        "data_type": "timestamp"
+                    },
+                    {
+                        "column_name": "UPDATE_TIME",
+                        "data_type": "datetime"
+                    },
+                    {
+                        "column_name": "CHECK_TIME",
+                        "data_type": "datetime"
+                    },
+                    {
+                        "column_name": "TABLE_COLLATION",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "CHECKSUM",
+                        "data_type": "bigint"
+                    },
+                    {
+                        "column_name": "CREATE_OPTIONS",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "TABLE_COMMENT",
+                        "data_type": "varchar"
+                    }
+                ]
+            },
+            {
+                "table_name": "COLUMNS",
+                "columns": [
+                    {
+                        "column_name": "TABLE_CATALOG",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "TABLE_SCHEMA",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "TABLE_NAME",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "COLUMN_NAME",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "ORDINAL_POSITION",
+                        "data_type": "int unsigned"
+                    },
+                    {
+                        "column_name": "COLUMN_DEFAULT",
+                        "data_type": "text"
+                    },
+                    {
+                        "column_name": "IS_NULLABLE",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "DATA_TYPE",
+                        "data_type": "longtext"
+                    },
+                    {
+                        "column_name": "CHARACTER_MAXIMUM_LENGTH",
+                        "data_type": "bigint"
+                    },
+                    {
+                        "column_name": "CHARACTER_OCTET_LENGTH",
+                        "data_type": "bigint"
+                    },
+                    {
+                        "column_name": "NUMERIC_PRECISION",
+                        "data_type": "int unsigned"
+                    },
+                    {
+                        "column_name": "NUMERIC_SCALE",
+                        "data_type": "int unsigned"
+                    },
+                    {
+                        "column_name": "DATETIME_PRECISION",
+                        "data_type": "int unsigned"
+                    },
+                    {
+                        "column_name": "CHARACTER_SET_NAME",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "COLLATION_NAME",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "COLUMN_TYPE",
+                        "data_type": "text"
+                    },
+                    {
+                        "column_name": "COLUMN_KEY",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "EXTRA",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "PRIVILEGES",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "COLUMN_COMMENT",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "GENERATION_EXPRESSION",
+                        "data_type": "text"
+                    },
+                    {
+                        "column_name": "SRS_ID",
+                        "data_type": "int unsigned"
+                    }
+                ]
+            },
+            {
+                "table_name": "STATISTICS",
+                "columns": [
+                    {
+                        "column_name": "TABLE_CATALOG",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "TABLE_SCHEMA",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "TABLE_NAME",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "NON_UNIQUE",
+                        "data_type": "bigint"
+                    },
+                    {
+                        "column_name": "INDEX_SCHEMA",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "INDEX_NAME",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "SEQ_IN_INDEX",
+                        "data_type": "int unsigned"
+                    },
+                    {
+                        "column_name": "COLUMN_NAME",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "COLLATION",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "CARDINALITY",
+                        "data_type": "bigint"
+                    },
+                    {
+                        "column_name": "SUB_PART",
+                        "data_type": "bigint"
+                    },
+                    {
+                        "column_name": "PACKED",
+                        "data_type": "null"
+                    },
+                    {
+                        "column_name": "NULLABLE",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "INDEX_TYPE",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "COMMENT",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "INDEX_COMMENT",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "IS_VISIBLE",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "EXPRESSION",
+                        "data_type": "text"
+                    }
+                ]
+            },
+            {
+                "table_name": "KEY_COLUMN_USAGE",
+                "columns": [
+                    {
+                        "column_name": "CONSTRAINT_CATALOG",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "CONSTRAINT_SCHEMA",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "CONSTRAINT_NAME",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "TABLE_CATALOG",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "TABLE_SCHEMA",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "TABLE_NAME",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "COLUMN_NAME",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "ORDINAL_POSITION",
+                        "data_type": "int unsigned"
+                    },
+                    {
+                        "column_name": "POSITION_IN_UNIQUE_CONSTRAINT",
+                        "data_type": "int unsigned"
+                    },
+                    {
+                        "column_name": "REFERENCED_TABLE_SCHEMA",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "REFERENCED_TABLE_NAME",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "REFERENCED_COLUMN_NAME",
+                        "data_type": "varchar"
+                    }
+                ]
+            },
+            {
+                "table_name": "TABLE_CONSTRAINTS",
+                "columns": [
+                    {
+                        "column_name": "CONSTRAINT_CATALOG",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "CONSTRAINT_SCHEMA",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "CONSTRAINT_NAME",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "TABLE_SCHEMA",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "TABLE_NAME",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "CONSTRAINT_TYPE",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "ENFORCED",
+                        "data_type": "varchar"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "database_name": "performance_schema",
+        "tables": [
+            {
+                "table_name": "threads",
+                "columns": [
+                    {
+                        "column_name": "THREAD_ID",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "NAME",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "TYPE",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "PROCESSLIST_ID",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "PROCESSLIST_USER",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "PROCESSLIST_HOST",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "PROCESSLIST_DB",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "PROCESSLIST_COMMAND",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "PROCESSLIST_TIME",
+                        "data_type": "bigint"
+                    },
+                    {
+                        "column_name": "PROCESSLIST_STATE",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "PROCESSLIST_INFO",
+                        "data_type": "text"
+                    },
+                    {
+                        "column_name": "PARENT_THREAD_ID",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "ROLE",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "INSTRUMENTED",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "HISTORY",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "CONNECTION_TYPE",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "THREAD_OS_ID",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "RESOURCE_GROUP",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "EXECUTION_ENGINE",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "CONTROLLED_MEMORY",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "MAX_CONTROLLED_MEMORY",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "TOTAL_MEMORY",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "MAX_TOTAL_MEMORY",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "TELEMETRY_ACTIVE",
+                        "data_type": "enum"
+                    }
+                ]
+            },
+            {
+                "table_name": "memory_summary_global_by_event_name",
+                "columns": [
+                    {
+                        "column_name": "EVENT_NAME",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "COUNT_ALLOC",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "COUNT_FREE",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "SUM_NUMBER_OF_BYTES_ALLOC",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "SUM_NUMBER_OF_BYTES_FREE",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "LOW_COUNT_USED",
+                        "data_type": "bigint"
+                    },
+                    {
+                        "column_name": "CURRENT_COUNT_USED",
+                        "data_type": "bigint"
+                    },
+                    {
+                        "column_name": "HIGH_COUNT_USED",
+                        "data_type": "bigint"
+                    },
+                    {
+                        "column_name": "LOW_NUMBER_OF_BYTES_USED",
+                        "data_type": "bigint"
+                    },
+                    {
+                        "column_name": "CURRENT_NUMBER_OF_BYTES_USED",
+                        "data_type": "bigint"
+                    },
+                    {
+                        "column_name": "HIGH_NUMBER_OF_BYTES_USED",
+                        "data_type": "bigint"
+                    }
+                ]
+            },
+            {
+                "table_name": "table_io_waits_summary_by_table",
+                "columns": [
+                    {
+                        "column_name": "OBJECT_TYPE",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "OBJECT_SCHEMA",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "OBJECT_NAME",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "COUNT_STAR",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "SUM_TIMER_WAIT",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "MIN_TIMER_WAIT",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "AVG_TIMER_WAIT",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "MAX_TIMER_WAIT",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "COUNT_READ",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "SUM_TIMER_READ",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "MIN_TIMER_READ",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "AVG_TIMER_READ",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "MAX_TIMER_READ",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "COUNT_WRITE",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "SUM_TIMER_WRITE",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "MIN_TIMER_WRITE",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "AVG_TIMER_WRITE",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "MAX_TIMER_WRITE",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "COUNT_FETCH",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "SUM_TIMER_FETCH",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "MIN_TIMER_FETCH",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "AVG_TIMER_FETCH",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "MAX_TIMER_FETCH",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "COUNT_INSERT",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "SUM_TIMER_INSERT",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "MIN_TIMER_INSERT",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "AVG_TIMER_INSERT",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "MAX_TIMER_INSERT",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "COUNT_UPDATE",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "SUM_TIMER_UPDATE",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "MIN_TIMER_UPDATE",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "AVG_TIMER_UPDATE",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "MAX_TIMER_UPDATE",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "COUNT_DELETE",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "SUM_TIMER_DELETE",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "MIN_TIMER_DELETE",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "AVG_TIMER_DELETE",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "MAX_TIMER_DELETE",
+                        "data_type": "bigint unsigned"
+                    }
+                ]
+            },
+            {
+                "table_name": "accounts",
+                "columns": [
+                    {
+                        "column_name": "USER",
+                        "data_type": "char"
+                    },
+                    {
+                        "column_name": "HOST",
+                        "data_type": "char"
+                    },
+                    {
+                        "column_name": "CURRENT_CONNECTIONS",
+                        "data_type": "bigint"
+                    },
+                    {
+                        "column_name": "TOTAL_CONNECTIONS",
+                        "data_type": "bigint"
+                    },
+                    {
+                        "column_name": "MAX_SESSION_CONTROLLED_MEMORY",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "MAX_SESSION_TOTAL_MEMORY",
+                        "data_type": "bigint unsigned"
+                    }
+                ]
+            },
+            {
+                "table_name": "hosts",
+                "columns": [
+                    {
+                        "column_name": "HOST",
+                        "data_type": "char"
+                    },
+                    {
+                        "column_name": "CURRENT_CONNECTIONS",
+                        "data_type": "bigint"
+                    },
+                    {
+                        "column_name": "TOTAL_CONNECTIONS",
+                        "data_type": "bigint"
+                    },
+                    {
+                        "column_name": "MAX_SESSION_CONTROLLED_MEMORY",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "MAX_SESSION_TOTAL_MEMORY",
+                        "data_type": "bigint unsigned"
+                    }
+                ]
+            },
+            {
+                "table_name": "users",
+                "columns": [
+                    {
+                        "column_name": "USER",
+                        "data_type": "char"
+                    },
+                    {
+                        "column_name": "CURRENT_CONNECTIONS",
+                        "data_type": "bigint"
+                    },
+                    {
+                        "column_name": "TOTAL_CONNECTIONS",
+                        "data_type": "bigint"
+                    },
+                    {
+                        "column_name": "MAX_SESSION_CONTROLLED_MEMORY",
+                        "data_type": "bigint unsigned"
+                    },
+                    {
+                        "column_name": "MAX_SESSION_TOTAL_MEMORY",
+                        "data_type": "bigint unsigned"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "database_name": "sys",
+        "tables": [
+            {
+                "table_name": "schema_table_statistics",
+                "columns": [
+                    {
+                        "column_name": "table_schema",
+                        "data_type": "varchar",
+                        "source_table": "performance_schema.table_io_waits_summary_by_table"
+                    },
+                    {
+                        "column_name": "table_name",
+                        "data_type": "varchar",
+                        "source_table": "performance_schema.table_io_waits_summary_by_table"
+                    },
+                    {
+                        "column_name": "total_latency",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "rows_fetched",
+                        "data_type": "bigint unsigned",
+                        "source_table": "performance_schema.table_io_waits_summary_by_table"
+                    },
+                    {
+                        "column_name": "fetch_latency",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "rows_inserted",
+                        "data_type": "bigint unsigned",
+                        "source_table": "performance_schema.table_io_waits_summary_by_table"
+                    },
+                    {
+                        "column_name": "insert_latency",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "rows_updated",
+                        "data_type": "bigint unsigned",
+                        "source_table": "performance_schema.table_io_waits_summary_by_table"
+                    },
+                    {
+                        "column_name": "update_latency",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "rows_deleted",
+                        "data_type": "bigint unsigned",
+                        "source_table": "performance_schema.table_io_waits_summary_by_table"
+                    },
+                    {
+                        "column_name": "delete_latency",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "io_read_requests",
+                        "data_type": "decimal",
+                        "source_table": "sys.x$ps_schema_table_statistics_io"
+                    },
+                    {
+                        "column_name": "io_read",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "io_read_latency",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "io_write_requests",
+                        "data_type": "decimal",
+                        "source_table": "sys.x$ps_schema_table_statistics_io"
+                    },
+                    {
+                        "column_name": "io_write",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "io_write_latency",
+                        "data_type": "varchar"
+                    },
+                    {
+                        "column_name": "io_misc_requests",
+                        "data_type": "decimal",
+                        "source_table": "sys.x$ps_schema_table_statistics_io"
+                    },
+                    {
+                        "column_name": "io_misc_latency",
+                        "data_type": "varchar"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "database_name": "mysql",
+        "tables": [
+            {
+                "table_name": "user",
+                "columns": [
+                    {
+                        "column_name": "Host",
+                        "data_type": "char"
+                    },
+                    {
+                        "column_name": "User",
+                        "data_type": "char"
+                    },
+                    {
+                        "column_name": "Select_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Insert_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Update_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Delete_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Create_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Drop_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Reload_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Shutdown_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Process_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "File_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Grant_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "References_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Index_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Alter_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Show_db_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Super_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Create_tmp_table_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Lock_tables_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Execute_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Repl_slave_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Repl_client_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Create_view_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Show_view_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Create_routine_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Alter_routine_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Create_user_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Event_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Trigger_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Create_tablespace_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "ssl_type",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "ssl_cipher",
+                        "data_type": "blob"
+                    },
+                    {
+                        "column_name": "x509_issuer",
+                        "data_type": "blob"
+                    },
+                    {
+                        "column_name": "x509_subject",
+                        "data_type": "blob"
+                    },
+                    {
+                        "column_name": "max_questions",
+                        "data_type": "int unsigned"
+                    },
+                    {
+                        "column_name": "max_updates",
+                        "data_type": "int unsigned"
+                    },
+                    {
+                        "column_name": "max_connections",
+                        "data_type": "int unsigned"
+                    },
+                    {
+                        "column_name": "max_user_connections",
+                        "data_type": "int unsigned"
+                    },
+                    {
+                        "column_name": "plugin",
+                        "data_type": "char"
+                    },
+                    {
+                        "column_name": "authentication_string",
+                        "data_type": "text"
+                    },
+                    {
+                        "column_name": "password_expired",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "password_last_changed",
+                        "data_type": "timestamp"
+                    },
+                    {
+                        "column_name": "password_lifetime",
+                        "data_type": "smallint unsigned"
+                    },
+                    {
+                        "column_name": "account_locked",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Create_role_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Drop_role_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Password_reuse_history",
+                        "data_type": "smallint unsigned"
+                    },
+                    {
+                        "column_name": "Password_reuse_time",
+                        "data_type": "smallint unsigned"
+                    },
+                    {
+                        "column_name": "Password_require_current",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "User_attributes",
+                        "data_type": "json"
+                    }
+                ]
+            },
+            {
+                "table_name": "db",
+                "columns": [
+                    {
+                        "column_name": "Host",
+                        "data_type": "char"
+                    },
+                    {
+                        "column_name": "Db",
+                        "data_type": "char"
+                    },
+                    {
+                        "column_name": "User",
+                        "data_type": "char"
+                    },
+                    {
+                        "column_name": "Select_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Insert_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Update_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Delete_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Create_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Drop_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Grant_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "References_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Index_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Alter_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Create_tmp_table_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Lock_tables_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Create_view_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Show_view_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Create_routine_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Alter_routine_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Execute_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Event_priv",
+                        "data_type": "enum"
+                    },
+                    {
+                        "column_name": "Trigger_priv",
+                        "data_type": "enum"
+                    }
+                ]
+            }
+        ]
+    }
+]

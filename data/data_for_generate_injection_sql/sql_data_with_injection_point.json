@@ -1,0 +1,3080 @@
+[
+    {
+        "db": "financial",
+        "sql_raw": "SELECT COUNT(T1.account_id) FROM loan AS T1 INNER JOIN account AS T2 ON T1.account_id = T2.account_id WHERE T2.frequency = 'POPLATEK TYDNE' AND T1.amount < 200000",
+        "sql": "SELECT COUNT(T1.account_id) FROM loan AS T1 INNER JOIN account AS T2 ON T1.account_id = T2.account_id WHERE T2.frequency = 'POPLATEK TYDNE' AND T1.amount < 200000$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "toxicology",
+        "sql_raw": "SELECT CAST(COUNT(DISTINCT CASE WHEN T1.element <> 'f' THEN T2.molecule_id ELSE NULL END) AS FLOAT) * 100 / COUNT(DISTINCT T2.molecule_id) FROM atom AS T1 INNER JOIN molecule AS T2 ON T1.molecule_id = T2.molecule_id WHERE T2.label = '+'",
+        "sql": "SELECT CAST(COUNT(DISTINCT CASE WHEN T1.element <> 'f' THEN T2.molecule_id ELSE NULL END) AS FLOAT) * 100 / COUNT(DISTINCT T2.molecule_id) FROM atom AS T1 INNER JOIN molecule AS T2 ON T1.molecule_id = T2.molecule_id WHERE T2.label = '+$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT T2.driverRef, T2.nationality, T2.dob FROM qualifying AS T1 INNER JOIN drivers AS T2 ON T1.driverId = T2.driverId WHERE T1.raceId = 23 AND NOT T1.q2 IS NULL",
+        "sql": "SELECT T2.driverRef, T2.nationality, T2.dob FROM qualifying AS T1 INNER JOIN drivers AS T2 ON T1.driverId = T2.driverId WHERE T1.raceId = 23$$ AND NOT T1.q2 IS NULL",
+        "query_columns": 3,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT COUNT(T1.Id) FROM posts AS T1 INNER JOIN users AS T2 ON T1.OwnerUserId = T2.Id WHERE T1.Score >= 20 AND T2.Age > 65",
+        "sql": "SELECT COUNT(T1.Id) FROM posts AS T1 INNER JOIN users AS T2 ON T1.OwnerUserId = T2.Id WHERE T1.Score >= 20 AND T2.Age > 65$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "superhero",
+        "sql_raw": "SELECT T1.weight_kg, T2.race FROM superhero AS T1 INNER JOIN race AS T2 ON T1.race_id = T2.id WHERE T1.id = 40",
+        "sql": "SELECT T1.weight_kg, T2.race FROM superhero AS T1 INNER JOIN race AS T2 ON T1.race_id = T2.id WHERE T1.id = 40$$",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT COUNT(T1.id) FROM comments AS T1 INNER JOIN posts AS T2 ON T1.PostId = T2.Id WHERE T2.CommentCount = 1 AND T2.Score = 0",
+        "sql": "SELECT COUNT(T1.id) FROM comments AS T1 INNER JOIN posts AS T2 ON T1.PostId = T2.Id WHERE T2.CommentCount = 1 AND T2.Score = 0$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT T1.Reputation FROM users AS T1 INNER JOIN posts AS T2 ON T1.Id = T2.OwnerUserId WHERE T2.Id = 65041",
+        "sql": "SELECT T1.Reputation FROM users AS T1 INNER JOIN posts AS T2 ON T1.Id = T2.OwnerUserId WHERE T2.Id = 65041$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "financial",
+        "sql_raw": "SELECT T1.A3 FROM district AS T1 INNER JOIN client AS T2 ON T1.district_id = T2.district_id WHERE T2.client_id = 3541",
+        "sql": "SELECT T1.A3 FROM district AS T1 INNER JOIN client AS T2 ON T1.district_id = T2.district_id WHERE T2.client_id = 3541$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT COUNT(id) FROM posts WHERE Score = 10",
+        "sql": "SELECT COUNT(id) FROM posts WHERE Score = 10$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT language FROM set_translations WHERE id IN (SELECT id FROM cards WHERE name = 'Angel of Mercy')",
+        "sql": "SELECT language FROM set_translations WHERE id IN (SELECT id FROM cards WHERE name = 'Angel of Mercy$$')",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "financial",
+        "sql_raw": "SELECT T1.client_id FROM client AS T1 INNER JOIN disp AS T2 ON T1.client_id = T2.client_id INNER JOIN account AS T5 ON T2.account_id = T5.account_id INNER JOIN loan AS T3 ON T5.account_id = T3.account_id INNER JOIN card AS T4 ON T2.disp_id = T4.disp_id WHERE T1.gender = 'F'",
+        "sql": "SELECT T1.client_id FROM client AS T1 INNER JOIN disp AS T2 ON T1.client_id = T2.client_id INNER JOIN account AS T5 ON T2.account_id = T5.account_id INNER JOIN loan AS T3 ON T5.account_id = T3.account_id INNER JOIN card AS T4 ON T2.disp_id = T4.disp_id WHERE T1.gender = 'F$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "toxicology",
+        "sql_raw": "SELECT T1.bond_type FROM bond AS T1 INNER JOIN connected AS T2 ON T1.bond_id = T2.bond_id WHERE T2.atom_id = 'TR000_1' AND T2.atom_id2 = 'TR000_2'",
+        "sql": "SELECT T1.bond_type FROM bond AS T1 INNER JOIN connected AS T2 ON T1.bond_id = T2.bond_id WHERE T2.atom_id = 'TR000_1' AND T2.atom_id2 = 'TR000_2$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT edhrecRank FROM cards WHERE frameVersion = 2015",
+        "sql": "SELECT edhrecRank FROM cards WHERE frameVersion = 2015$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "toxicology",
+        "sql_raw": "SELECT DISTINCT T2.atom_id2 FROM atom AS T1 INNER JOIN connected AS T2 ON T1.atom_id = T2.atom_id WHERE T1.element = 's'",
+        "sql": "SELECT DISTINCT T2.atom_id2 FROM atom AS T1 INNER JOIN connected AS T2 ON T1.atom_id = T2.atom_id WHERE T1.element = 's$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "financial",
+        "sql_raw": "SELECT COUNT(T1.client_id) FROM client AS T1 INNER JOIN district AS T2 ON T1.district_id = T2.district_id WHERE T1.gender = 'M' AND T2.A3 = 'north Bohemia' AND T2.A11 > 8000",
+        "sql": "SELECT COUNT(T1.client_id) FROM client AS T1 INNER JOIN district AS T2 ON T1.district_id = T2.district_id WHERE T1.gender = 'M' AND T2.A3 = 'north Bohemia' AND T2.A11 > 8000$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "superhero",
+        "sql_raw": "SELECT COUNT(*) FROM superhero AS T1 INNER JOIN race AS T2 ON T1.race_id = T2.id INNER JOIN gender AS T3 ON T3.id = T1.gender_id WHERE T1.race_id = 21 AND T1.gender_id = 1",
+        "sql": "SELECT COUNT(*) FROM superhero AS T1 INNER JOIN race AS T2 ON T1.race_id = T2.id INNER JOIN gender AS T3 ON T3.id = T1.gender_id WHERE T1.race_id = 21 AND T1.gender_id = 1$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT id FROM cards WHERE borderColor = 'black' AND isFullArt = 1",
+        "sql": "SELECT id FROM cards WHERE borderColor = 'black' AND isFullArt = 1$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "student_club",
+        "sql_raw": "SELECT expense_description FROM expense GROUP BY expense_description HAVING AVG(cost) > 50",
+        "sql": "SELECT expense_description FROM expense GROUP BY expense_description HAVING AVG(cost) > 50$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT COUNT(Id) FROM comments WHERE UserId = 13 AND Score < 60",
+        "sql": "SELECT COUNT(Id) FROM comments WHERE UserId = 13 AND Score < 60$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT T2.url FROM races AS T1 INNER JOIN seasons AS T2 ON T2.year = T1.year WHERE T1.raceId = 901",
+        "sql": "SELECT T2.url FROM races AS T1 INNER JOIN seasons AS T2 ON T2.year = T1.year WHERE T1.raceId = 901$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "student_club",
+        "sql_raw": "SELECT T1.first_name, T1.last_name FROM member AS T1 INNER JOIN income AS T2 ON T1.member_id = T2.link_to_member WHERE T2.amount > 40",
+        "sql": "SELECT T1.first_name, T1.last_name FROM member AS T1 INNER JOIN income AS T2 ON T1.member_id = T2.link_to_member WHERE T2.amount > 40$$",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT COUNT(DISTINCT T1.id) FROM cards AS T1 INNER JOIN legalities AS T2 ON T1.uuid = T2.uuid WHERE T2.status = 'Restricted' AND T1.isStarter = 1",
+        "sql": "SELECT COUNT(DISTINCT T1.id) FROM cards AS T1 INNER JOIN legalities AS T2 ON T1.uuid = T2.uuid WHERE T2.status = 'Restricted' AND T1.isStarter = 1$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "financial",
+        "sql_raw": "SELECT DISTINCT T2.account_id FROM trans AS T1 INNER JOIN account AS T2 ON T1.account_id = T2.account_id WHERE DATE_FORMAT(CAST(T2.date AS DATETIME), '%Y') < '1997' AND T1.amount > 3000",
+        "sql": "SELECT DISTINCT T2.account_id FROM trans AS T1 INNER JOIN account AS T2 ON T1.account_id = T2.account_id WHERE DATE_FORMAT(CAST(T2.date AS DATETIME), '%Y') < '1997' AND T1.amount > 3000$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT COUNT(CASE WHEN T1.Diagnosis LIKE '%SLE%' THEN T1.ID ELSE 0 END) / COUNT(T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.`GOT` >= 60",
+        "sql": "SELECT COUNT(CASE WHEN T1.Diagnosis LIKE '%SLE%' THEN T1.ID ELSE 0 END) / COUNT(T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.`GOT` >= 60$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT DISTINCT T1.ID FROM Laboratory AS T1 INNER JOIN Examination AS T2 ON T1.ID = T2.ID WHERE T2.Thrombosis = 0 AND T1.CPK < 250",
+        "sql": "SELECT DISTINCT T1.ID FROM Laboratory AS T1 INNER JOIN Examination AS T2 ON T1.ID = T2.ID WHERE T2.Thrombosis = 0 AND T1.CPK < 250$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "student_club",
+        "sql_raw": "SELECT DISTINCT T3.link_to_event FROM expense AS T1 INNER JOIN member AS T2 ON T1.link_to_member = T2.member_id INNER JOIN attendance AS T3 ON T2.member_id = T3.link_to_member WHERE T1.cost > 50",
+        "sql": "SELECT DISTINCT T3.link_to_event FROM expense AS T1 INNER JOIN member AS T2 ON T1.link_to_member = T2.member_id INNER JOIN attendance AS T3 ON T2.member_id = T3.link_to_member WHERE T1.cost > 50$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT COUNT(T1.ID) FROM Examination AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.SM IN ('negative', '0') AND T1.Thrombosis = 0",
+        "sql": "SELECT COUNT(T1.ID) FROM Examination AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.SM IN ('negative', '0') AND T1.Thrombosis = 0$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT T1.Diagnosis, T2.Date FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T1.ID = 30609",
+        "sql": "SELECT T1.Diagnosis, T2.Date FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T1.ID = 30609$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "california_schools",
+        "sql_raw": "SELECT COUNT(T1.cds) FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode WHERE T2.MailCity = 'Lakeport' AND (T1.AvgScrRead + T1.AvgScrMath + T1.AvgScrWrite) >= 1500",
+        "sql": "SELECT COUNT(T1.cds) FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode WHERE T2.MailCity = 'Lakeport' AND (T1.AvgScrRead + T1.AvgScrMath + T1.AvgScrWrite) >= 1500$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT T1.DisplayName FROM users AS T1 INNER JOIN votes AS T2 ON T1.Id = T2.UserId WHERE T2.Id = 6347",
+        "sql": "SELECT T1.DisplayName FROM users AS T1 INNER JOIN votes AS T2 ON T1.Id = T2.UserId WHERE T2.Id = 6347$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "superhero",
+        "sql_raw": "SELECT COUNT(T1.id) FROM superhero AS T1 INNER JOIN hero_power AS T2 ON T1.id = T2.hero_id INNER JOIN superpower AS T3 ON T2.power_id = T3.id WHERE T3.power_name = 'Super Strength' AND T1.height_cm > 200",
+        "sql": "SELECT COUNT(T1.id) FROM superhero AS T1 INNER JOIN hero_power AS T2 ON T1.id = T2.hero_id INNER JOIN superpower AS T3 ON T2.power_id = T3.id WHERE T3.power_name = 'Super Strength' AND T1.height_cm > 200$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "california_schools",
+        "sql_raw": "SELECT School FROM (SELECT T2.School, T1.AvgScrRead, RANK() OVER (PARTITION BY T2.County ORDER BY T1.AvgScrRead DESC) AS rnk FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode WHERE T2.`Virtual` = 'F') AS ranked_schools WHERE rnk <= 5",
+        "sql": "SELECT School FROM (SELECT T2.School, T1.AvgScrRead, RANK() OVER (PARTITION BY T2.County ORDER BY T1.AvgScrRead DESC) AS rnk FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode WHERE T2.`Virtual` = 'F') AS ranked_schools WHERE rnk <= 5$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "WITH fastest_lap_times AS (SELECT T1.raceId, T1.fastestLapTime FROM results AS T1 WHERE NOT T1.FastestLapTime IS NULL) SELECT MIN(fastest_lap_times.fastestLapTime) AS lap_record FROM fastest_lap_times INNER JOIN races AS T2 ON fastest_lap_times.raceId = T2.raceId INNER JOIN circuits AS T3 ON T2.circuitId = T3.circuitId WHERE T2.name = 'Austrian Grand Prix'",
+        "sql": "WITH fastest_lap_times AS (SELECT T1.raceId, T1.fastestLapTime FROM results AS T1 WHERE NOT T1.FastestLapTime IS NULL) SELECT MIN(fastest_lap_times.fastestLapTime) AS lap_record FROM fastest_lap_times INNER JOIN races AS T2 ON fastest_lap_times.raceId = T2.raceId INNER JOIN circuits AS T3 ON T2.circuitId = T3.circuitId WHERE T2.name = 'Austrian Grand Prix$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT T2.language FROM sets AS T1 INNER JOIN set_translations AS T2 ON T1.code = T2.setCode WHERE T1.baseSetSize = 309",
+        "sql": "SELECT T2.language FROM sets AS T1 INNER JOIN set_translations AS T2 ON T1.code = T2.setCode WHERE T1.baseSetSize = 309$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT DISTINCT T1.ID FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.CPK < 250 AND T1.Admission = '-'",
+        "sql": "SELECT DISTINCT T1.ID FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.CPK < 250 AND T1.Admission = '-$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "student_club",
+        "sql_raw": "SELECT DISTINCT T1.email FROM member AS T1 INNER JOIN expense AS T2 ON T1.member_id = T2.link_to_member WHERE DATE(SUBSTRING(T2.expense_date, 1, 10)) BETWEEN '2019-09-10' AND '2019-11-19' AND T2.cost > 20",
+        "sql": "SELECT DISTINCT T1.email FROM member AS T1 INNER JOIN expense AS T2 ON T1.member_id = T2.link_to_member WHERE DATE(SUBSTRING(T2.expense_date, 1, 10)) BETWEEN '2019-09-10' AND '2019-11-19' AND T2.cost > 20$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT DISTINCT (T1.Diagnosis) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.DNA >= 8",
+        "sql": "SELECT DISTINCT (T1.Diagnosis) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.DNA >= 8$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT T1.DisplayName FROM users AS T1 INNER JOIN comments AS T2 ON T1.Id = T2.UserId WHERE T2.Text = 'thank you user93!'",
+        "sql": "SELECT T1.DisplayName FROM users AS T1 INNER JOIN comments AS T2 ON T1.Id = T2.UserId WHERE T2.Text = 'thank you user93!$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT DISTINCT T2.language, T2.flavorText FROM cards AS T1 INNER JOIN foreign_data AS T2 ON T2.uuid = T1.uuid WHERE T1.watermark = 'colorpie'",
+        "sql": "SELECT DISTINCT T2.language, T2.flavorText FROM cards AS T1 INNER JOIN foreign_data AS T2 ON T2.uuid = T1.uuid WHERE T1.watermark = 'colorpie$$'",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "debit_card_specializing",
+        "sql_raw": "SELECT COUNT(GasStationID) FROM gasstations WHERE Country = 'CZE' AND Segment = 'Premium'",
+        "sql": "SELECT COUNT(GasStationID) FROM gasstations WHERE Country = 'CZE' AND Segment = 'Premium$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "student_club",
+        "sql_raw": "SELECT T1.event_name FROM event AS T1 INNER JOIN attendance AS T2 ON T1.event_id = T2.link_to_event GROUP BY T1.event_id HAVING COUNT(T2.link_to_event) > 10 EXCEPT SELECT T1.event_name FROM event AS T1 WHERE T1.type = 'Meeting'",
+        "sql": "SELECT T1.event_name FROM event AS T1 INNER JOIN attendance AS T2 ON T1.event_id = T2.link_to_event GROUP BY T1.event_id HAVING COUNT(T2.link_to_event) > 10 EXCEPT SELECT T1.event_name FROM event AS T1 WHERE T1.type = 'Meeting$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "superhero",
+        "sql_raw": "SELECT DISTINCT T2.power_name FROM hero_power AS T1 INNER JOIN superpower AS T2 ON T1.power_id = T2.id WHERE T1.hero_id = 1",
+        "sql": "SELECT DISTINCT T2.power_name FROM hero_power AS T1 INNER JOIN superpower AS T2 ON T1.power_id = T2.id WHERE T1.hero_id = 1$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "financial",
+        "sql_raw": "SELECT T3.client_id FROM `order` AS T1 INNER JOIN account AS T2 ON T1.account_id = T2.account_id INNER JOIN disp AS T4 ON T4.account_id = T2.account_id INNER JOIN client AS T3 ON T4.client_id = T3.client_id WHERE T1.order_id = 32423",
+        "sql": "SELECT T3.client_id FROM `order` AS T1 INNER JOIN account AS T2 ON T1.account_id = T2.account_id INNER JOIN disp AS T4 ON T4.account_id = T2.account_id INNER JOIN client AS T3 ON T4.client_id = T3.client_id WHERE T1.order_id = 32423$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT DISTINCT T1.ID, DATE_FORMAT(CAST(CURRENT_TIMESTAMP() AS DATETIME), '%Y') - DATE_FORMAT(CAST(T1.Birthday AS DATETIME), '%Y') FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.LDH > 600 AND T2.LDH < 800",
+        "sql": "SELECT DISTINCT T1.ID, DATE_FORMAT(CAST(CURRENT_TIMESTAMP() AS DATETIME), '%Y') - DATE_FORMAT(CAST(T1.Birthday AS DATETIME), '%Y') FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.LDH > 600 AND T2.LDH < 800$$",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT T1.Score, T2.LinkTypeId FROM posts AS T1 INNER JOIN postLinks AS T2 ON T1.Id = T2.PostId WHERE T2.PostId = 395",
+        "sql": "SELECT T1.Score, T2.LinkTypeId FROM posts AS T1 INNER JOIN postLinks AS T2 ON T1.Id = T2.PostId WHERE T2.PostId = 395$$",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT CreationDate FROM users WHERE DisplayName = 'IrishStat'",
+        "sql": "SELECT CreationDate FROM users WHERE DisplayName = 'IrishStat$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "superhero",
+        "sql_raw": "SELECT DISTINCT T2.colour FROM superhero AS T1 INNER JOIN colour AS T2 ON T1.skin_colour_id = T2.id INNER JOIN hero_attribute AS T3 ON T1.id = T3.hero_id WHERE T3.attribute_value = 100",
+        "sql": "SELECT DISTINCT T2.colour FROM superhero AS T1 INNER JOIN colour AS T2 ON T1.skin_colour_id = T2.id INNER JOIN hero_attribute AS T3 ON T1.id = T3.hero_id WHERE T3.attribute_value = 100$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT T1.Date, DATE_FORMAT(CAST(T2.`First Date` AS DATETIME), '%Y') - DATE_FORMAT(CAST(T2.Birthday AS DATETIME), '%Y'), T2.Birthday FROM Laboratory AS T1 INNER JOIN Patient AS T2 ON T1.ID = T2.ID WHERE T2.Diagnosis = 'SJS' AND NOT T2.Birthday IS NULL ORDER BY T2.Birthday ASC LIMIT 1",
+        "sql": "SELECT T1.Date, DATE_FORMAT(CAST(T2.`First Date` AS DATETIME), '%Y') - DATE_FORMAT(CAST(T2.Birthday AS DATETIME), '%Y'), T2.Birthday FROM Laboratory AS T1 INNER JOIN Patient AS T2 ON T1.ID = T2.ID WHERE T2.Diagnosis = 'SJS$$' AND NOT T2.Birthday IS NULL ORDER BY T2.Birthday ASC LIMIT 1",
+        "query_columns": 3,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "european_football_2",
+        "sql_raw": "SELECT DISTINCT t2.buildUpPlayPositioningClass FROM Team AS t1 INNER JOIN Team_attributes AS t2 ON t1.team_fifa_api_id = t2.team_fifa_api_id WHERE t1.team_long_name = 'ADO Den Haag'",
+        "sql": "SELECT DISTINCT t2.buildUpPlayPositioningClass FROM Team AS t1 INNER JOIN Team_attributes AS t2 ON t1.team_fifa_api_id = t2.team_fifa_api_id WHERE t1.team_long_name = 'ADO Den Haag$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT T2.Diagnosis FROM Examination AS T1 INNER JOIN Patient AS T2 ON T1.ID = T2.ID WHERE T1.`Examination Date` BETWEEN '1985-01-01' AND '1995-12-31' GROUP BY T2.Diagnosis ORDER BY COUNT(T2.Diagnosis) DESC LIMIT 1",
+        "sql": "SELECT T2.Diagnosis FROM Examination AS T1 INNER JOIN Patient AS T2 ON T1.ID = T2.ID WHERE T1.`Examination Date` BETWEEN '1985-01-01' AND '1995-12-31$$' GROUP BY T2.Diagnosis ORDER BY COUNT(T2.Diagnosis) DESC LIMIT 1",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT COUNT(DISTINCT T1.id) FROM comments AS T1 INNER JOIN users AS T2 ON T1.UserId = T2.Id WHERE T1.Score = 0 AND T2.Age = 40",
+        "sql": "SELECT COUNT(DISTINCT T1.id) FROM comments AS T1 INNER JOIN users AS T2 ON T1.UserId = T2.Id WHERE T1.Score = 0 AND T2.Age = 40$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT COUNT(T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.GOT < 60 AND T1.SEX = 'M'",
+        "sql": "SELECT COUNT(T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.GOT < 60 AND T1.SEX = 'M$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT T1.ID FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE DATE_FORMAT(CAST(T1.`First Date` AS DATETIME), '%Y') > '1992' AND T2.PT < 14",
+        "sql": "SELECT T1.ID FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE DATE_FORMAT(CAST(T1.`First Date` AS DATETIME), '%Y') > '1992' AND T2.PT < 14$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT COUNT(T2.circuitId) FROM circuits AS T1 INNER JOIN races AS T2 ON T2.circuitID = T1.circuitId WHERE T1.country = 'Italy'",
+        "sql": "SELECT COUNT(T2.circuitId) FROM circuits AS T1 INNER JOIN races AS T2 ON T2.circuitID = T1.circuitId WHERE T1.country = 'Italy$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "toxicology",
+        "sql_raw": "SELECT T2.bond_id FROM atom AS T1 INNER JOIN connected AS T2 ON T1.atom_id = T2.atom_id WHERE T2.bond_id IN (SELECT T3.bond_id FROM connected AS T3 INNER JOIN atom AS T4 ON T3.atom_id = T4.atom_id WHERE T4.element = 'p') AND T1.element = 'n'",
+        "sql": "SELECT T2.bond_id FROM atom AS T1 INNER JOIN connected AS T2 ON T1.atom_id = T2.atom_id WHERE T2.bond_id IN (SELECT T3.bond_id FROM connected AS T3 INNER JOIN atom AS T4 ON T3.atom_id = T4.atom_id WHERE T4.element = 'p') AND T1.element = 'n$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "european_football_2",
+        "sql_raw": "SELECT DISTINCT t1.team_short_name FROM Team AS t1 INNER JOIN Team_Attributes AS t2 ON t1.team_api_id = t2.team_api_id WHERE t2.buildUpPlaySpeed = 31 AND t2.buildUpPlayDribbling = 53 AND t2.buildUpPlayPassing = 32",
+        "sql": "SELECT DISTINCT t1.team_short_name FROM Team AS t1 INNER JOIN Team_Attributes AS t2 ON t1.team_api_id = t2.team_api_id WHERE t2.buildUpPlaySpeed = 31 AND t2.buildUpPlayDribbling = 53 AND t2.buildUpPlayPassing = 32$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT T1.DisplayName FROM users AS T1 INNER JOIN badges AS T2 ON T1.Id = T2.UserId WHERE T2.`Name` = 'Organizer'",
+        "sql": "SELECT T1.DisplayName FROM users AS T1 INNER JOIN badges AS T2 ON T1.Id = T2.UserId WHERE T2.`Name` = 'Organizer$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "student_club",
+        "sql_raw": "SELECT T2.category, T2.amount FROM event AS T1 INNER JOIN budget AS T2 ON T1.event_id = T2.link_to_event WHERE T1.event_name = 'January Speaker'",
+        "sql": "SELECT T2.category, T2.amount FROM event AS T1 INNER JOIN budget AS T2 ON T1.event_id = T2.link_to_event WHERE T1.event_name = 'January Speaker$$'",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT ID FROM Patient WHERE DATE_FORMAT(CAST(Birthday AS DATETIME), '%Y') = '1964' AND SEX = 'F' AND Admission = '+'",
+        "sql": "SELECT ID FROM Patient WHERE DATE_FORMAT(CAST(Birthday AS DATETIME), '%Y') = '1964' AND SEX = 'F' AND Admission = '+$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "superhero",
+        "sql_raw": "SELECT T1.superhero_name, T2.race FROM superhero AS T1 INNER JOIN race AS T2 ON T1.race_id = T2.id WHERE T1.full_name = 'Charles Chandler'",
+        "sql": "SELECT T1.superhero_name, T2.race FROM superhero AS T1 INNER JOIN race AS T2 ON T1.race_id = T2.id WHERE T1.full_name = 'Charles Chandler$$'",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT T3.lat, T3.lng FROM lapTimes AS T1 INNER JOIN races AS T2 ON T1.raceId = T2.raceId INNER JOIN circuits AS T3 ON T2.circuitId = T3.circuitId WHERE T1.time = '1:29.488'",
+        "sql": "SELECT T3.lat, T3.lng FROM lapTimes AS T1 INNER JOIN races AS T2 ON T1.raceId = T2.raceId INNER JOIN circuits AS T3 ON T2.circuitId = T3.circuitId WHERE T1.time = '1:29.488$$'",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT driverRef FROM drivers WHERE forename = 'Robert' AND surname = 'Kubica'",
+        "sql": "SELECT driverRef FROM drivers WHERE forename = 'Robert' AND surname = 'Kubica$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT DisplayName FROM users WHERE Age BETWEEN 19 AND 65",
+        "sql": "SELECT DisplayName FROM users WHERE Age BETWEEN 19 AND 65$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "california_schools",
+        "sql_raw": "SELECT CAST(SUM(CASE WHEN County = 'Colusa' THEN 1 ELSE 0 END) AS FLOAT) / SUM(CASE WHEN County = 'Humboldt' THEN 1 ELSE 0 END) FROM schools WHERE MailState = 'CA'",
+        "sql": "SELECT CAST(SUM(CASE WHEN County = 'Colusa' THEN 1 ELSE 0 END) AS FLOAT) / SUM(CASE WHEN County = 'Humboldt' THEN 1 ELSE 0 END) FROM schools WHERE MailState = 'CA$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "european_football_2",
+        "sql_raw": "SELECT DISTINCT t1.player_name FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE t2.volleys > 70 AND t2.dribbling > 70",
+        "sql": "SELECT DISTINCT t1.player_name FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE t2.volleys > 70 AND t2.dribbling > 70$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT CAST(SUM(CASE WHEN T2.Age > 65 THEN 1 ELSE 0 END) AS FLOAT) * 100 / COUNT(T1.Id) FROM posts AS T1 INNER JOIN users AS T2 ON T1.OwnerUserId = T2.Id WHERE T1.Score > 5",
+        "sql": "SELECT CAST(SUM(CASE WHEN T2.Age > 65 THEN 1 ELSE 0 END) AS FLOAT) * 100 / COUNT(T1.Id) FROM posts AS T1 INNER JOIN users AS T2 ON T1.OwnerUserId = T2.Id WHERE T1.Score > 5$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "california_schools",
+        "sql_raw": "SELECT MAX(CAST(T1.`Free Meal Count (Ages 5-17)` AS FLOAT) / T1.`Enrollment (Ages 5-17)`) FROM frpm AS T1 INNER JOIN satscores AS T2 ON T1.CDSCode = T2.cds WHERE CAST(T2.NumGE1500 AS FLOAT) / T2.NumTstTakr > 0.3",
+        "sql": "SELECT MAX(CAST(T1.`Free Meal Count (Ages 5-17)` AS FLOAT) / T1.`Enrollment (Ages 5-17)`) FROM frpm AS T1 INNER JOIN satscores AS T2 ON T1.CDSCode = T2.cds WHERE CAST(T2.NumGE1500 AS FLOAT) / T2.NumTstTakr > 0.3$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT type FROM sets WHERE code IN (SELECT setCode FROM set_translations WHERE translation = 'Huitième édition')",
+        "sql": "SELECT type FROM sets WHERE code IN (SELECT setCode FROM set_translations WHERE translation = 'Huitième édition$$')",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT T1.nationality FROM drivers AS T1 INNER JOIN results AS T2 ON T2.driverId = T1.driverId WHERE T2.raceId = 933 AND NOT T2.fastestLapTime IS NULL ORDER BY T2.fastestLapSpeed DESC LIMIT 1",
+        "sql": "SELECT T1.nationality FROM drivers AS T1 INNER JOIN results AS T2 ON T2.driverId = T1.driverId WHERE T2.raceId = 933$$ AND NOT T2.fastestLapTime IS NULL ORDER BY T2.fastestLapSpeed DESC LIMIT 1",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT T1.Diagnosis FROM Patient AS T1 INNER JOIN Examination AS T2 ON T1.ID = T2.ID WHERE T1.ID = (SELECT ID FROM Examination WHERE `Examination Date` = '1997-01-27' AND Diagnosis = 'SLE') AND T2.`Examination Date` = T1.`First Date`",
+        "sql": "SELECT T1.Diagnosis FROM Patient AS T1 INNER JOIN Examination AS T2 ON T1.ID = T2.ID WHERE T1.ID = (SELECT ID FROM Examination WHERE `Examination Date` = '1997-01-27' AND Diagnosis = 'SLE$$') AND T2.`Examination Date` = T1.`First Date`",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "debit_card_specializing",
+        "sql_raw": "SELECT SUM(CASE WHEN T1.Currency = 'CZK' THEN T2.Consumption ELSE 0 END) - SUM(CASE WHEN T1.Currency = 'EUR' THEN T2.Consumption ELSE 0 END) FROM customers AS T1 INNER JOIN yearmonth AS T2 ON T1.CustomerID = T2.CustomerID WHERE SUBSTRING(T2.Date, 1, 4) = '2012'",
+        "sql": "SELECT SUM(CASE WHEN T1.Currency = 'CZK' THEN T2.Consumption ELSE 0 END) - SUM(CASE WHEN T1.Currency = 'EUR' THEN T2.Consumption ELSE 0 END) FROM customers AS T1 INNER JOIN yearmonth AS T2 ON T1.CustomerID = T2.CustomerID WHERE SUBSTRING(T2.Date, 1, 4) = '2012$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT Name FROM badges WHERE Date = '2010-07-19 19:39:08.0'",
+        "sql": "SELECT Name FROM badges WHERE Date = '2010-07-19 19:39:08.0$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "student_club",
+        "sql_raw": "SELECT CAST(SUM(CASE WHEN T2.major_name = 'Business' THEN 1 ELSE 0 END) AS FLOAT) * 100 / COUNT(T1.member_id) FROM member AS T1 INNER JOIN major AS T2 ON T2.major_id = T1.link_to_major WHERE T1.position = 'Member'",
+        "sql": "SELECT CAST(SUM(CASE WHEN T2.major_name = 'Business' THEN 1 ELSE 0 END) AS FLOAT) * 100 / COUNT(T1.member_id) FROM member AS T1 INNER JOIN major AS T2 ON T2.major_id = T1.link_to_major WHERE T1.position = 'Member$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT T1.PostHistoryTypeId, (SELECT COUNT(DISTINCT UserId) FROM comments WHERE PostId = 3720) AS NumberOfUsers FROM postHistory AS T1 WHERE T1.PostId = 3720",
+        "sql": "SELECT T1.PostHistoryTypeId, (SELECT COUNT(DISTINCT UserId) FROM comments WHERE PostId = 3720) AS NumberOfUsers FROM postHistory AS T1 WHERE T1.PostId = 3720$$",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT COUNT(id) FROM cards WHERE borderColor = 'white' AND NOT cardKingdomId IS NULL AND NOT cardKingdomFoilId IS NULL",
+        "sql": "SELECT COUNT(id) FROM cards WHERE borderColor = 'white$$' AND NOT cardKingdomId IS NULL AND NOT cardKingdomFoilId IS NULL",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "student_club",
+        "sql_raw": "SELECT T2.city FROM member AS T1 INNER JOIN zip_code AS T2 ON T2.zip_code = T1.zip WHERE T1.first_name = 'Garrett' AND T1.last_name = 'Gerke'",
+        "sql": "SELECT T2.city FROM member AS T1 INNER JOIN zip_code AS T2 ON T2.zip_code = T1.zip WHERE T1.first_name = 'Garrett' AND T1.last_name = 'Gerke$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "debit_card_specializing",
+        "sql_raw": "SELECT COUNT(T1.TransactionID) FROM transactions_1k AS T1 INNER JOIN gasstations AS T2 ON T1.GasStationID = T2.GasStationID WHERE T2.Country = 'CZE' AND T1.Price > 1000",
+        "sql": "SELECT COUNT(T1.TransactionID) FROM transactions_1k AS T1 INNER JOIN gasstations AS T2 ON T1.GasStationID = T2.GasStationID WHERE T2.Country = 'CZE' AND T1.Price > 1000$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "student_club",
+        "sql_raw": "SELECT T2.first_name, T2.last_name, T1.cost FROM expense AS T1 INNER JOIN member AS T2 ON T1.link_to_member = T2.member_id WHERE T1.expense_description = 'Water, Veggie tray, supplies'",
+        "sql": "SELECT T2.first_name, T2.last_name, T1.cost FROM expense AS T1 INNER JOIN member AS T2 ON T1.link_to_member = T2.member_id WHERE T1.expense_description = 'Water, Veggie tray, supplies$$'",
+        "query_columns": 3,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT COUNT(circuitId) FROM circuits WHERE location = 'Adelaide' AND country = 'Australia'",
+        "sql": "SELECT COUNT(circuitId) FROM circuits WHERE location = 'Adelaide' AND country = 'Australia$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "toxicology",
+        "sql_raw": "SELECT T.bond_type FROM (SELECT T1.bond_type, COUNT(T1.molecule_id) FROM bond AS T1 WHERE T1.molecule_id = 'TR010' GROUP BY T1.bond_type ORDER BY COUNT(T1.molecule_id) DESC LIMIT 1) AS T",
+        "sql": "SELECT T.bond_type FROM (SELECT T1.bond_type, COUNT(T1.molecule_id) FROM bond AS T1 WHERE T1.molecule_id = 'TR010$$' GROUP BY T1.bond_type ORDER BY COUNT(T1.molecule_id) DESC LIMIT 1) AS T",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "superhero",
+        "sql_raw": "SELECT id FROM superpower WHERE power_name = 'Cryokinesis'",
+        "sql": "SELECT id FROM superpower WHERE power_name = 'Cryokinesis$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT COUNT(T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID INNER JOIN Examination AS T3 ON T3.ID = T2.ID WHERE T2.IGG BETWEEN 900 AND 2000 AND NOT T3.Symptoms IS NULL",
+        "sql": "SELECT COUNT(T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID INNER JOIN Examination AS T3 ON T3.ID = T2.ID WHERE T2.IGG BETWEEN 900 AND 2000$$ AND NOT T3.Symptoms IS NULL",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT COUNT(T2.circuitid) FROM circuits AS T1 INNER JOIN races AS T2 ON T2.circuitID = T1.circuitId WHERE T1.name = 'Silverstone Circuit' AND T2.name = 'British Grand Prix'",
+        "sql": "SELECT COUNT(T2.circuitid) FROM circuits AS T1 INNER JOIN races AS T2 ON T2.circuitID = T1.circuitId WHERE T1.name = 'Silverstone Circuit' AND T2.name = 'British Grand Prix$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT T1.ID, T1.SEX FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T1.Diagnosis = 'SLE' AND T2.HGB > 10 AND T2.HGB < 17 ORDER BY T1.Birthday ASC LIMIT 1",
+        "sql": "SELECT T1.ID, T1.SEX FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T1.Diagnosis = 'SLE' AND T2.HGB > 10$$ AND T2.HGB < 17 ORDER BY T1.Birthday ASC LIMIT 1",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "student_club",
+        "sql_raw": "SELECT city, state FROM member AS T1 INNER JOIN major AS T2 ON T2.major_id = T1.link_to_major INNER JOIN zip_code AS T3 ON T3.zip_code = T1.zip WHERE department = 'Electrical and Computer Engineering Department' AND position = 'Member'",
+        "sql": "SELECT city, state FROM member AS T1 INNER JOIN major AS T2 ON T2.major_id = T1.link_to_major INNER JOIN zip_code AS T3 ON T3.zip_code = T1.zip WHERE department = 'Electrical and Computer Engineering Department$$' AND position = 'Member'",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "european_football_2",
+        "sql_raw": "SELECT DISTINCT t4.team_long_name FROM Team_Attributes AS t3 INNER JOIN Team AS t4 ON t3.team_api_id = t4.team_api_id WHERE SUBSTRING(t3.`date`, 1, 4) = '2012' AND t3.buildUpPlayPassing > (SELECT CAST(SUM(t2.buildUpPlayPassing) AS FLOAT) / COUNT(t1.id) FROM Team AS t1 INNER JOIN Team_Attributes AS t2 ON t1.team_api_id = t2.team_api_id WHERE DATE_FORMAT(CAST(t2.`date` AS DATETIME), '%Y') = '2012')",
+        "sql": "SELECT DISTINCT t4.team_long_name FROM Team_Attributes AS t3 INNER JOIN Team AS t4 ON t3.team_api_id = t4.team_api_id WHERE SUBSTRING(t3.`date`, 1, 4) = '2012' AND t3.buildUpPlayPassing > (SELECT CAST(SUM(t2.buildUpPlayPassing) AS FLOAT) / COUNT(t1.id) FROM Team AS t1 INNER JOIN Team_Attributes AS t2 ON t1.team_api_id = t2.team_api_id WHERE DATE_FORMAT(CAST(t2.`date` AS DATETIME), '%Y') = '2012$$')",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "superhero",
+        "sql_raw": "SELECT DISTINCT T2.race FROM superhero AS T1 INNER JOIN race AS T2 ON T1.race_id = T2.id WHERE T1.weight_kg = 108 AND T1.height_cm = 188",
+        "sql": "SELECT DISTINCT T2.race FROM superhero AS T1 INNER JOIN race AS T2 ON T1.race_id = T2.id WHERE T1.weight_kg = 108 AND T1.height_cm = 188$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "financial",
+        "sql_raw": "SELECT T3.trans_id FROM district AS T1 INNER JOIN account AS T2 ON T1.district_id = T2.district_id INNER JOIN trans AS T3 ON T2.account_id = T3.account_id WHERE T1.district_id = 5",
+        "sql": "SELECT T3.trans_id FROM district AS T1 INNER JOIN account AS T2 ON T1.district_id = T2.district_id INNER JOIN trans AS T3 ON T2.account_id = T3.account_id WHERE T1.district_id = 5$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT T1.DisplayName, T1.WebsiteUrl FROM users AS T1 INNER JOIN posts AS T2 ON T1.Id = T2.OwnerUserId WHERE T2.FavoriteCount > 150",
+        "sql": "SELECT T1.DisplayName, T1.WebsiteUrl FROM users AS T1 INNER JOIN posts AS T2 ON T1.Id = T2.OwnerUserId WHERE T2.FavoriteCount > 150$$",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "european_football_2",
+        "sql_raw": "SELECT player_name FROM Player WHERE CAST((JULIANDAY('now') - JULIANDAY(birthday)) AS FLOAT) / 365 >= 35",
+        "sql": "SELECT player_name FROM Player WHERE CAST((JULIANDAY('now') - JULIANDAY(birthday)) AS FLOAT) / 365 >= 35$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT COUNT(id) FROM users WHERE Reputation > 2000 AND Views > 1000",
+        "sql": "SELECT COUNT(id) FROM users WHERE Reputation > 2000 AND Views > 1000$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT DisplayName FROM users WHERE Age BETWEEN 19 AND 65-- Retrieve names of users aged between 19 and 65",
+        "sql": "SELECT DisplayName FROM users WHERE Age BETWEEN 19 AND 65-- Retrieve names of users aged between 19 and 65$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT Date FROM Laboratory WHERE ID = 48473 AND GOT >= 60",
+        "sql": "SELECT Date FROM Laboratory WHERE ID = 48473 AND GOT >= 60$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "student_club",
+        "sql_raw": "SELECT T1.type FROM event AS T1 INNER JOIN budget AS T2 ON T1.event_id = T2.link_to_event WHERE T2.remaining > 30",
+        "sql": "SELECT T1.type FROM event AS T1 INNER JOIN budget AS T2 ON T1.event_id = T2.link_to_event WHERE T2.remaining > 30$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "superhero",
+        "sql_raw": "SELECT DISTINCT T1.full_name FROM superhero AS T1 INNER JOIN hero_power AS T2 ON T1.id = T2.hero_id GROUP BY T1.full_name HAVING COUNT(T2.power_id) > 15",
+        "sql": "SELECT DISTINCT T1.full_name FROM superhero AS T1 INNER JOIN hero_power AS T2 ON T1.id = T2.hero_id GROUP BY T1.full_name HAVING COUNT(T2.power_id) > 15$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT T2.UpVotes FROM comments AS T1 INNER JOIN users AS T2 ON T1.UserId = T2.Id WHERE T1.Text = 'R is also lazy evaluated.'",
+        "sql": "SELECT T2.UpVotes FROM comments AS T1 INNER JOIN users AS T2 ON T1.UserId = T2.Id WHERE T1.Text = 'R is also lazy evaluated.$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "student_club",
+        "sql_raw": "SELECT AVG(T2.cost) FROM member AS T1 INNER JOIN expense AS T2 ON T1.member_id = T2.link_to_member WHERE T1.last_name = 'Allen' AND T1.first_name = 'Elijah' AND (SUBSTRING(T2.expense_date, 6, 2) = '09' OR SUBSTRING(T2.expense_date, 6, 2) = '10')",
+        "sql": "SELECT AVG(T2.cost) FROM member AS T1 INNER JOIN expense AS T2 ON T1.member_id = T2.link_to_member WHERE T1.last_name = 'Allen' AND T1.first_name = 'Elijah' AND (SUBSTRING(T2.expense_date, 6, 2) = '09' OR SUBSTRING(T2.expense_date, 6, 2) = '10$$')",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT T2.ViewCount, T3.DisplayName FROM postHistory AS T1 INNER JOIN posts AS T2 ON T1.PostId = T2.Id INNER JOIN users AS T3 ON T2.LastEditorUserId = T3.Id WHERE T1.Text = 'Computer Game Datasets'",
+        "sql": "SELECT T2.ViewCount, T3.DisplayName FROM postHistory AS T1 INNER JOIN posts AS T2 ON T1.PostId = T2.Id INNER JOIN users AS T3 ON T2.LastEditorUserId = T3.Id WHERE T1.Text = 'Computer Game Datasets$$'",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT CASE WHEN `T-CHO` < 250 THEN 'Normal' ELSE 'Abnormal' END FROM Laboratory WHERE ID = 2927464 AND Date = '1995-09-04'",
+        "sql": "SELECT CASE WHEN `T-CHO` < 250 THEN 'Normal' ELSE 'Abnormal' END FROM Laboratory WHERE ID = 2927464 AND Date = '1995-09-04$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "student_club",
+        "sql_raw": "SELECT T2.first_name, T2.last_name FROM major AS T1 INNER JOIN member AS T2 ON T1.major_id = T2.link_to_major INNER JOIN attendance AS T3 ON T2.member_id = T3.link_to_member INNER JOIN event AS T4 ON T3.link_to_event = T4.event_id WHERE T4.event_name = 'Community Theater' AND T1.major_name = 'Interior Design'",
+        "sql": "SELECT T2.first_name, T2.last_name FROM major AS T1 INNER JOIN member AS T2 ON T1.major_id = T2.link_to_major INNER JOIN attendance AS T3 ON T2.member_id = T3.link_to_member INNER JOIN event AS T4 ON T3.link_to_event = T4.event_id WHERE T4.event_name = 'Community Theater' AND T1.major_name = 'Interior Design$$'",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT COUNT(id) FROM votes WHERE DATE_FORMAT(CAST(CreationDate AS DATETIME), '%Y') = '2010'",
+        "sql": "SELECT COUNT(id) FROM votes WHERE DATE_FORMAT(CAST(CreationDate AS DATETIME), '%Y') = '2010$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "european_football_2",
+        "sql_raw": "SELECT MAX(t2.overall_rating) FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE t1.player_name = 'Dorlan Pabon'",
+        "sql": "SELECT MAX(t2.overall_rating) FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE t1.player_name = 'Dorlan Pabon$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT DISTINCT T2.status FROM cards AS T1 INNER JOIN legalities AS T2 ON T2.uuid = T1.uuid WHERE T1.frameVersion = 1997 AND T1.hasContentWarning = 1 AND T1.artist = 'D. Alexander Gregory' AND T2.format = 'legacy'",
+        "sql": "SELECT DISTINCT T2.status FROM cards AS T1 INNER JOIN legalities AS T2 ON T2.uuid = T1.uuid WHERE T1.frameVersion = 1997 AND T1.hasContentWarning = 1 AND T1.artist = 'D. Alexander Gregory' AND T2.format = 'legacy$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT T1.SEX FROM Patient AS T1 INNER JOIN Examination AS T2 ON T1.ID = T2.ID INNER JOIN Laboratory AS T3 ON T3.ID = T2.ID WHERE T2.Diagnosis = 'PSS' AND T3.CRP = '2+' AND T3.CRE = 1.0 AND T3.LDH = 123",
+        "sql": "SELECT T1.SEX FROM Patient AS T1 INNER JOIN Examination AS T2 ON T1.ID = T2.ID INNER JOIN Laboratory AS T3 ON T3.ID = T2.ID WHERE T2.Diagnosis = 'PSS' AND T3.CRP = '2+' AND T3.CRE = 1.0 AND T3.LDH = 123$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "toxicology",
+        "sql_raw": "SELECT T1.bond_id, T2.atom_id, T2.atom_id2 FROM bond AS T1 INNER JOIN connected AS T2 ON T1.bond_id = T2.bond_id WHERE T1.bond_type = '-'",
+        "sql": "SELECT T1.bond_id, T2.atom_id, T2.atom_id2 FROM bond AS T1 INNER JOIN connected AS T2 ON T1.bond_id = T2.bond_id WHERE T1.bond_type = '-$$'",
+        "query_columns": 3,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "superhero",
+        "sql_raw": "SELECT T1.full_name FROM superhero AS T1 INNER JOIN colour AS T2 ON T1.eye_colour_id = T2.id WHERE T1.weight_kg < 100 AND T2.colour = 'Brown'",
+        "sql": "SELECT T1.full_name FROM superhero AS T1 INNER JOIN colour AS T2 ON T1.eye_colour_id = T2.id WHERE T1.weight_kg < 100 AND T2.colour = 'Brown$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT name FROM foreign_data WHERE uuid IN (SELECT uuid FROM cards WHERE types = 'Creature' AND layout = 'normal' AND borderColor = 'black' AND artist = 'Matthew D. Wilson') AND language = 'French'",
+        "sql": "SELECT name FROM foreign_data WHERE uuid IN (SELECT uuid FROM cards WHERE types = 'Creature' AND layout = 'normal' AND borderColor = 'black' AND artist = 'Matthew D. Wilson') AND language = 'French$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT T1.id, T2.text, T1.hasContentWarning FROM cards AS T1 INNER JOIN rulings AS T2 ON T1.uuid = T2.uuid WHERE T1.artist = 'Stephen Daniele'",
+        "sql": "SELECT T1.id, T2.text, T1.hasContentWarning FROM cards AS T1 INNER JOIN rulings AS T2 ON T1.uuid = T2.uuid WHERE T1.artist = 'Stephen Daniele$$'",
+        "query_columns": 3,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT name FROM races WHERE year = 2017 AND NOT name IN (SELECT name FROM races WHERE year = 2000)",
+        "sql": "SELECT name FROM races WHERE year = 2017 AND NOT name IN (SELECT name FROM races WHERE year = 2000$$)",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "financial",
+        "sql_raw": "SELECT T2.account_id FROM district AS T1 INNER JOIN account AS T2 ON T1.district_id = T2.district_id INNER JOIN disp AS T3 ON T2.account_id = T3.account_id WHERE T3.type = 'OWNER' AND T1.A2 = 'Tabor'",
+        "sql": "SELECT T2.account_id FROM district AS T1 INNER JOIN account AS T2 ON T1.district_id = T2.district_id INNER JOIN disp AS T3 ON T2.account_id = T3.account_id WHERE T3.type = 'OWNER' AND T1.A2 = 'Tabor$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "superhero",
+        "sql_raw": "SELECT T1.superhero_name FROM superhero AS T1 INNER JOIN gender AS T2 ON T1.gender_id = T2.id WHERE T2.gender = 'Male' AND T1.weight_kg * 100 > (SELECT AVG(weight_kg) FROM superhero) * 79",
+        "sql": "SELECT T1.superhero_name FROM superhero AS T1 INNER JOIN gender AS T2 ON T1.gender_id = T2.id WHERE T2.gender = 'Male$$' AND T1.weight_kg * 100 > (SELECT AVG(weight_kg) FROM superhero) * 79",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "european_football_2",
+        "sql_raw": "SELECT CAST(SUM(t2.overall_rating) AS FLOAT) / COUNT(t2.id) FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE t1.player_name = 'Pietro Marino'",
+        "sql": "SELECT CAST(SUM(t2.overall_rating) AS FLOAT) / COUNT(t2.id) FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE t1.player_name = 'Pietro Marino$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "california_schools",
+        "sql_raw": "SELECT County FROM schools WHERE DATE_FORMAT(CAST(ClosedDate AS DATETIME), '%Y') BETWEEN '1980' AND '1989' AND StatusType = 'Closed' AND SOC = 11 GROUP BY County ORDER BY COUNT(School) DESC LIMIT 1",
+        "sql": "SELECT County FROM schools WHERE DATE_FORMAT(CAST(ClosedDate AS DATETIME), '%Y') BETWEEN '1980' AND '1989' AND StatusType = 'Closed$$' AND SOC = 11 GROUP BY County ORDER BY COUNT(School) DESC LIMIT 1",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT T1.q1 FROM qualifying AS T1 INNER JOIN drivers AS T2 ON T2.driverId = T1.driverId WHERE T1.raceId = 345 AND T2.forename = 'Lucas' AND T2.surname = 'di Grassi'",
+        "sql": "SELECT T1.q1 FROM qualifying AS T1 INNER JOIN drivers AS T2 ON T2.driverId = T1.driverId WHERE T1.raceId = 345 AND T2.forename = 'Lucas' AND T2.surname = 'di Grassi$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT (SELECT CAST(SUM(CASE WHEN language = 'Spanish' THEN 1 ELSE 0 END) AS FLOAT) * 100 / COUNT(*) FROM foreign_data), name FROM foreign_data WHERE language = 'Spanish'",
+        "sql": "SELECT (SELECT CAST(SUM(CASE WHEN language = 'Spanish' THEN 1 ELSE 0 END) AS FLOAT) * 100 / COUNT(*) FROM foreign_data), name FROM foreign_data WHERE language = 'Spanish$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT T2.language FROM sets AS T1 INNER JOIN set_translations AS T2 ON T1.code = T2.setCode WHERE T1.mcmName = 'Archenemy' AND T2.setCode = 'ARC'",
+        "sql": "SELECT T2.language FROM sets AS T1 INNER JOIN set_translations AS T2 ON T1.code = T2.setCode WHERE T1.mcmName = 'Archenemy' AND T2.setCode = 'ARC$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT T1.name, T1.id FROM sets AS T1 INNER JOIN set_translations AS T2 ON T1.code = T2.setCode WHERE T2.language = 'Japanese' AND T1.isFoilOnly = 1 AND T1.isForeignOnly = 0",
+        "sql": "SELECT T1.name, T1.id FROM sets AS T1 INNER JOIN set_translations AS T2 ON T1.code = T2.setCode WHERE T2.language = 'Japanese' AND T1.isFoilOnly = 1 AND T1.isForeignOnly = 0$$",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "superhero",
+        "sql_raw": "SELECT T2.colour FROM superhero AS T1 INNER JOIN colour AS T2 ON T1.eye_colour_id = T2.id WHERE T1.id = 75",
+        "sql": "SELECT T2.colour FROM superhero AS T1 INNER JOIN colour AS T2 ON T1.eye_colour_id = T2.id WHERE T1.id = 75$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "toxicology",
+        "sql_raw": "SELECT T.element FROM (SELECT T2.element, COUNT(DISTINCT T2.molecule_id) FROM molecule AS T1 INNER JOIN atom AS T2 ON T1.molecule_id = T2.molecule_id WHERE T1.label = '+' GROUP BY T2.element ORDER BY COUNT(DISTINCT T2.molecule_id) LIMIT 1) AS t",
+        "sql": "SELECT T.element FROM (SELECT T2.element, COUNT(DISTINCT T2.molecule_id) FROM molecule AS T1 INNER JOIN atom AS T2 ON T1.molecule_id = T2.molecule_id WHERE T1.label = '+$$' GROUP BY T2.element ORDER BY COUNT(DISTINCT T2.molecule_id) LIMIT 1) AS t",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT COUNT(T1.driverId) FROM drivers AS T1 INNER JOIN lapTimes AS T2 ON T1.driverId = T2.driverId WHERE T1.nationality = 'French' AND (CAST(SUBSTRING(T2.time, 1, 2) AS SIGNED) * 60 + CAST(SUBSTRING(T2.time, 4, 2) AS SIGNED) + CAST(SUBSTRING(T2.time, 7, 2) AS FLOAT) / 1000) < 120",
+        "sql": "SELECT COUNT(T1.driverId) FROM drivers AS T1 INNER JOIN lapTimes AS T2 ON T1.driverId = T2.driverId WHERE T1.nationality = 'French' AND (CAST(SUBSTRING(T2.time, 1, 2) AS SIGNED) * 60 + CAST(SUBSTRING(T2.time, 4, 2) AS SIGNED) + CAST(SUBSTRING(T2.time, 7, 2) AS FLOAT) / 1000) < 120$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT T1.forename, T1.surname, T1.nationality, MAX(T2.points) FROM drivers AS T1 INNER JOIN driverStandings AS T2 ON T2.driverId = T1.driverId WHERE T2.wins >= 1 GROUP BY T1.forename, T1.surname, T1.nationality ORDER BY COUNT(T2.wins) DESC LIMIT 1",
+        "sql": "SELECT T1.forename, T1.surname, T1.nationality, MAX(T2.points) FROM drivers AS T1 INNER JOIN driverStandings AS T2 ON T2.driverId = T1.driverId WHERE T2.wins >= 1$$ GROUP BY T1.forename, T1.surname, T1.nationality ORDER BY COUNT(T2.wins) DESC LIMIT 1",
+        "query_columns": 4,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT AVG(T2.ViewCount), T2.Title, T1.Text FROM comments AS T1 INNER JOIN posts AS T2 ON T2.Id = T1.PostId WHERE T2.Tags = '<humor>' GROUP BY T2.Title, T1.Text",
+        "sql": "SELECT AVG(T2.ViewCount), T2.Title, T1.Text FROM comments AS T1 INNER JOIN posts AS T2 ON T2.Id = T1.PostId WHERE T2.Tags = '<humor>$$' GROUP BY T2.Title, T1.Text",
+        "query_columns": 3,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "toxicology",
+        "sql_raw": "SELECT DISTINCT T1.element, T2.label FROM atom AS T1 INNER JOIN molecule AS T2 ON T1.molecule_id = T2.molecule_id WHERE T2.molecule_id = 'TR060'",
+        "sql": "SELECT DISTINCT T1.element, T2.label FROM atom AS T1 INNER JOIN molecule AS T2 ON T1.molecule_id = T2.molecule_id WHERE T2.molecule_id = 'TR060$$'",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT T1.name, T1.location, T2.name FROM circuits AS T1 INNER JOIN races AS T2 ON T2.circuitID = T1.circuitId WHERE T1.country = 'USA' AND T2.year = 2006",
+        "sql": "SELECT T1.name, T1.location, T2.name FROM circuits AS T1 INNER JOIN races AS T2 ON T2.circuitID = T1.circuitId WHERE T1.country = 'USA' AND T2.year = 2006$$",
+        "query_columns": 3,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "california_schools",
+        "sql_raw": "SELECT COUNT(T2.`School Code`) FROM satscores AS T1 INNER JOIN frpm AS T2 ON T1.cds = T2.CDSCode WHERE T1.AvgScrMath > 560 AND T2.`Charter Funding Type` = 'Directly funded'",
+        "sql": "SELECT COUNT(T2.`School Code`) FROM satscores AS T1 INNER JOIN frpm AS T2 ON T1.cds = T2.CDSCode WHERE T1.AvgScrMath > 560 AND T2.`Charter Funding Type` = 'Directly funded$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT DISTINCT purchaseUrls FROM cards WHERE promoTypes = 'bundle'",
+        "sql": "SELECT DISTINCT purchaseUrls FROM cards WHERE promoTypes = 'bundle$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT mcmId FROM sets WHERE code = 'SS2'",
+        "sql": "SELECT mcmId FROM sets WHERE code = 'SS2$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "european_football_2",
+        "sql_raw": "SELECT player_name FROM Player WHERE height > 180",
+        "sql": "SELECT player_name FROM Player WHERE height > 180$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "debit_card_specializing",
+        "sql_raw": "SELECT DISTINCT T1.Time FROM transactions_1k AS T1 INNER JOIN gasstations AS T2 ON T1.GasStationID = T2.GasStationID WHERE T2.ChainID = 11",
+        "sql": "SELECT DISTINCT T1.Time FROM transactions_1k AS T1 INNER JOIN gasstations AS T2 ON T1.GasStationID = T2.GasStationID WHERE T2.ChainID = 11$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "debit_card_specializing",
+        "sql_raw": "SELECT COUNT(T1.TransactionID) FROM transactions_1k AS T1 INNER JOIN customers AS T2 ON T1.CustomerID = T2.CustomerID WHERE T1.Date = '2012-08-26' AND T1.Time < '13:00:00' AND T2.Currency = 'CZK'",
+        "sql": "SELECT COUNT(T1.TransactionID) FROM transactions_1k AS T1 INNER JOIN customers AS T2 ON T1.CustomerID = T2.CustomerID WHERE T1.Date = '2012-08-26' AND T1.Time < '13:00:00' AND T2.Currency = 'CZK$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT COUNT(DISTINCT T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.FG <= 150 OR T2.FG >= 450 AND T1.Birthday > '1980-01-01'",
+        "sql": "SELECT COUNT(DISTINCT T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.FG <= 150 OR T2.FG >= 450 AND T1.Birthday > '1980-01-01$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT T3.forename, T3.surname FROM races AS T1 INNER JOIN results AS T2 ON T2.raceId = T1.raceId INNER JOIN drivers AS T3 ON T3.driverId = T2.driverId WHERE T1.year = 2006 AND T1.name = 'San Marino Grand Prix' AND T2.position = 2",
+        "sql": "SELECT T3.forename, T3.surname FROM races AS T1 INNER JOIN results AS T2 ON T2.raceId = T1.raceId INNER JOIN drivers AS T3 ON T3.driverId = T2.driverId WHERE T1.year = 2006 AND T1.name = 'San Marino Grand Prix' AND T2.position = 2$$",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "superhero",
+        "sql_raw": "SELECT T1.height_cm FROM superhero AS T1 INNER JOIN colour AS T2 ON T1.eye_colour_id = T2.id WHERE T2.colour = 'Amber'",
+        "sql": "SELECT T1.height_cm FROM superhero AS T1 INNER JOIN colour AS T2 ON T1.eye_colour_id = T2.id WHERE T2.colour = 'Amber$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT DISTINCT T1.name FROM circuits AS T1 INNER JOIN races AS T2 ON T2.circuitID = T1.circuitId WHERE DATE_FORMAT(CAST(T2.date AS DATETIME), '%Y') BETWEEN '1990' AND '2000' GROUP BY T1.name HAVING COUNT(T2.raceId) = 4",
+        "sql": "SELECT DISTINCT T1.name FROM circuits AS T1 INNER JOIN races AS T2 ON T2.circuitID = T1.circuitId WHERE DATE_FORMAT(CAST(T2.date AS DATETIME), '%Y') BETWEEN '1990' AND '2000' GROUP BY T1.name HAVING COUNT(T2.raceId) = 4$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "european_football_2",
+        "sql_raw": "SELECT COUNT(DISTINCT t1.player_name) FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE DATE_FORMAT(CAST(t1.birthday AS DATETIME), '%Y') < '1986' AND t2.defensive_work_rate = 'high'",
+        "sql": "SELECT COUNT(DISTINCT t1.player_name) FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE DATE_FORMAT(CAST(t1.birthday AS DATETIME), '%Y') < '1986' AND t2.defensive_work_rate = 'high$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT DISTINCT T1.ID, T1.SEX, DATE_FORMAT(CAST(CURRENT_TIMESTAMP() AS DATETIME), '%Y') - DATE_FORMAT(CAST(T1.Birthday AS DATETIME), '%Y') FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.GLU >= 180 AND T2.`T-CHO` < 250",
+        "sql": "SELECT DISTINCT T1.ID, T1.SEX, DATE_FORMAT(CAST(CURRENT_TIMESTAMP() AS DATETIME), '%Y') - DATE_FORMAT(CAST(T1.Birthday AS DATETIME), '%Y') FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.GLU >= 180 AND T2.`T-CHO` < 250$$",
+        "query_columns": 3,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "european_football_2",
+        "sql_raw": "SELECT t2.home_team_goal, t2.away_team_goal FROM League AS t1 INNER JOIN `Match` AS t2 ON t1.id = t2.league_id WHERE t1.name = 'Belgium Jupiler League' AND t2.`date` LIKE '2008-09-24%'",
+        "sql": "SELECT t2.home_team_goal, t2.away_team_goal FROM League AS t1 INNER JOIN `Match` AS t2 ON t1.id = t2.league_id WHERE t1.name = 'Belgium Jupiler League' AND t2.`date` LIKE '2008-09-24%$$'",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT id, colors FROM cards WHERE id IN (SELECT id FROM set_translations WHERE setCode = 'OGW')",
+        "sql": "SELECT id, colors FROM cards WHERE id IN (SELECT id FROM set_translations WHERE setCode = 'OGW$$')",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "financial",
+        "sql_raw": "SELECT SUM(T3.amount) FROM client AS T1 INNER JOIN disp AS T4 ON T1.client_id = T4.client_id INNER JOIN account AS T2 ON T4.account_id = T2.account_id INNER JOIN trans AS T3 ON T2.account_id = T3.account_id WHERE DATE_FORMAT(CAST(T3.date AS DATETIME), '%Y') = '1998' AND T1.client_id = 617",
+        "sql": "SELECT SUM(T3.amount) FROM client AS T1 INNER JOIN disp AS T4 ON T1.client_id = T4.client_id INNER JOIN account AS T2 ON T4.account_id = T2.account_id INNER JOIN trans AS T3 ON T2.account_id = T3.account_id WHERE DATE_FORMAT(CAST(T3.date AS DATETIME), '%Y') = '1998' AND T1.client_id = 617$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT DISTINCT T2.name, T1.name, T1.location FROM circuits AS T1 INNER JOIN races AS T2 ON T2.circuitID = T1.circuitId WHERE T2.year = 2005 AND DATE_FORMAT(CAST(T2.date AS DATETIME), '%m') = '09'",
+        "sql": "SELECT DISTINCT T2.name, T1.name, T1.location FROM circuits AS T1 INNER JOIN races AS T2 ON T2.circuitID = T1.circuitId WHERE T2.year = 2005 AND DATE_FORMAT(CAST(T2.date AS DATETIME), '%m') = '09$$'",
+        "query_columns": 3,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT SUM(T1.Score), T2.WebsiteUrl FROM posts AS T1 INNER JOIN users AS T2 ON T1.LastEditorUserId = T2.Id WHERE T2.DisplayName = 'Yevgeny' GROUP BY T2.WebsiteUrl",
+        "sql": "SELECT SUM(T1.Score), T2.WebsiteUrl FROM posts AS T1 INNER JOIN users AS T2 ON T1.LastEditorUserId = T2.Id WHERE T2.DisplayName = 'Yevgeny$$' GROUP BY T2.WebsiteUrl",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "student_club",
+        "sql_raw": "SELECT COUNT(T1.event_id) FROM event AS T1 INNER JOIN attendance AS T2 ON T1.event_id = T2.link_to_event INNER JOIN member AS T3 ON T2.link_to_member = T3.member_id WHERE T1.event_name = 'Women''s Soccer' AND T3.t_shirt_size = 'Medium'",
+        "sql": "SELECT COUNT(T1.event_id) FROM event AS T1 INNER JOIN attendance AS T2 ON T1.event_id = T2.link_to_event INNER JOIN member AS T3 ON T2.link_to_member = T3.member_id WHERE T1.event_name = 'Women''s Soccer' AND T3.t_shirt_size = 'Medium$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT T2.text FROM cards AS T1 INNER JOIN rulings AS T2 ON T1.uuid = T2.uuid WHERE T1.name = 'Condemn'",
+        "sql": "SELECT T2.text FROM cards AS T1 INNER JOIN rulings AS T2 ON T1.uuid = T2.uuid WHERE T1.name = 'Condemn$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT T2.language, T1.type FROM sets AS T1 INNER JOIN set_translations AS T2 ON T1.code = T2.setCode WHERE T2.id = 206",
+        "sql": "SELECT T2.language, T1.type FROM sets AS T1 INNER JOIN set_translations AS T2 ON T1.code = T2.setCode WHERE T2.id = 206$$",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "european_football_2",
+        "sql_raw": "SELECT t2.chanceCreationShootingClass FROM Team AS t1 INNER JOIN Team_Attributes AS t2 ON t1.team_api_id = t2.team_api_id WHERE t1.team_long_name = 'Hannover 96' AND t2.`date` LIKE '2015-09-10%'",
+        "sql": "SELECT t2.chanceCreationShootingClass FROM Team AS t1 INNER JOIN Team_Attributes AS t2 ON t1.team_api_id = t2.team_api_id WHERE t1.team_long_name = 'Hannover 96' AND t2.`date` LIKE '2015-09-10%$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "student_club",
+        "sql_raw": "SELECT T1.first_name, T1.last_name FROM member AS T1 INNER JOIN major AS T2 ON T1.link_to_major = T2.major_id WHERE T2.department = 'Art and Design Department'",
+        "sql": "SELECT T1.first_name, T1.last_name FROM member AS T1 INNER JOIN major AS T2 ON T1.link_to_major = T2.major_id WHERE T2.department = 'Art and Design Department$$'",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT T1.name, T1.id FROM sets AS T1 INNER JOIN set_translations AS T2 ON T1.code = T2.setCode WHERE T1.block = 'Shadowmoor' AND T2.language = 'Italian' ORDER BY T1.id LIMIT 2",
+        "sql": "SELECT T1.name, T1.id FROM sets AS T1 INNER JOIN set_translations AS T2 ON T1.code = T2.setCode WHERE T1.block = 'Shadowmoor' AND T2.language = 'Italian$$' ORDER BY T1.id LIMIT 2",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT Reputation, Views FROM users WHERE DisplayName = 'Jarrod Dixon'",
+        "sql": "SELECT Reputation, Views FROM users WHERE DisplayName = 'Jarrod Dixon$$'",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "european_football_2",
+        "sql_raw": "SELECT t2.overall_rating FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE t1.player_name = 'Gabriel Tamas' AND DATE_FORMAT(CAST(t2.date AS DATETIME), '%Y') = '2011'",
+        "sql": "SELECT t2.overall_rating FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE t1.player_name = 'Gabriel Tamas' AND DATE_FORMAT(CAST(t2.date AS DATETIME), '%Y') = '2011$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "european_football_2",
+        "sql_raw": "SELECT SUM(t2.away_team_goal) FROM Player AS t1 INNER JOIN `match` AS t2 ON t1.player_api_id = t2.away_player_5 WHERE t1.player_name IN ('Daan Smith', 'Filipe Ferreira')",
+        "sql": "SELECT SUM(t2.away_team_goal) FROM Player AS t1 INNER JOIN `match` AS t2 ON t1.player_api_id = t2.away_player_5 WHERE t1.player_name IN ('Daan Smith', 'Filipe Ferreira$$')",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "california_schools",
+        "sql_raw": "SELECT Website FROM schools WHERE (AdmFName1 = 'Mike' AND AdmLName1 = 'Larson') OR (AdmFName1 = 'Dante' AND AdmLName1 = 'Alvarez')",
+        "sql": "SELECT Website FROM schools WHERE (AdmFName1 = 'Mike' AND AdmLName1 = 'Larson') OR (AdmFName1 = 'Dante' AND AdmLName1 = 'Alvarez$$')",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "toxicology",
+        "sql_raw": "SELECT DISTINCT T.element FROM atom AS T WHERE T.molecule_id = 'TR000' ORDER BY T.element LIMIT 3",
+        "sql": "SELECT DISTINCT T.element FROM atom AS T WHERE T.molecule_id = 'TR000$$' ORDER BY T.element LIMIT 3",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "student_club",
+        "sql_raw": "SELECT notes FROM income WHERE source = 'Fundraising' AND date_received = '2019-09-14'",
+        "sql": "SELECT notes FROM income WHERE source = 'Fundraising' AND date_received = '2019-09-14$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "financial",
+        "sql_raw": "SELECT COUNT(T2.account_id) FROM account AS T1 INNER JOIN disp AS T2 ON T2.account_id = T1.account_id WHERE T1.frequency = 'POPLATEK TYDNE' AND T2.type = 'OWNER'",
+        "sql": "SELECT COUNT(T2.account_id) FROM account AS T1 INNER JOIN disp AS T2 ON T2.account_id = T1.account_id WHERE T1.frequency = 'POPLATEK TYDNE' AND T2.type = 'OWNER$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT translation FROM set_translations WHERE setCode IN (SELECT code FROM sets WHERE name = 'Mirrodin') AND language = 'Chinese Simplified'",
+        "sql": "SELECT translation FROM set_translations WHERE setCode IN (SELECT code FROM sets WHERE name = 'Mirrodin') AND language = 'Chinese Simplified$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "european_football_2",
+        "sql_raw": "SELECT CAST(SUM(T1.height) AS FLOAT) / COUNT(T1.id) FROM Player AS T1 INNER JOIN `Match` AS T2 ON T1.id = T2.id INNER JOIN Country AS T3 ON T2.country_id = T3.ID WHERE T3.NAME = 'Italy'",
+        "sql": "SELECT CAST(SUM(T1.height) AS FLOAT) / COUNT(T1.id) FROM Player AS T1 INNER JOIN `Match` AS T2 ON T1.id = T2.id INNER JOIN Country AS T3 ON T2.country_id = T3.ID WHERE T3.NAME = 'Italy$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT COUNT(Id) FROM comments WHERE UserId = 13",
+        "sql": "SELECT COUNT(Id) FROM comments WHERE UserId = 13$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT T1.name FROM cards AS T1 INNER JOIN sets AS T2 ON T2.code = T1.setCode WHERE T2.name = 'Coldsnap' AND T1.number = 4",
+        "sql": "SELECT T1.name FROM cards AS T1 INNER JOIN sets AS T2 ON T2.code = T1.setCode WHERE T2.name = 'Coldsnap' AND T1.number = 4$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "financial",
+        "sql_raw": "SELECT COUNT(DISTINCT T2.district_id) FROM client AS T1 INNER JOIN district AS T2 ON T1.district_id = T2.district_id WHERE T1.gender = 'F' AND T2.A11 BETWEEN 6000 AND 10000",
+        "sql": "SELECT COUNT(DISTINCT T2.district_id) FROM client AS T1 INNER JOIN district AS T2 ON T1.district_id = T2.district_id WHERE T1.gender = 'F' AND T2.A11 BETWEEN 6000 AND 10000$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT COUNT(T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.IGG > 900 AND T2.IGG < 2000 AND T1.Admission = '+'",
+        "sql": "SELECT COUNT(T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.IGG > 900 AND T2.IGG < 2000 AND T1.Admission = '+$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT DISTINCT T2.nationality FROM qualifying AS T1 INNER JOIN drivers AS T2 ON T2.driverId = T1.driverId WHERE T1.raceId = 347 AND T1.q2 LIKE '1:15%'",
+        "sql": "SELECT DISTINCT T2.nationality FROM qualifying AS T1 INNER JOIN drivers AS T2 ON T2.driverId = T1.driverId WHERE T1.raceId = 347 AND T1.q2 LIKE '1:15%$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT T2.Body FROM tags AS T1 INNER JOIN posts AS T2 ON T2.Id = T1.ExcerptPostId WHERE T1.TagName = 'bayesian'",
+        "sql": "SELECT T2.Body FROM tags AS T1 INNER JOIN posts AS T2 ON T2.Id = T1.ExcerptPostId WHERE T1.TagName = 'bayesian$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "toxicology",
+        "sql_raw": "SELECT ROUND(CAST(COUNT(CASE WHEN T2.label = '+' THEN T1.bond_id ELSE NULL END) AS FLOAT) * 100 / COUNT(T1.bond_id), 5) FROM bond AS T1 INNER JOIN molecule AS T2 ON T1.molecule_id = T2.molecule_id WHERE T1.bond_type = '-'",
+        "sql": "SELECT ROUND(CAST(COUNT(CASE WHEN T2.label = '+' THEN T1.bond_id ELSE NULL END) AS FLOAT) * 100 / COUNT(T1.bond_id), 5) FROM bond AS T1 INNER JOIN molecule AS T2 ON T1.molecule_id = T2.molecule_id WHERE T1.bond_type = '-$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "student_club",
+        "sql_raw": "SELECT T1.phone FROM member AS T1 INNER JOIN major AS T2 ON T2.major_id = T1.link_to_major WHERE T2.major_name = 'Business' AND T2.college = 'College of Agriculture and Applied Sciences'",
+        "sql": "SELECT T1.phone FROM member AS T1 INNER JOIN major AS T2 ON T2.major_id = T1.link_to_major WHERE T2.major_name = 'Business' AND T2.college = 'College of Agriculture and Applied Sciences$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT T1.ID, T1.SEX FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.`T-BIL` >= 2.0 GROUP BY T1.SEX, T1.ID",
+        "sql": "SELECT T1.ID, T1.SEX FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.`T-BIL` >= 2.0$$ GROUP BY T1.SEX, T1.ID",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT DISTINCT borderColor FROM cards WHERE name = 'Ancestor''s Chosen'",
+        "sql": "SELECT DISTINCT borderColor FROM cards WHERE name = 'Ancestor''s Chosen$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "debit_card_specializing",
+        "sql_raw": "SELECT T1.CustomerID FROM customers AS T1 INNER JOIN yearmonth AS T2 ON T1.CustomerID = T2.CustomerID WHERE T2.Date = '201309' GROUP BY T1.CustomerID ORDER BY SUM(T2.Consumption) DESC LIMIT 1",
+        "sql": "SELECT T1.CustomerID FROM customers AS T1 INNER JOIN yearmonth AS T2 ON T1.CustomerID = T2.CustomerID WHERE T2.Date = '201309$$' GROUP BY T1.CustomerID ORDER BY SUM(T2.Consumption) DESC LIMIT 1",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "student_club",
+        "sql_raw": "SELECT DISTINCT T3.first_name, T3.last_name, T4.amount FROM event AS T1 INNER JOIN attendance AS T2 ON T1.event_id = T2.link_to_event INNER JOIN member AS T3 ON T3.member_id = T2.link_to_member INNER JOIN income AS T4 ON T4.link_to_member = T3.member_id WHERE T4.date_received = '2019-09-09'",
+        "sql": "SELECT DISTINCT T3.first_name, T3.last_name, T4.amount FROM event AS T1 INNER JOIN attendance AS T2 ON T1.event_id = T2.link_to_event INNER JOIN member AS T3 ON T3.member_id = T2.link_to_member INNER JOIN income AS T4 ON T4.link_to_member = T3.member_id WHERE T4.date_received = '2019-09-09$$'",
+        "query_columns": 3,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT CAST(SUM(CASE WHEN year BETWEEN 2000 AND 2010 THEN 1 ELSE 0 END) AS FLOAT) / 10 FROM races WHERE date BETWEEN '2000-01-01' AND '2010-12-31'",
+        "sql": "SELECT CAST(SUM(CASE WHEN year BETWEEN 2000 AND 2010 THEN 1 ELSE 0 END) AS FLOAT) / 10 FROM races WHERE date BETWEEN '2000-01-01' AND '2010-12-31$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT DATE_FORMAT(CAST(T3.`Examination Date` AS DATETIME), '%d') - DATE_FORMAT(CAST(T1.`First Date` AS DATETIME), '%d') FROM Patient AS T1 INNER JOIN Examination AS T3 ON T1.ID = T3.ID WHERE T1.ID = 821298",
+        "sql": "SELECT DATE_FORMAT(CAST(T3.`Examination Date` AS DATETIME), '%d') - DATE_FORMAT(CAST(T1.`First Date` AS DATETIME), '%d') FROM Patient AS T1 INNER JOIN Examination AS T3 ON T1.ID = T3.ID WHERE T1.ID = 821298$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT COUNT(Id) FROM posts WHERE ViewCount > 35000 AND CommentCount = 0",
+        "sql": "SELECT COUNT(Id) FROM posts WHERE ViewCount > 35000 AND CommentCount = 0$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT T1.Birthday FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.GLU > 180 ORDER BY T1.Birthday ASC LIMIT 1",
+        "sql": "SELECT T1.Birthday FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.GLU > 180$$ ORDER BY T1.Birthday ASC LIMIT 1",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "california_schools",
+        "sql_raw": "SELECT School, MailZip FROM schools WHERE AdmFName1 = 'Avetik' AND AdmLName1 = 'Atoian'",
+        "sql": "SELECT School, MailZip FROM schools WHERE AdmFName1 = 'Avetik' AND AdmLName1 = 'Atoian$$'",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "financial",
+        "sql_raw": "SELECT AVG(T2.amount) FROM account AS T1 INNER JOIN loan AS T2 ON T1.account_id = T2.account_id WHERE T2.status IN ('C', 'D') AND T1.frequency = 'POPLATEK PO OBRATU'",
+        "sql": "SELECT AVG(T2.amount) FROM account AS T1 INNER JOIN loan AS T2 ON T1.account_id = T2.account_id WHERE T2.status IN ('C', 'D') AND T1.frequency = 'POPLATEK PO OBRATU$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT CAST(SUM(CASE WHEN Diagnosis = 'BEHCET' THEN 1 ELSE 0 END) AS FLOAT) * 100 / COUNT(ID) FROM Patient WHERE DATE_FORMAT(CAST(`First Date` AS DATETIME), '%Y') = '1981' AND SEX = 'M'",
+        "sql": "SELECT CAST(SUM(CASE WHEN Diagnosis = 'BEHCET' THEN 1 ELSE 0 END) AS FLOAT) * 100 / COUNT(ID) FROM Patient WHERE DATE_FORMAT(CAST(`First Date` AS DATETIME), '%Y') = '1981' AND SEX = 'M$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT manaCost FROM cards WHERE artist = 'Rob Alexander'",
+        "sql": "SELECT manaCost FROM cards WHERE artist = 'Rob Alexander$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT DISTINCT T1.ID, DATE_FORMAT(CAST(CURRENT_TIMESTAMP() AS DATETIME), '%Y') - DATE_FORMAT(CAST(T1.Birthday AS DATETIME), '%Y') FROM Patient AS T1 INNER JOIN Examination AS T2 ON T1.ID = T2.ID WHERE T2.RVVT = '+'",
+        "sql": "SELECT DISTINCT T1.ID, DATE_FORMAT(CAST(CURRENT_TIMESTAMP() AS DATETIME), '%Y') - DATE_FORMAT(CAST(T1.Birthday AS DATETIME), '%Y') FROM Patient AS T1 INNER JOIN Examination AS T2 ON T1.ID = T2.ID WHERE T2.RVVT = '+$$'",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "student_club",
+        "sql_raw": "SELECT T2.city, T2.state FROM member AS T1 INNER JOIN zip_code AS T2 ON T1.zip = T2.zip_code WHERE T1.position = 'President'",
+        "sql": "SELECT T2.city, T2.state FROM member AS T1 INNER JOIN zip_code AS T2 ON T1.zip = T2.zip_code WHERE T1.position = 'President$$'",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "california_schools",
+        "sql_raw": "SELECT T2.School, T1.AvgScrWrite, T2.Phone FROM schools AS T2 LEFT JOIN satscores AS T1 ON T2.CDSCode = T1.cds WHERE DATE_FORMAT(CAST(T2.OpenDate AS DATETIME), '%Y') > '1991' OR DATE_FORMAT(CAST(T2.ClosedDate AS DATETIME), '%Y') < '2000'",
+        "sql": "SELECT T2.School, T1.AvgScrWrite, T2.Phone FROM schools AS T2 LEFT JOIN satscores AS T1 ON T2.CDSCode = T1.cds WHERE DATE_FORMAT(CAST(T2.OpenDate AS DATETIME), '%Y') > '1991' OR DATE_FORMAT(CAST(T2.ClosedDate AS DATETIME), '%Y') < '2000$$'",
+        "query_columns": 3,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT COUNT(T1.Id) FROM users AS T1 INNER JOIN postHistory AS T2 ON T1.Id = T2.UserId INNER JOIN votes AS T3 ON T3.PostId = T2.PostId WHERE T1.DisplayName = 'Harlan'",
+        "sql": "SELECT COUNT(T1.Id) FROM users AS T1 INNER JOIN postHistory AS T2 ON T1.Id = T2.UserId INNER JOIN votes AS T3 ON T3.PostId = T2.PostId WHERE T1.DisplayName = 'Harlan$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT DISTINCT T1.name FROM cards AS T1 INNER JOIN set_translations AS T2 ON T2.setCode = T1.setCode WHERE T2.translation = 'Hauptset Zehnte Edition'",
+        "sql": "SELECT DISTINCT T1.name FROM cards AS T1 INNER JOIN set_translations AS T2 ON T2.setCode = T1.setCode WHERE T2.translation = 'Hauptset Zehnte Edition$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "european_football_2",
+        "sql_raw": "SELECT DISTINCT t2.defensive_work_rate FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE t1.player_name = 'David Wilson'",
+        "sql": "SELECT DISTINCT t2.defensive_work_rate FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE t1.player_name = 'David Wilson$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT DISTINCT T1.frameVersion, T1.name, CASE WHEN T2.status = 'Banned' THEN T1.name ELSE 'NO' END FROM cards AS T1 INNER JOIN legalities AS T2 ON T1.uuid = T2.uuid WHERE T1.artist = 'Allen Williams'",
+        "sql": "SELECT DISTINCT T1.frameVersion, T1.name, CASE WHEN T2.status = 'Banned' THEN T1.name ELSE 'NO' END FROM cards AS T1 INNER JOIN legalities AS T2 ON T1.uuid = T2.uuid WHERE T1.artist = 'Allen Williams$$'",
+        "query_columns": 3,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT T1.time FROM lapTimes AS T1 INNER JOIN drivers AS T2 ON T1.driverId = T2.driverId WHERE T2.forename = 'Lewis' AND T2.surname = 'Hamilton'",
+        "sql": "SELECT T1.time FROM lapTimes AS T1 INNER JOIN drivers AS T2 ON T1.driverId = T2.driverId WHERE T2.forename = 'Lewis' AND T2.surname = 'Hamilton$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "european_football_2",
+        "sql_raw": "SELECT sprint_speed, agility, acceleration FROM Player_Attributes WHERE player_api_id IN (SELECT player_api_id FROM Player WHERE player_name = 'Alexis Blin')",
+        "sql": "SELECT sprint_speed, agility, acceleration FROM Player_Attributes WHERE player_api_id IN (SELECT player_api_id FROM Player WHERE player_name = 'Alexis Blin$$')",
+        "query_columns": 3,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT COUNT(DISTINCT T1.Id) FROM badges AS T1 INNER JOIN users AS T2 ON T1.UserId = T2.Id WHERE T1.Name IN ('Supporter', 'Teacher') AND T2.Location = 'New York'",
+        "sql": "SELECT COUNT(DISTINCT T1.Id) FROM badges AS T1 INNER JOIN users AS T2 ON T1.UserId = T2.Id WHERE T1.Name IN ('Supporter', 'Teacher') AND T2.Location = 'New York$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "superhero",
+        "sql_raw": "SELECT COUNT(T1.hero_id) FROM hero_attribute AS T1 INNER JOIN attribute AS T2 ON T1.attribute_id = T2.id WHERE T2.attribute_name = 'Strength' AND T1.attribute_value = (SELECT MAX(attribute_value) FROM hero_attribute)",
+        "sql": "SELECT COUNT(T1.hero_id) FROM hero_attribute AS T1 INNER JOIN attribute AS T2 ON T1.attribute_id = T2.id WHERE T2.attribute_name = 'Strength$$' AND T1.attribute_value = (SELECT MAX(attribute_value) FROM hero_attribute)",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "student_club",
+        "sql_raw": "SELECT event_id, location, status FROM event WHERE DATE(SUBSTRING(event_date, 1, 10)) BETWEEN '2019-11-01' AND '2020-03-31'",
+        "sql": "SELECT event_id, location, status FROM event WHERE DATE(SUBSTRING(event_date, 1, 10)) BETWEEN '2019-11-01' AND '2020-03-31$$'",
+        "query_columns": 3,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "financial",
+        "sql_raw": "SELECT COUNT(T1.client_id) FROM client AS T1 INNER JOIN district AS T2 ON T1.district_id = T2.district_id WHERE T1.gender = 'M' AND T2.A15 = (SELECT T3.A15 FROM district AS T3 ORDER BY T3.A15 DESC LIMIT 1 OFFSET 1)",
+        "sql": "SELECT COUNT(T1.client_id) FROM client AS T1 INNER JOIN district AS T2 ON T1.district_id = T2.district_id WHERE T1.gender = 'M$$' AND T2.A15 = (SELECT T3.A15 FROM district AS T3 ORDER BY T3.A15 DESC LIMIT 1 OFFSET 1)",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT COUNT(T3.Id) FROM users AS T1 INNER JOIN posts AS T2 ON T1.Id = T2.OwnerUserId INNER JOIN comments AS T3 ON T2.Id = T3.PostId WHERE T1.DisplayName = 'Neil McGuigan' AND T3.Score < 60",
+        "sql": "SELECT COUNT(T3.Id) FROM users AS T1 INNER JOIN posts AS T2 ON T1.Id = T2.OwnerUserId INNER JOIN comments AS T3 ON T2.Id = T3.PostId WHERE T1.DisplayName = 'Neil McGuigan$$' AND T3.Score < 60",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT DISTINCT T2.forename, T2.surname, T2.url FROM lapTimes AS T1 INNER JOIN drivers AS T2 ON T2.driverId = T1.driverId WHERE T1.raceId = 161 AND T1.time LIKE '1:27%'",
+        "sql": "SELECT DISTINCT T2.forename, T2.surname, T2.url FROM lapTimes AS T1 INNER JOIN drivers AS T2 ON T2.driverId = T1.driverId WHERE T1.raceId = 161 AND T1.time LIKE '1:27%$$'",
+        "query_columns": 3,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT T2.text FROM cards AS T1 INNER JOIN rulings AS T2 ON T1.uuid = T2.uuid WHERE (T1.power IS NULL OR T1.power = '*') AND T2.text LIKE '%triggered ability%'",
+        "sql": "SELECT T2.text FROM cards AS T1 INNER JOIN rulings AS T2 ON T1.uuid = T2.uuid WHERE (T1.power IS NULL OR T1.power = '*') AND T2.text LIKE '%triggered ability%$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT T1.SEX FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.GPT = 9.0 AND T2.Date = '1992-06-12'",
+        "sql": "SELECT T1.SEX FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.GPT = 9.0 AND T2.Date = '1992-06-12$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT year FROM races WHERE name = 'Singapore Grand Prix' ORDER BY year ASC LIMIT 1",
+        "sql": "SELECT year FROM races WHERE name = 'Singapore Grand Prix$$' ORDER BY year ASC LIMIT 1",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT COUNT(DISTINCT T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID INNER JOIN Examination AS T3 ON T3.ID = T2.ID WHERE T3.Thrombosis = 0 AND T2.APTT > 45",
+        "sql": "SELECT COUNT(DISTINCT T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID INNER JOIN Examination AS T3 ON T3.ID = T2.ID WHERE T3.Thrombosis = 0 AND T2.APTT > 45$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT COUNT(T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T1.SEX = 'M' AND T2.ALB > 3.5 AND T2.ALB < 5.5 AND T2.TP BETWEEN 6.0 AND 8.5",
+        "sql": "SELECT COUNT(T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T1.SEX = 'M' AND T2.ALB > 3.5 AND T2.ALB < 5.5 AND T2.TP BETWEEN 6.0 AND 8.5$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT COUNT(DISTINCT T1.id) FROM cards AS T1 INNER JOIN legalities AS T2 ON T1.uuid = T2.uuid WHERE T2.status = 'Restricted' AND T1.isTextless = 0",
+        "sql": "SELECT COUNT(DISTINCT T1.id) FROM cards AS T1 INNER JOIN legalities AS T2 ON T1.uuid = T2.uuid WHERE T2.status = 'Restricted' AND T1.isTextless = 0$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "student_club",
+        "sql_raw": "SELECT DISTINCT T1.first_name, T1.last_name, T2.major_name FROM member AS T1 INNER JOIN major AS T2 ON T2.major_id = T1.link_to_major INNER JOIN expense AS T3 ON T1.member_id = T3.link_to_member WHERE T3.cost > 100",
+        "sql": "SELECT DISTINCT T1.first_name, T1.last_name, T2.major_name FROM member AS T1 INNER JOIN major AS T2 ON T2.major_id = T1.link_to_major INNER JOIN expense AS T3 ON T1.member_id = T3.link_to_member WHERE T3.cost > 100$$",
+        "query_columns": 3,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT DISTINCT name FROM cards WHERE isTextless = 0",
+        "sql": "SELECT DISTINCT name FROM cards WHERE isTextless = 0$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT COUNT(id) FROM cards WHERE toughness = 99",
+        "sql": "SELECT COUNT(id) FROM cards WHERE toughness = 99$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT CAST(COUNT(T1.Id) AS FLOAT) / COUNT(DISTINCT T2.DisplayName) FROM badges AS T1 INNER JOIN users AS T2 ON T1.UserId = T2.Id WHERE T2.Views > 200",
+        "sql": "SELECT CAST(COUNT(T1.Id) AS FLOAT) / COUNT(DISTINCT T2.DisplayName) FROM badges AS T1 INNER JOIN users AS T2 ON T1.UserId = T2.Id WHERE T2.Views > 200$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "california_schools",
+        "sql_raw": "SELECT T2.Phone FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode WHERE T2.District = 'Fresno Unified' AND NOT T1.AvgScrRead IS NULL ORDER BY T1.AvgScrRead ASC LIMIT 1",
+        "sql": "SELECT T2.Phone FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode WHERE T2.District = 'Fresno Unified$$' AND NOT T1.AvgScrRead IS NULL ORDER BY T1.AvgScrRead ASC LIMIT 1",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT setCode FROM set_translations WHERE language = 'Spanish'",
+        "sql": "SELECT setCode FROM set_translations WHERE language = 'Spanish$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT COUNT(id) FROM cards WHERE (cardKingdomId IS NULL OR cardKingdomFoilId IS NULL) AND artist = 'John Avon'",
+        "sql": "SELECT COUNT(id) FROM cards WHERE (cardKingdomId IS NULL OR cardKingdomFoilId IS NULL) AND artist = 'John Avon$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "california_schools",
+        "sql_raw": "SELECT COUNT(School) FROM schools WHERE DATE_FORMAT(CAST(ClosedDate AS DATETIME), '%Y') = '1989' AND City = 'San Francisco' AND DOCType = 'Community College District'",
+        "sql": "SELECT COUNT(School) FROM schools WHERE DATE_FORMAT(CAST(ClosedDate AS DATETIME), '%Y') = '1989' AND City = 'San Francisco' AND DOCType = 'Community College District$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT SUM(CASE WHEN isOnlineOnly = 1 THEN 1.0 ELSE 0 END) / COUNT(id) * 100 FROM cards WHERE frameEffects = 'legendary'",
+        "sql": "SELECT SUM(CASE WHEN isOnlineOnly = 1 THEN 1.0 ELSE 0 END) / COUNT(id) * 100 FROM cards WHERE frameEffects = 'legendary$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT COUNT(T1.id) FROM cards AS T1 INNER JOIN foreign_data AS T2 ON T1.uuid = T2.uuid WHERE T2.language = 'German' AND T1.isReprint = 1",
+        "sql": "SELECT COUNT(T1.id) FROM cards AS T1 INNER JOIN foreign_data AS T2 ON T1.uuid = T2.uuid WHERE T2.language = 'German' AND T1.isReprint = 1$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "european_football_2",
+        "sql_raw": "SELECT t2.buildUpPlaySpeedClass FROM Team AS t1 INNER JOIN Team_Attributes AS t2 ON t1.team_api_id = t2.team_api_id WHERE t1.team_long_name = 'Willem II' AND SUBSTRING(t2.`date`, 1, 10) = '2011-02-22'",
+        "sql": "SELECT t2.buildUpPlaySpeedClass FROM Team AS t1 INNER JOIN Team_Attributes AS t2 ON t1.team_api_id = t2.team_api_id WHERE t1.team_long_name = 'Willem II' AND SUBSTRING(t2.`date`, 1, 10) = '2011-02-22$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "superhero",
+        "sql_raw": "SELECT colour.colour AS EyeColor, COUNT(superhero.id) AS Count, RANK() OVER (ORDER BY COUNT(superhero.id) DESC) AS PopularityRank FROM superhero INNER JOIN colour ON superhero.eye_colour_id = colour.id INNER JOIN publisher ON superhero.publisher_id = publisher.id WHERE publisher.publisher_name = 'Marvel Comics' GROUP BY colour.colour",
+        "sql": "SELECT colour.colour AS EyeColor, COUNT(superhero.id) AS Count, RANK() OVER (ORDER BY COUNT(superhero.id) DESC) AS PopularityRank FROM superhero INNER JOIN colour ON superhero.eye_colour_id = colour.id INNER JOIN publisher ON superhero.publisher_id = publisher.id WHERE publisher.publisher_name = 'Marvel Comics$$' GROUP BY colour.colour",
+        "query_columns": 3,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "superhero",
+        "sql_raw": "SELECT AVG(T1.attribute_value) FROM hero_attribute AS T1 INNER JOIN superhero AS T2 ON T1.hero_id = T2.id INNER JOIN alignment AS T3 ON T2.alignment_id = T3.id WHERE T3.alignment = 'Neutral'",
+        "sql": "SELECT AVG(T1.attribute_value) FROM hero_attribute AS T1 INNER JOIN superhero AS T2 ON T1.hero_id = T2.id INNER JOIN alignment AS T3 ON T2.alignment_id = T3.id WHERE T3.alignment = 'Neutral$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "superhero",
+        "sql_raw": "SELECT T3.power_name FROM superhero AS T1 INNER JOIN hero_power AS T2 ON T1.id = T2.hero_id INNER JOIN superpower AS T3 ON T2.power_id = T3.id WHERE T1.superhero_name = '3-D Man'",
+        "sql": "SELECT T3.power_name FROM superhero AS T1 INNER JOIN hero_power AS T2 ON T1.id = T2.hero_id INNER JOIN superpower AS T3 ON T2.power_id = T3.id WHERE T1.superhero_name = '3-D Man$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "financial",
+        "sql_raw": "SELECT account_id FROM trans WHERE DATE_FORMAT(CAST(date AS DATETIME), '%Y') = '1995' ORDER BY date ASC LIMIT 1",
+        "sql": "SELECT account_id FROM trans WHERE DATE_FORMAT(CAST(date AS DATETIME), '%Y') = '1995$$' ORDER BY date ASC LIMIT 1",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "student_club",
+        "sql_raw": "SELECT T2.spent FROM event AS T1 INNER JOIN budget AS T2 ON T1.event_id = T2.link_to_event WHERE T1.event_name = 'September Meeting' AND T2.category = 'Advertisement' AND SUBSTRING(T1.event_date, 6, 2) = '09'",
+        "sql": "SELECT T2.spent FROM event AS T1 INNER JOIN budget AS T2 ON T1.event_id = T2.link_to_event WHERE T1.event_name = 'September Meeting' AND T2.category = 'Advertisement$$' AND SUBSTRING(T1.event_date, 6, 2) = '09'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT T1.id, T1.artist FROM cards AS T1 INNER JOIN legalities AS T2 ON T1.uuid = T2.uuid WHERE T2.status = 'Legal' AND T2.format = 'commander' AND (T1.power IS NULL OR T1.power = '*')",
+        "sql": "SELECT T1.id, T1.artist FROM cards AS T1 INNER JOIN legalities AS T2 ON T1.uuid = T2.uuid WHERE T2.status = 'Legal$$' AND T2.format = 'commander' AND (T1.power IS NULL OR T1.power = '*')",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "european_football_2",
+        "sql_raw": "SELECT t2.name FROM Country AS t1 INNER JOIN League AS t2 ON t1.id = t2.country_id WHERE t1.name = 'Germany'",
+        "sql": "SELECT t2.name FROM Country AS t1 INNER JOIN League AS t2 ON t1.id = t2.country_id WHERE t1.name = 'Germany$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "toxicology",
+        "sql_raw": "SELECT COUNT(DISTINCT T1.molecule_id) FROM molecule AS T1 INNER JOIN bond AS T2 ON T1.molecule_id = T2.molecule_id WHERE T2.bond_type = '#' AND T1.label = '-'",
+        "sql": "SELECT COUNT(DISTINCT T1.molecule_id) FROM molecule AS T1 INNER JOIN bond AS T2 ON T1.molecule_id = T2.molecule_id WHERE T2.bond_type = '#' AND T1.label = '-$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "toxicology",
+        "sql_raw": "SELECT DISTINCT T1.bond_id, T2.label FROM bond AS T1 INNER JOIN molecule AS T2 ON T1.molecule_id = T2.molecule_id WHERE T1.bond_type = '#'",
+        "sql": "SELECT DISTINCT T1.bond_id, T2.label FROM bond AS T1 INNER JOIN molecule AS T2 ON T1.molecule_id = T2.molecule_id WHERE T1.bond_type = '#$$'",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT DISTINCT subtypes, supertypes FROM cards WHERE name = 'Molimo, Maro-Sorcerer'",
+        "sql": "SELECT DISTINCT subtypes, supertypes FROM cards WHERE name = 'Molimo, Maro-Sorcerer$$'",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT DISTINCT T1.ID, T2.GLU FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE DATE_FORMAT(CAST(T1.`First Date` AS DATETIME), '%Y') = '1991' AND T2.GLU < 180",
+        "sql": "SELECT DISTINCT T1.ID, T2.GLU FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE DATE_FORMAT(CAST(T1.`First Date` AS DATETIME), '%Y') = '1991' AND T2.GLU < 180$$",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT ANA FROM Examination WHERE ID = 3605340 AND `Examination Date` = '1996-12-02'",
+        "sql": "SELECT ANA FROM Examination WHERE ID = 3605340 AND `Examination Date` = '1996-12-02$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT T1.baseSetSize FROM sets AS T1 INNER JOIN set_translations AS T2 ON T2.setCode = T1.code WHERE T2.translation = 'Rinascita di Alara'",
+        "sql": "SELECT T1.baseSetSize FROM sets AS T1 INNER JOIN set_translations AS T2 ON T2.setCode = T1.code WHERE T2.translation = 'Rinascita di Alara$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT CASE WHEN (T1.SEX = 'F' AND T2.UA > 6.5) OR (T1.SEX = 'M' AND T2.UA > 8.0) THEN TRUE ELSE FALSE END FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T1.ID = 57266",
+        "sql": "SELECT CASE WHEN (T1.SEX = 'F' AND T2.UA > 6.5) OR (T1.SEX = 'M' AND T2.UA > 8.0) THEN TRUE ELSE FALSE END FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T1.ID = 57266$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "superhero",
+        "sql_raw": "SELECT AVG(T1.weight_kg) FROM superhero AS T1 INNER JOIN gender AS T2 ON T1.gender_id = T2.id WHERE T2.gender = 'Female'",
+        "sql": "SELECT AVG(T1.weight_kg) FROM superhero AS T1 INNER JOIN gender AS T2 ON T1.gender_id = T2.id WHERE T2.gender = 'Female$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT COUNT(T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID INNER JOIN Examination AS T3 ON T1.ID = T3.ID WHERE T2.CPK < 250 AND (T3.KCT = '+' OR T3.RVVT = '+' OR T3.LAC = '+')",
+        "sql": "SELECT COUNT(T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID INNER JOIN Examination AS T3 ON T1.ID = T3.ID WHERE T2.CPK < 250$$ AND (T3.KCT = '+' OR T3.RVVT = '+' OR T3.LAC = '+')",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "financial",
+        "sql_raw": "SELECT COUNT(T1.account_id) FROM account AS T1 INNER JOIN district AS T2 ON T1.district_id = T2.district_id WHERE T2.A2 = 'Pisek'",
+        "sql": "SELECT COUNT(T1.account_id) FROM account AS T1 INNER JOIN district AS T2 ON T1.district_id = T2.district_id WHERE T2.A2 = 'Pisek$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT AVG(T2.HCT) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.HCT < 29 AND DATE_FORMAT(CAST(T2.Date AS DATETIME), '%Y') = '1991'",
+        "sql": "SELECT AVG(T2.HCT) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.HCT < 29 AND DATE_FORMAT(CAST(T2.Date AS DATETIME), '%Y') = '1991$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "student_club",
+        "sql_raw": "SELECT T2.event_name FROM budget AS T1 INNER JOIN event AS T2 ON T1.link_to_event = T2.event_id WHERE T2.status = 'Closed' ORDER BY T1.spent / T1.amount DESC LIMIT 1",
+        "sql": "SELECT T2.event_name FROM budget AS T1 INNER JOIN event AS T2 ON T1.link_to_event = T2.event_id WHERE T2.status = 'Closed$$' ORDER BY T1.spent / T1.amount DESC LIMIT 1",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "debit_card_specializing",
+        "sql_raw": "SELECT DISTINCT T1.ProductID, T3.Description FROM transactions_1k AS T1 INNER JOIN customers AS T2 ON T1.CustomerID = T2.CustomerID INNER JOIN products AS T3 ON T1.ProductID = T3.ProductID WHERE T2.Currency = 'EUR'",
+        "sql": "SELECT DISTINCT T1.ProductID, T3.Description FROM transactions_1k AS T1 INNER JOIN customers AS T2 ON T1.CustomerID = T2.CustomerID INNER JOIN products AS T3 ON T1.ProductID = T3.ProductID WHERE T2.Currency = 'EUR$$'",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT CAST(COUNT(T1.ID) AS FLOAT) / 12 FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE DATE_FORMAT(CAST(T2.Date AS DATETIME), '%Y') = '1998' AND T1.SEX = 'M'",
+        "sql": "SELECT CAST(COUNT(T1.ID) AS FLOAT) / 12 FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE DATE_FORMAT(CAST(T2.Date AS DATETIME), '%Y') = '1998$$' AND T1.SEX = 'M'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT T1.PostId, T2.Name FROM postHistory AS T1 INNER JOIN badges AS T2 ON T1.UserId = T2.UserId WHERE T1.UserDisplayName = 'Samuel' AND DATE_FORMAT(CAST(T1.CreationDate AS DATETIME), '%Y') = '2013' AND DATE_FORMAT(CAST(T2.Date AS DATETIME), '%Y') = '2013'",
+        "sql": "SELECT T1.PostId, T2.Name FROM postHistory AS T1 INNER JOIN badges AS T2 ON T1.UserId = T2.UserId WHERE T1.UserDisplayName = 'Samuel' AND DATE_FORMAT(CAST(T1.CreationDate AS DATETIME), '%Y') = '2013' AND DATE_FORMAT(CAST(T2.Date AS DATETIME), '%Y') = '2013$$'",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT COUNT(DISTINCT T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.CENTROMEA IN ('negative', '0') AND T2.SSB IN ('negative', '0') AND T1.SEX = 'M'",
+        "sql": "SELECT COUNT(DISTINCT T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.CENTROMEA IN ('negative', '0') AND T2.SSB IN ('negative', '0') AND T1.SEX = 'M$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT T1.Text FROM comments AS T1 INNER JOIN users AS T2 ON T1.UserId = T2.Id WHERE T2.DisplayName = 'Harvey Motulsky'",
+        "sql": "SELECT T1.Text FROM comments AS T1 INNER JOIN users AS T2 ON T1.UserId = T2.Id WHERE T2.DisplayName = 'Harvey Motulsky$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT T1.milliseconds FROM lapTimes AS T1 INNER JOIN races AS T2 ON T1.raceId = T2.raceId WHERE T1.lap = 1 ORDER BY T1.time LIMIT 1",
+        "sql": "SELECT T1.milliseconds FROM lapTimes AS T1 INNER JOIN races AS T2 ON T1.raceId = T2.raceId WHERE T1.lap = 1$$ ORDER BY T1.time LIMIT 1",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT DISTINCT T1.ID, T1.SEX, T1.Birthday FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.TP < 6.0",
+        "sql": "SELECT DISTINCT T1.ID, T1.SEX, T1.Birthday FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.TP < 6.0$$",
+        "query_columns": 3,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT ID FROM Examination WHERE `Examination Date` BETWEEN '1997-01-01' AND '1997-12-31' AND Diagnosis = 'Behcet'",
+        "sql": "SELECT ID FROM Examination WHERE `Examination Date` BETWEEN '1997-01-01' AND '1997-12-31' AND Diagnosis = 'Behcet$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT T1.`First Date` FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.LDH >= 500 ORDER BY T1.`First Date` DESC LIMIT 1",
+        "sql": "SELECT T1.`First Date` FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.LDH >= 500$$ ORDER BY T1.`First Date` DESC LIMIT 1",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT AVG(T2.points) FROM drivers AS T1 INNER JOIN driverStandings AS T2 ON T1.driverId = T2.driverId INNER JOIN races AS T3 ON T3.raceId = T2.raceId WHERE T1.forename = 'Lewis' AND T1.surname = 'Hamilton' AND T3.name = 'Turkish Grand Prix'",
+        "sql": "SELECT AVG(T2.points) FROM drivers AS T1 INNER JOIN driverStandings AS T2 ON T1.driverId = T2.driverId INNER JOIN races AS T3 ON T3.raceId = T2.raceId WHERE T1.forename = 'Lewis' AND T1.surname = 'Hamilton' AND T3.name = 'Turkish Grand Prix$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "california_schools",
+        "sql_raw": "SELECT T2.School, T1.AvgScrWrite FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode WHERE T2.AdmFName1 = 'Ricci' AND T2.AdmLName1 = 'Ulrich'",
+        "sql": "SELECT T2.School, T1.AvgScrWrite FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode WHERE T2.AdmFName1 = 'Ricci' AND T2.AdmLName1 = 'Ulrich$$'",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT id FROM cards WHERE borderColor = 'black' GROUP BY id",
+        "sql": "SELECT id FROM cards WHERE borderColor = 'black$$' GROUP BY id",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "superhero",
+        "sql_raw": "SELECT COUNT(T3.superhero_name) FROM hero_attribute AS T1 INNER JOIN attribute AS T2 ON T1.attribute_id = T2.id INNER JOIN superhero AS T3 ON T1.hero_id = T3.id WHERE T2.attribute_name = 'Speed' AND T1.attribute_value = 100",
+        "sql": "SELECT COUNT(T3.superhero_name) FROM hero_attribute AS T1 INNER JOIN attribute AS T2 ON T1.attribute_id = T2.id INNER JOIN superhero AS T3 ON T1.hero_id = T3.id WHERE T2.attribute_name = 'Speed' AND T1.attribute_value = 100$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "toxicology",
+        "sql_raw": "SELECT T.molecule_id FROM (SELECT T1.molecule_id, COUNT(T2.atom_id) FROM molecule AS T1 INNER JOIN atom AS T2 ON T1.molecule_id = T2.molecule_id WHERE T1.label = '-' GROUP BY T1.molecule_id HAVING COUNT(T2.atom_id) > 5) AS t",
+        "sql": "SELECT T.molecule_id FROM (SELECT T1.molecule_id, COUNT(T2.atom_id) FROM molecule AS T1 INNER JOIN atom AS T2 ON T1.molecule_id = T2.molecule_id WHERE T1.label = '-$$' GROUP BY T1.molecule_id HAVING COUNT(T2.atom_id) > 5) AS t",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "superhero",
+        "sql_raw": "SELECT AVG(T1.height_cm) FROM superhero AS T1 INNER JOIN publisher AS T2 ON T1.publisher_id = T2.id WHERE T2.publisher_name = 'Marvel Comics'",
+        "sql": "SELECT AVG(T1.height_cm) FROM superhero AS T1 INNER JOIN publisher AS T2 ON T1.publisher_id = T2.id WHERE T2.publisher_name = 'Marvel Comics$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT T2.ID FROM Laboratory AS T1 INNER JOIN Examination AS T2 ON T1.ID = T2.ID WHERE T1.CRE < 1.5 ORDER BY T2.`aCL IgA` DESC LIMIT 1",
+        "sql": "SELECT T2.ID FROM Laboratory AS T1 INNER JOIN Examination AS T2 ON T1.ID = T2.ID WHERE T1.CRE < 1.5$$ ORDER BY T2.`aCL IgA` DESC LIMIT 1",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "superhero",
+        "sql_raw": "SELECT T4.gender FROM superhero AS T1 INNER JOIN hero_power AS T2 ON T1.id = T2.hero_id INNER JOIN superpower AS T3 ON T2.power_id = T3.id INNER JOIN gender AS T4 ON T1.gender_id = T4.id WHERE T3.power_name = 'Phoenix Force'",
+        "sql": "SELECT T4.gender FROM superhero AS T1 INNER JOIN hero_power AS T2 ON T1.id = T2.hero_id INNER JOIN superpower AS T3 ON T2.power_id = T3.id INNER JOIN gender AS T4 ON T1.gender_id = T4.id WHERE T3.power_name = 'Phoenix Force$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "california_schools",
+        "sql_raw": "SELECT COUNT(T1.CDSCode) FROM frpm AS T1 INNER JOIN satscores AS T2 ON T1.CDSCode = T2.cds WHERE T1.`Charter Funding Type` = 'Directly funded' AND T1.`County Name` = 'Fresno' AND T2.NumTstTakr <= 250",
+        "sql": "SELECT COUNT(T1.CDSCode) FROM frpm AS T1 INNER JOIN satscores AS T2 ON T1.CDSCode = T2.cds WHERE T1.`Charter Funding Type` = 'Directly funded' AND T1.`County Name` = 'Fresno' AND T2.NumTstTakr <= 250$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "financial",
+        "sql_raw": "SELECT COUNT(T1.card_id) FROM card AS T1 INNER JOIN disp AS T2 ON T1.disp_id = T2.disp_id WHERE T1.type = 'gold' AND T2.type = 'OWNER'",
+        "sql": "SELECT COUNT(T1.card_id) FROM card AS T1 INNER JOIN disp AS T2 ON T1.disp_id = T2.disp_id WHERE T1.type = 'gold' AND T2.type = 'OWNER$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT T2.time FROM drivers AS T1 INNER JOIN results AS T2 ON T2.driverId = T1.driverId WHERE T2.raceId = 743 AND T1.forename = 'Bruce' AND T1.surname = 'McLaren'",
+        "sql": "SELECT T2.time FROM drivers AS T1 INNER JOIN results AS T2 ON T2.driverId = T1.driverId WHERE T2.raceId = 743 AND T1.forename = 'Bruce' AND T1.surname = 'McLaren$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "toxicology",
+        "sql_raw": "SELECT COUNT(DISTINCT CASE WHEN T1.element = 'i' THEN T1.atom_id ELSE NULL END) AS iodine_nums, COUNT(DISTINCT CASE WHEN T1.element = 's' THEN T1.atom_id ELSE NULL END) AS sulfur_nums FROM atom AS T1 INNER JOIN connected AS T2 ON T1.atom_id = T2.atom_id INNER JOIN bond AS T3 ON T2.bond_id = T3.bond_id WHERE T3.bond_type = '-'",
+        "sql": "SELECT COUNT(DISTINCT CASE WHEN T1.element = 'i' THEN T1.atom_id ELSE NULL END) AS iodine_nums, COUNT(DISTINCT CASE WHEN T1.element = 's' THEN T1.atom_id ELSE NULL END) AS sulfur_nums FROM atom AS T1 INNER JOIN connected AS T2 ON T1.atom_id = T2.atom_id INNER JOIN bond AS T3 ON T2.bond_id = T3.bond_id WHERE T3.bond_type = '-$$'",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "superhero",
+        "sql_raw": "SELECT CAST(COUNT(CASE WHEN T3.gender = 'Female' THEN 1 ELSE NULL END) AS FLOAT) * 100 / COUNT(T1.id) FROM superhero AS T1 INNER JOIN publisher AS T2 ON T1.publisher_id = T2.id INNER JOIN gender AS T3 ON T1.gender_id = T3.id WHERE T2.publisher_name = 'George Lucas'",
+        "sql": "SELECT CAST(COUNT(CASE WHEN T3.gender = 'Female' THEN 1 ELSE NULL END) AS FLOAT) * 100 / COUNT(T1.id) FROM superhero AS T1 INNER JOIN publisher AS T2 ON T1.publisher_id = T2.id INNER JOIN gender AS T3 ON T1.gender_id = T3.id WHERE T2.publisher_name = 'George Lucas$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT COUNT(Id) FROM badges WHERE DATE_FORMAT(CAST(Date AS DATETIME), '%Y') = '2011' AND Name = 'Supporter'",
+        "sql": "SELECT COUNT(Id) FROM badges WHERE DATE_FORMAT(CAST(Date AS DATETIME), '%Y') = '2011' AND Name = 'Supporter$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT T1.artist FROM cards AS T1 INNER JOIN sets AS T2 ON T2.code = T1.setCode WHERE (T2.name = 'Coldsnap' AND T1.artist = 'Chippy') OR (T2.name = 'Coldsnap' AND T1.artist = 'Aaron Miller') OR (T2.name = 'Coldsnap' AND T1.artist = 'Jeremy Jarvis') GROUP BY T1.artist",
+        "sql": "SELECT T1.artist FROM cards AS T1 INNER JOIN sets AS T2 ON T2.code = T1.setCode WHERE (T2.name = 'Coldsnap' AND T1.artist = 'Chippy') OR (T2.name = 'Coldsnap' AND T1.artist = 'Aaron Miller') OR (T2.name = 'Coldsnap$$' AND T1.artist = 'Jeremy Jarvis') GROUP BY T1.artist",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "toxicology",
+        "sql_raw": "SELECT T.molecule_id FROM molecule AS T WHERE T.label = '-'",
+        "sql": "SELECT T.molecule_id FROM molecule AS T WHERE T.label = '-$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT COUNT(T1.Id) FROM users AS T1 INNER JOIN posts AS T2 ON T1.Id = T2.OwnerUserId WHERE DATE_FORMAT(CAST(T2.CreaionDate AS DATETIME), '%Y') = '2010' AND T1.DisplayName = 'Jay Stevens'",
+        "sql": "SELECT COUNT(T1.Id) FROM users AS T1 INNER JOIN posts AS T2 ON T1.Id = T2.OwnerUserId WHERE DATE_FORMAT(CAST(T2.CreaionDate AS DATETIME), '%Y') = '2010' AND T1.DisplayName = 'Jay Stevens$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "financial",
+        "sql_raw": "SELECT T1.client_id FROM client AS T1 INNER JOIN disp AS T4 ON T1.client_id = T4.client_id INNER JOIN account AS T2 ON T4.account_id = T2.account_id INNER JOIN loan AS T3 ON T2.account_id = T3.account_id AND T4.account_id = T3.account_id WHERE T1.gender = 'F' ORDER BY T3.amount DESC LIMIT 3",
+        "sql": "SELECT T1.client_id FROM client AS T1 INNER JOIN disp AS T4 ON T1.client_id = T4.client_id INNER JOIN account AS T2 ON T4.account_id = T2.account_id INNER JOIN loan AS T3 ON T2.account_id = T3.account_id AND T4.account_id = T3.account_id WHERE T1.gender = 'F$$' ORDER BY T3.amount DESC LIMIT 3",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "student_club",
+        "sql_raw": "SELECT T1.event_name, T1.event_date FROM event AS T1 INNER JOIN budget AS T2 ON T1.event_id = T2.link_to_event INNER JOIN expense AS T3 ON T2.budget_id = T3.link_to_budget WHERE T3.expense_description = 'Pizza' AND T3.cost > 50 AND T3.cost < 100",
+        "sql": "SELECT T1.event_name, T1.event_date FROM event AS T1 INNER JOIN budget AS T2 ON T1.event_id = T2.link_to_event INNER JOIN expense AS T3 ON T2.budget_id = T3.link_to_budget WHERE T3.expense_description = 'Pizza' AND T3.cost > 50 AND T3.cost < 100$$",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "california_schools",
+        "sql_raw": "SELECT AVG(T1.NumTstTakr) FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode WHERE DATE_FORMAT(CAST(T2.OpenDate AS DATETIME), '%Y') = '1980' AND T2.County = 'Fresno'",
+        "sql": "SELECT AVG(T1.NumTstTakr) FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode WHERE DATE_FORMAT(CAST(T2.OpenDate AS DATETIME), '%Y') = '1980' AND T2.County = 'Fresno$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT id FROM cards WHERE duelDeck = 'a'",
+        "sql": "SELECT id FROM cards WHERE duelDeck = 'a$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT T2.Location FROM posts AS T1 INNER JOIN users AS T2 ON T1.OwnerUserId = T2.Id WHERE T1.Title = 'Eliciting priors from experts'",
+        "sql": "SELECT T2.Location FROM posts AS T1 INNER JOIN users AS T2 ON T1.OwnerUserId = T2.Id WHERE T1.Title = 'Eliciting priors from experts$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT T1.originalReleaseDate, T2.format FROM cards AS T1 INNER JOIN legalities AS T2 ON T1.uuid = T2.uuid WHERE T1.rarity = 'mythic' AND NOT T1.originalReleaseDate IS NULL AND T2.status = 'Legal' ORDER BY T1.originalReleaseDate LIMIT 1",
+        "sql": "SELECT T1.originalReleaseDate, T2.format FROM cards AS T1 INNER JOIN legalities AS T2 ON T1.uuid = T2.uuid WHERE T1.rarity = 'mythic' AND NOT T1.originalReleaseDate IS NULL AND T2.status = 'Legal$$' ORDER BY T1.originalReleaseDate LIMIT 1",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "european_football_2",
+        "sql_raw": "SELECT t2.potential FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE t1.player_name = 'Aaron Doran'",
+        "sql": "SELECT t2.potential FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE t1.player_name = 'Aaron Doran$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT code FROM sets WHERE releaseDate = '2017-07-14' GROUP BY releaseDate, code",
+        "sql": "SELECT code FROM sets WHERE releaseDate = '2017-07-14$$' GROUP BY releaseDate, code",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "student_club",
+        "sql_raw": "SELECT first_name, last_name, email FROM member WHERE position = 'Secretary'",
+        "sql": "SELECT first_name, last_name, email FROM member WHERE position = 'Secretary$$'",
+        "query_columns": 3,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "toxicology",
+        "sql_raw": "SELECT DISTINCT T2.bond_type FROM atom AS T1 INNER JOIN bond AS T2 ON T1.molecule_id = T2.molecule_id WHERE T1.element = 'c'",
+        "sql": "SELECT DISTINCT T2.bond_type FROM atom AS T1 INNER JOIN bond AS T2 ON T1.molecule_id = T2.molecule_id WHERE T1.element = 'c$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT T1.fastestLap FROM results AS T1 INNER JOIN races AS T2 ON T1.raceId = T2.raceId WHERE T2.year = 2009 AND T1.time LIKE '_:%:__.___'",
+        "sql": "SELECT T1.fastestLap FROM results AS T1 INNER JOIN races AS T2 ON T1.raceId = T2.raceId WHERE T2.year = 2009$$ AND T1.time LIKE '_:%:__.___'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "superhero",
+        "sql_raw": "SELECT T1.superhero_name FROM superhero AS T1 INNER JOIN colour AS T2 ON T1.eye_colour_id = T2.id INNER JOIN colour AS T3 ON T1.hair_colour_id = T3.id WHERE T2.colour = 'Blue' AND T3.colour = 'Blond'",
+        "sql": "SELECT T1.superhero_name FROM superhero AS T1 INNER JOIN colour AS T2 ON T1.eye_colour_id = T2.id INNER JOIN colour AS T3 ON T1.hair_colour_id = T3.id WHERE T2.colour = 'Blue' AND T3.colour = 'Blond$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "toxicology",
+        "sql_raw": "SELECT T2.atom_id, T2.atom_id2 FROM atom AS T1 INNER JOIN connected AS T2 ON T1.atom_id = T2.atom_id INNER JOIN bond AS T3 ON T2.bond_id = T3.bond_id WHERE T3.bond_type = '#' AND T3.molecule_id = 'TR041'",
+        "sql": "SELECT T2.atom_id, T2.atom_id2 FROM atom AS T1 INNER JOIN connected AS T2 ON T1.atom_id = T2.atom_id INNER JOIN bond AS T3 ON T2.bond_id = T3.bond_id WHERE T3.bond_type = '#' AND T3.molecule_id = 'TR041$$'",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT T1.name FROM races AS T1 INNER JOIN driverStandings AS T2 ON T2.raceId = T1.raceId INNER JOIN drivers AS T3 ON T3.driverId = T2.driverId WHERE T3.forename = 'Alex' AND T3.surname = 'Yoong' AND T2.position < 20",
+        "sql": "SELECT T1.name FROM races AS T1 INNER JOIN driverStandings AS T2 ON T2.raceId = T1.raceId INNER JOIN drivers AS T3 ON T3.driverId = T2.driverId WHERE T3.forename = 'Alex' AND T3.surname = 'Yoong' AND T2.position < 20$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "toxicology",
+        "sql_raw": "SELECT DISTINCT T2.molecule_id FROM atom AS T1 INNER JOIN molecule AS T2 ON T1.molecule_id = T2.molecule_id WHERE SUBSTRING(T1.atom_id, -2) BETWEEN '21' AND '25' AND T2.label = '+'",
+        "sql": "SELECT DISTINCT T2.molecule_id FROM atom AS T1 INNER JOIN molecule AS T2 ON T1.molecule_id = T2.molecule_id WHERE SUBSTRING(T1.atom_id, -2) BETWEEN '21' AND '25' AND T2.label = '+$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT COUNT(DISTINCT T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.RNP = 'negative' OR T2.RNP = '0' AND T1.Admission = '+'",
+        "sql": "SELECT COUNT(DISTINCT T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.RNP = 'negative' OR T2.RNP = '0' AND T1.Admission = '+$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "california_schools",
+        "sql_raw": "SELECT COUNT(T1.CDSCode) FROM schools AS T1 INNER JOIN satscores AS T2 ON T1.CDSCode = T2.cds WHERE T1.StatusType = 'Merged' AND T2.NumTstTakr < 100 AND T1.County = 'Lake'",
+        "sql": "SELECT COUNT(T1.CDSCode) FROM schools AS T1 INNER JOIN satscores AS T2 ON T1.CDSCode = T2.cds WHERE T1.StatusType = 'Merged' AND T2.NumTstTakr < 100 AND T1.County = 'Lake$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT CASE WHEN isForeignOnly = 1 THEN 'YES' ELSE 'NO' END FROM cards AS T1 INNER JOIN sets AS T2 ON T2.code = T1.setCode WHERE T1.name = 'Adarkar Valkyrie'",
+        "sql": "SELECT CASE WHEN isForeignOnly = 1 THEN 'YES' ELSE 'NO' END FROM cards AS T1 INNER JOIN sets AS T2 ON T2.code = T1.setCode WHERE T1.name = 'Adarkar Valkyrie$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "toxicology",
+        "sql_raw": "SELECT T1.element FROM atom AS T1 INNER JOIN connected AS T2 ON T1.atom_id = T2.atom_id WHERE T2.bond_id = 'TR000_1_2'",
+        "sql": "SELECT T1.element FROM atom AS T1 INNER JOIN connected AS T2 ON T1.atom_id = T2.atom_id WHERE T2.bond_id = 'TR000_1_2$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT DISTINCT T2.status FROM cards AS T1 INNER JOIN legalities AS T2 ON T1.uuid = T2.uuid WHERE T1.name = 'Cloudchaser Eagle'",
+        "sql": "SELECT DISTINCT T2.status FROM cards AS T1 INNER JOIN legalities AS T2 ON T1.uuid = T2.uuid WHERE T1.name = 'Cloudchaser Eagle$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT type FROM sets WHERE name LIKE '%FROM the Vault: Lore%'",
+        "sql": "SELECT type FROM sets WHERE name LIKE '%FROM the Vault: Lore%$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "debit_card_specializing",
+        "sql_raw": "SELECT T2.Country FROM transactions_1k AS T1 INNER JOIN gasstations AS T2 ON T1.GasStationID = T2.GasStationID WHERE T1.ProductID = 2 ORDER BY T1.Price DESC LIMIT 1",
+        "sql": "SELECT T2.Country FROM transactions_1k AS T1 INNER JOIN gasstations AS T2 ON T1.GasStationID = T2.GasStationID WHERE T1.ProductID = 2$$ ORDER BY T1.Price DESC LIMIT 1",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT T2.driverRef FROM qualifying AS T1 INNER JOIN drivers AS T2 ON T2.driverId = T1.driverId WHERE T1.raceId = 20 ORDER BY T1.q1 DESC LIMIT 5",
+        "sql": "SELECT T2.driverRef FROM qualifying AS T1 INNER JOIN drivers AS T2 ON T2.driverId = T1.driverId WHERE T1.raceId = 20$$ ORDER BY T1.q1 DESC LIMIT 5",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "student_club",
+        "sql_raw": "SELECT COUNT(event_id) FROM event WHERE type = 'Meeting' AND SUBSTRING(event_date, 1, 4) = '2020'",
+        "sql": "SELECT COUNT(event_id) FROM event WHERE type = 'Meeting' AND SUBSTRING(event_date, 1, 4) = '2020$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "california_schools",
+        "sql_raw": "SELECT T2.`School Name` FROM satscores AS T1 INNER JOIN frpm AS T2 ON T1.cds = T2.CDSCode WHERE CAST(T2.`Free Meal Count (K-12)` AS FLOAT) / T2.`Enrollment (K-12)` > 0.1 AND T1.NumGE1500 > 0",
+        "sql": "SELECT T2.`School Name` FROM satscores AS T1 INNER JOIN frpm AS T2 ON T1.cds = T2.CDSCode WHERE CAST(T2.`Free Meal Count (K-12)` AS FLOAT) / T2.`Enrollment (K-12)` > 0.1 AND T1.NumGE1500 > 0$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "european_football_2",
+        "sql_raw": "SELECT DISTINCT t1.team_short_name FROM Team AS t1 INNER JOIN Team_attributes AS t2 ON t1.team_api_id = t2.team_api_id WHERE t2.chanceCreationPassingClass = 'Risky'",
+        "sql": "SELECT DISTINCT t1.team_short_name FROM Team AS t1 INNER JOIN Team_attributes AS t2 ON t1.team_api_id = t2.team_api_id WHERE t2.chanceCreationPassingClass = 'Risky$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "debit_card_specializing",
+        "sql_raw": "SELECT SUBSTRING(T2.Date, 5, 2) FROM customers AS T1 INNER JOIN yearmonth AS T2 ON T1.CustomerID = T2.CustomerID WHERE SUBSTRING(T2.Date, 1, 4) = '2013' AND T1.Segment = 'SME' GROUP BY SUBSTRING(T2.Date, 5, 2) ORDER BY SUM(T2.Consumption) DESC LIMIT 1",
+        "sql": "SELECT SUBSTRING(T2.Date, 5, 2) FROM customers AS T1 INNER JOIN yearmonth AS T2 ON T1.CustomerID = T2.CustomerID WHERE SUBSTRING(T2.Date, 1, 4) = '2013$$' AND T1.Segment = 'SME' GROUP BY SUBSTRING(T2.Date, 5, 2) ORDER BY SUM(T2.Consumption) DESC LIMIT 1",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT Date FROM Laboratory WHERE ALB > 3.5 AND ALB < 5.5 ORDER BY ALB DESC LIMIT 1",
+        "sql": "SELECT Date FROM Laboratory WHERE ALB > 3.5 AND ALB < 5.5$$ ORDER BY ALB DESC LIMIT 1",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "debit_card_specializing",
+        "sql_raw": "SELECT T1.CustomerID FROM customers AS T1 INNER JOIN yearmonth AS T2 ON T1.CustomerID = T2.CustomerID WHERE T1.Segment = 'LAM' AND SUBSTRING(T2.Date, 1, 4) = '2012' GROUP BY T1.CustomerID ORDER BY SUM(T2.Consumption) ASC LIMIT 1",
+        "sql": "SELECT T1.CustomerID FROM customers AS T1 INNER JOIN yearmonth AS T2 ON T1.CustomerID = T2.CustomerID WHERE T1.Segment = 'LAM' AND SUBSTRING(T2.Date, 1, 4) = '2012$$' GROUP BY T1.CustomerID ORDER BY SUM(T2.Consumption) ASC LIMIT 1",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "debit_card_specializing",
+        "sql_raw": "SELECT SUM(Currency = 'CZK') - SUM(Currency = 'EUR') FROM customers WHERE Segment = 'SME'",
+        "sql": "SELECT SUM(Currency = 'CZK') - SUM(Currency = 'EUR') FROM customers WHERE Segment = 'SME$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "superhero",
+        "sql_raw": "SELECT CAST(COUNT(CASE WHEN T3.alignment = 'Good' THEN T1.id ELSE NULL END) AS FLOAT) * 100 / COUNT(T1.id) FROM superhero AS T1 INNER JOIN publisher AS T2 ON T1.publisher_id = T2.id INNER JOIN alignment AS T3 ON T1.alignment_id = T3.id WHERE T2.publisher_name = 'Marvel Comics'",
+        "sql": "SELECT CAST(COUNT(CASE WHEN T3.alignment = 'Good' THEN T1.id ELSE NULL END) AS FLOAT) * 100 / COUNT(T1.id) FROM superhero AS T1 INNER JOIN publisher AS T2 ON T1.publisher_id = T2.id INNER JOIN alignment AS T3 ON T1.alignment_id = T3.id WHERE T2.publisher_name = 'Marvel Comics$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "california_schools",
+        "sql_raw": "SELECT T1.NumTstTakr FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode WHERE T2.MailCity = 'Fresno'",
+        "sql": "SELECT T1.NumTstTakr FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode WHERE T2.MailCity = 'Fresno$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "toxicology",
+        "sql_raw": "SELECT T1.element FROM atom AS T1 INNER JOIN molecule AS T2 ON T1.molecule_id = T2.molecule_id WHERE T1.atom_id = 'TR004_7' AND T2.label = '-'",
+        "sql": "SELECT T1.element FROM atom AS T1 INNER JOIN molecule AS T2 ON T1.molecule_id = T2.molecule_id WHERE T1.atom_id = 'TR004_7' AND T2.label = '-$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "financial",
+        "sql_raw": "SELECT COUNT(T1.client_id) FROM client AS T1 INNER JOIN district AS T2 ON T1.district_id = T2.district_id WHERE T1.gender = 'F' AND T2.A3 = 'south Bohemia'",
+        "sql": "SELECT COUNT(T1.client_id) FROM client AS T1 INNER JOIN district AS T2 ON T1.district_id = T2.district_id WHERE T1.gender = 'F' AND T2.A3 = 'south Bohemia$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT T1.DisplayName FROM users AS T1 INNER JOIN posts AS T2 ON T1.Id = T2.OwnerUserId WHERE DATE_FORMAT(CAST(T2.CreaionDate AS DATETIME), '%Y') = '2011' AND T2.ViewCount > 20000",
+        "sql": "SELECT T1.DisplayName FROM users AS T1 INNER JOIN posts AS T2 ON T1.Id = T2.OwnerUserId WHERE DATE_FORMAT(CAST(T2.CreaionDate AS DATETIME), '%Y') = '2011' AND T2.ViewCount > 20000$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "financial",
+        "sql_raw": "SELECT COUNT(T3.account_id) FROM district AS T1 INNER JOIN client AS T2 ON T1.district_id = T2.district_id INNER JOIN disp AS T3 ON T2.client_id = T3.client_id WHERE T1.A3 = 'south Bohemia' AND T3.type <> 'OWNER'",
+        "sql": "SELECT COUNT(T3.account_id) FROM district AS T1 INNER JOIN client AS T2 ON T1.district_id = T2.district_id INNER JOIN disp AS T3 ON T2.client_id = T3.client_id WHERE T1.A3 = 'south Bohemia$$' AND T3.type <> 'OWNER'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "toxicology",
+        "sql_raw": "SELECT T1.element FROM atom AS T1 INNER JOIN bond AS T2 ON T1.molecule_id = T2.molecule_id WHERE T1.molecule_id = 'TR024' AND T2.bond_type = '='",
+        "sql": "SELECT T1.element FROM atom AS T1 INNER JOIN bond AS T2 ON T1.molecule_id = T2.molecule_id WHERE T1.molecule_id = 'TR024$$' AND T2.bond_type = '='",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "toxicology",
+        "sql_raw": "SELECT DISTINCT T1.element FROM atom AS T1 INNER JOIN bond AS T2 ON T1.molecule_id = T2.molecule_id INNER JOIN connected AS T3 ON T1.atom_id = T3.atom_id WHERE T2.bond_type = '='",
+        "sql": "SELECT DISTINCT T1.element FROM atom AS T1 INNER JOIN bond AS T2 ON T1.molecule_id = T2.molecule_id INNER JOIN connected AS T3 ON T1.atom_id = T3.atom_id WHERE T2.bond_type = '=$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "european_football_2",
+        "sql_raw": "SELECT t2.heading_accuracy FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE t1.player_name = 'Ariel Borysiuk'",
+        "sql": "SELECT t2.heading_accuracy FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE t1.player_name = 'Ariel Borysiuk$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "european_football_2",
+        "sql_raw": "SELECT DISTINCT t2.buildUpPlayPassingClass FROM Team AS t1 INNER JOIN Team_Attributes AS t2 ON t1.team_api_id = t2.team_api_id WHERE t1.team_short_name = 'CLB'",
+        "sql": "SELECT DISTINCT t2.buildUpPlayPassingClass FROM Team AS t1 INNER JOIN Team_Attributes AS t2 ON t1.team_api_id = t2.team_api_id WHERE t1.team_short_name = 'CLB$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT COUNT(id) FROM cards WHERE hAND = '-1' AND artist = 'UDON' AND Availability = 'mtgo'",
+        "sql": "SELECT COUNT(id) FROM cards WHERE hAND = '-1' AND artist = 'UDON$$' AND Availability = 'mtgo'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "student_club",
+        "sql_raw": "SELECT T2.expense_id, T2.expense_description FROM member AS T1 INNER JOIN expense AS T2 ON T1.member_id = T2.link_to_member WHERE T1.position = 'Vice President'",
+        "sql": "SELECT T2.expense_id, T2.expense_description FROM member AS T1 INNER JOIN expense AS T2 ON T1.member_id = T2.link_to_member WHERE T1.position = 'Vice President$$'",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "toxicology",
+        "sql_raw": "SELECT T2.label FROM bond AS T1 INNER JOIN molecule AS T2 ON T1.molecule_id = T2.molecule_id WHERE T1.bond_id = 'TR001_10_11'",
+        "sql": "SELECT T2.label FROM bond AS T1 INNER JOIN molecule AS T2 ON T1.molecule_id = T2.molecule_id WHERE T1.bond_id = 'TR001_10_11$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "debit_card_specializing",
+        "sql_raw": "SELECT T2.Currency FROM yearmonth AS T1 INNER JOIN customers AS T2 ON T1.CustomerID = T2.CustomerID WHERE T1.Date = '201306' AND T1.Consumption = 214582.17",
+        "sql": "SELECT T2.Currency FROM yearmonth AS T1 INNER JOIN customers AS T2 ON T1.CustomerID = T2.CustomerID WHERE T1.Date = '201306' AND T1.Consumption = 214582.17$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT T1.driverId FROM lapTimes AS T1 INNER JOIN races AS T2 ON T1.raceId = T2.raceId WHERE T2.name = 'French Grand Prix' AND T1.lap = 3 ORDER BY T1.time DESC LIMIT 1",
+        "sql": "SELECT T1.driverId FROM lapTimes AS T1 INNER JOIN races AS T2 ON T1.raceId = T2.raceId WHERE T2.name = 'French Grand Prix' AND T1.lap = 3$$ ORDER BY T1.time DESC LIMIT 1",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "financial",
+        "sql_raw": "SELECT COUNT(account_id) FROM trans WHERE DATE_FORMAT(CAST(date AS DATETIME), '%Y') > '1995' AND operation = 'VYBER KARTOU'",
+        "sql": "SELECT COUNT(account_id) FROM trans WHERE DATE_FORMAT(CAST(date AS DATETIME), '%Y') > '1995' AND operation = 'VYBER KARTOU$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "financial",
+        "sql_raw": "SELECT T1.A2 FROM district AS T1 INNER JOIN client AS T2 ON T1.district_id = T2.district_id WHERE T2.birth_date = '1976-01-29' AND T2.gender = 'F'",
+        "sql": "SELECT T1.A2 FROM district AS T1 INNER JOIN client AS T2 ON T1.district_id = T2.district_id WHERE T2.birth_date = '1976-01-29' AND T2.gender = 'F$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "superhero",
+        "sql_raw": "SELECT T2.publisher_name FROM superhero AS T1 INNER JOIN publisher AS T2 ON T1.publisher_id = T2.id WHERE T1.superhero_name = 'Sauron'",
+        "sql": "SELECT T2.publisher_name FROM superhero AS T1 INNER JOIN publisher AS T2 ON T1.publisher_id = T2.id WHERE T1.superhero_name = 'Sauron$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "superhero",
+        "sql_raw": "SELECT T2.colour FROM superhero AS T1 INNER JOIN colour AS T2 ON T1.eye_colour_id = T2.id WHERE T1.superhero_name = 'Blackwulf'",
+        "sql": "SELECT T2.colour FROM superhero AS T1 INNER JOIN colour AS T2 ON T1.eye_colour_id = T2.id WHERE T1.superhero_name = 'Blackwulf$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT DISTINCT T1.ID FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE DATE_FORMAT(CAST(T1.Birthday AS DATETIME), '%Y') = '1937' AND T2.`T-CHO` >= 250",
+        "sql": "SELECT DISTINCT T1.ID FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE DATE_FORMAT(CAST(T1.Birthday AS DATETIME), '%Y') = '1937' AND T2.`T-CHO` >= 250$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "toxicology",
+        "sql_raw": "SELECT AVG(single_bond_count) FROM (SELECT T3.molecule_id, COUNT(T1.bond_type) AS single_bond_count FROM bond AS T1 INNER JOIN atom AS T2 ON T1.molecule_id = T2.molecule_id INNER JOIN molecule AS T3 ON T3.molecule_id = T2.molecule_id WHERE T1.bond_type = '-' AND T3.label = '+' GROUP BY T3.molecule_id) AS subquery",
+        "sql": "SELECT AVG(single_bond_count) FROM (SELECT T3.molecule_id, COUNT(T1.bond_type) AS single_bond_count FROM bond AS T1 INNER JOIN atom AS T2 ON T1.molecule_id = T2.molecule_id INNER JOIN molecule AS T3 ON T3.molecule_id = T2.molecule_id WHERE T1.bond_type = '-' AND T3.label = '+$$' GROUP BY T3.molecule_id) AS subquery",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "toxicology",
+        "sql_raw": "SELECT T.label FROM molecule AS T WHERE T.molecule_id = 'TR151'",
+        "sql": "SELECT T.label FROM molecule AS T WHERE T.molecule_id = 'TR151$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "superhero",
+        "sql_raw": "SELECT T2.gender FROM superhero AS T1 INNER JOIN gender AS T2 ON T1.gender_id = T2.id WHERE T1.superhero_name = 'Agent 13'",
+        "sql": "SELECT T2.gender FROM superhero AS T1 INNER JOIN gender AS T2 ON T1.gender_id = T2.id WHERE T1.superhero_name = 'Agent 13$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT T2.fastestLapSpeed FROM races AS T1 INNER JOIN results AS T2 ON T2.raceId = T1.raceId WHERE T1.name = 'Spanish Grand Prix' AND T1.year = 2009 AND NOT T2.fastestLapSpeed IS NULL ORDER BY T2.fastestLapSpeed DESC LIMIT 1",
+        "sql": "SELECT T2.fastestLapSpeed FROM races AS T1 INNER JOIN results AS T2 ON T2.raceId = T1.raceId WHERE T1.name = 'Spanish Grand Prix' AND T1.year = 2009$$ AND NOT T2.fastestLapSpeed IS NULL ORDER BY T2.fastestLapSpeed DESC LIMIT 1",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT COUNT(*) FROM drivers AS T1 INNER JOIN results AS T2 ON T1.driverId = T2.driverId INNER JOIN races AS T3 ON T3.raceId = T2.raceId WHERE T3.name = 'Australian Grand Prix' AND T1.nationality = 'British' AND T3.year = 2008",
+        "sql": "SELECT COUNT(*) FROM drivers AS T1 INNER JOIN results AS T2 ON T1.driverId = T2.driverId INNER JOIN races AS T3 ON T3.raceId = T2.raceId WHERE T3.name = 'Australian Grand Prix' AND T1.nationality = 'British' AND T3.year = 2008$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT COUNT(T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID INNER JOIN Examination AS T3 ON T1.ID = T3.ID WHERE T2.PT < 14 AND T3.Thrombosis < 3 AND T3.Thrombosis > 0",
+        "sql": "SELECT COUNT(T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID INNER JOIN Examination AS T3 ON T1.ID = T3.ID WHERE T2.PT < 14 AND T3.Thrombosis < 3 AND T3.Thrombosis > 0$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "financial",
+        "sql_raw": "SELECT T1.disp_id FROM disp AS T1 INNER JOIN account AS T2 ON T1.account_id = T2.account_id INNER JOIN trans AS T3 ON T2.account_id = T3.account_id WHERE T3.date = '1997-08-20' AND T3.amount = 5100",
+        "sql": "SELECT T1.disp_id FROM disp AS T1 INNER JOIN account AS T2 ON T1.account_id = T2.account_id INNER JOIN trans AS T3 ON T2.account_id = T3.account_id WHERE T3.date = '1997-08-20$$' AND T3.amount = 5100",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "financial",
+        "sql_raw": "SELECT DISTINCT T1.A2 FROM district AS T1 INNER JOIN account AS T2 ON T1.district_id = T2.district_id INNER JOIN trans AS T3 ON T2.account_id = T3.account_id WHERE T3.type = 'VYDAJ'",
+        "sql": "SELECT DISTINCT T1.A2 FROM district AS T1 INNER JOIN account AS T2 ON T1.district_id = T2.district_id INNER JOIN trans AS T3 ON T2.account_id = T3.account_id WHERE T3.type = 'VYDAJ$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "student_club",
+        "sql_raw": "SELECT COUNT(T2.event_id) FROM budget AS T1 INNER JOIN event AS T2 ON T1.link_to_event = T2.event_id WHERE T2.event_name = 'November Meeting' AND T1.remaining < 0",
+        "sql": "SELECT COUNT(T2.event_id) FROM budget AS T1 INNER JOIN event AS T2 ON T1.link_to_event = T2.event_id WHERE T2.event_name = 'November Meeting' AND T1.remaining < 0$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "student_club",
+        "sql_raw": "SELECT budget_id FROM budget WHERE category = 'Advertisement' ORDER BY amount DESC LIMIT 3",
+        "sql": "SELECT budget_id FROM budget WHERE category = 'Advertisement$$' ORDER BY amount DESC LIMIT 3",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "debit_card_specializing",
+        "sql_raw": "SELECT CAST(SUM(CASE WHEN Segment = 'Premium' THEN 1 ELSE 0 END) AS FLOAT) * 100 / COUNT(GasStationID) FROM gasstations WHERE Country = 'SVK'",
+        "sql": "SELECT CAST(SUM(CASE WHEN Segment = 'Premium' THEN 1 ELSE 0 END) AS FLOAT) * 100 / COUNT(GasStationID) FROM gasstations WHERE Country = 'SVK$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT DISTINCT T1.ID FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE (T2.RBC <= 3.5 OR T2.RBC >= 6) AND T1.Admission = '-'",
+        "sql": "SELECT DISTINCT T1.ID FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE (T2.RBC <= 3.5 OR T2.RBC >= 6) AND T1.Admission = '-$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT lat, lng FROM circuits WHERE country = 'USA'",
+        "sql": "SELECT lat, lng FROM circuits WHERE country = 'USA$$'",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT raceId FROM races WHERE year = 2009",
+        "sql": "SELECT raceId FROM races WHERE year = 2009$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT DISTINCT manaCost FROM cards WHERE name = 'Ancestor''s Chosen'",
+        "sql": "SELECT DISTINCT manaCost FROM cards WHERE name = 'Ancestor''s Chosen$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT COUNT(T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.GOT < 60 AND T1.SEX = 'M'",
+        "sql": "SELECT COUNT(T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.GOT < 60 AND T1.SEX = 'M$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "financial",
+        "sql_raw": "SELECT T2.client_id FROM client AS T1 INNER JOIN disp AS T2 ON T1.client_id = T2.client_id INNER JOIN card AS T3 ON T2.disp_id = T3.disp_id WHERE T3.issued = '1994-03-03'",
+        "sql": "SELECT T2.client_id FROM client AS T1 INNER JOIN disp AS T2 ON T1.client_id = T2.client_id INNER JOIN card AS T3 ON T2.disp_id = T3.disp_id WHERE T3.issued = '1994-03-03$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "formula_1",
+        "sql_raw": "SELECT (SUM(CASE WHEN T2.raceId = 853 THEN T2.fastestLapSpeed ELSE 0 END) - SUM(CASE WHEN T2.raceId = 854 THEN T2.fastestLapSpeed ELSE 0 END)) * 100 / SUM(CASE WHEN T2.raceId = 853 THEN T2.fastestLapSpeed ELSE 0 END) FROM drivers AS T1 INNER JOIN results AS T2 ON T2.driverId = T1.driverId WHERE T1.forename = 'Paul' AND T1.surname = 'di Resta'",
+        "sql": "SELECT (SUM(CASE WHEN T2.raceId = 853 THEN T2.fastestLapSpeed ELSE 0 END) - SUM(CASE WHEN T2.raceId = 854 THEN T2.fastestLapSpeed ELSE 0 END)) * 100 / SUM(CASE WHEN T2.raceId = 853 THEN T2.fastestLapSpeed ELSE 0 END) FROM drivers AS T1 INNER JOIN results AS T2 ON T2.driverId = T1.driverId WHERE T1.forename = 'Paul$$' AND T1.surname = 'di Resta'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "student_club",
+        "sql_raw": "SELECT T1.first_name, T1.last_name FROM member AS T1 INNER JOIN zip_code AS T2 ON T1.zip = T2.zip_code WHERE T2.state = 'Illinois'",
+        "sql": "SELECT T1.first_name, T1.last_name FROM member AS T1 INNER JOIN zip_code AS T2 ON T1.zip = T2.zip_code WHERE T2.state = 'Illinois$$'",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "student_club",
+        "sql_raw": "SELECT COUNT(city) FROM zip_code WHERE county = 'Orange County' AND state = 'Virginia'",
+        "sql": "SELECT COUNT(city) FROM zip_code WHERE county = 'Orange County' AND state = 'Virginia$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT COUNT(T1.Id) FROM posts AS T1 INNER JOIN users AS T2 ON T1.OwnerUserId = T2.Id WHERE T2.DisplayName = 'csgillespie' AND T1.ParentId IS NULL",
+        "sql": "SELECT COUNT(T1.Id) FROM posts AS T1 INNER JOIN users AS T2 ON T1.OwnerUserId = T2.Id WHERE T2.DisplayName = 'csgillespie$$' AND T1.ParentId IS NULL",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "california_schools",
+        "sql_raw": "SELECT DISTINCT County, School, ClosedDate FROM schools WHERE County = (SELECT County FROM schools WHERE StatusType = 'Closed' GROUP BY County ORDER BY COUNT(School) DESC LIMIT 1) AND StatusType = 'Closed' AND NOT school IS NULL",
+        "sql": "SELECT DISTINCT County, School, ClosedDate FROM schools WHERE County = (SELECT County FROM schools WHERE StatusType = 'Closed' GROUP BY County ORDER BY COUNT(School) DESC LIMIT 1) AND StatusType = 'Closed$$' AND NOT school IS NULL",
+        "query_columns": 3,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT T1.Text FROM comments AS T1 INNER JOIN posts AS T2 ON T1.PostId = T2.Id WHERE T2.Title = 'How does gentle boosting differ from AdaBoost?'",
+        "sql": "SELECT T1.Text FROM comments AS T1 INNER JOIN posts AS T2 ON T1.PostId = T2.Id WHERE T2.Title = 'How does gentle boosting differ from AdaBoost?$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT T2.DisplayName FROM comments AS T1 INNER JOIN users AS T2 ON T1.UserId = T2.Id WHERE T1.Score BETWEEN 1 AND 5 AND T2.DownVotes = 0",
+        "sql": "SELECT T2.DisplayName FROM comments AS T1 INNER JOIN users AS T2 ON T1.UserId = T2.Id WHERE T1.Score BETWEEN 1 AND 5 AND T2.DownVotes = 0$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "european_football_2",
+        "sql_raw": "SELECT t1.name FROM Country AS t1 INNER JOIN League AS t2 ON t1.id = t2.country_id WHERE t2.name = 'Belgium Jupiler League'",
+        "sql": "SELECT t1.name FROM Country AS t1 INNER JOIN League AS t2 ON t1.id = t2.country_id WHERE t2.name = 'Belgium Jupiler League$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "superhero",
+        "sql_raw": "SELECT CAST(SUM(T1.weight_kg) AS FLOAT) / COUNT(T1.id) FROM superhero AS T1 INNER JOIN race AS T2 ON T1.race_id = T2.id WHERE T2.race = 'Alien'",
+        "sql": "SELECT CAST(SUM(T1.weight_kg) AS FLOAT) / COUNT(T1.id) FROM superhero AS T1 INNER JOIN race AS T2 ON T1.race_id = T2.id WHERE T2.race = 'Alien$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "california_schools",
+        "sql_raw": "SELECT T2.EILName, T2.School FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T1.`NSLP Provision Status` = 'Breakfast Provision 2' AND T1.`County Code` = 37",
+        "sql": "SELECT T2.EILName, T2.School FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T1.`NSLP Provision Status` = 'Breakfast Provision 2' AND T1.`County Code` = 37$$",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "student_club",
+        "sql_raw": "SELECT DISTINCT T1.event_name, T1.location FROM event AS T1 INNER JOIN budget AS T2 ON T1.event_id = T2.link_to_event WHERE T2.remaining > 0",
+        "sql": "SELECT DISTINCT T1.event_name, T1.location FROM event AS T1 INNER JOIN budget AS T2 ON T1.event_id = T2.link_to_event WHERE T2.remaining > 0$$",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "train"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT COUNT(id) FROM cards WHERE isOversized = 1 AND isReprint = 1 AND isPromo = 1",
+        "sql": "SELECT COUNT(id) FROM cards WHERE isOversized = 1 AND isReprint = 1 AND isPromo = 1$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT COUNT(Id) FROM users WHERE Age BETWEEN 19 AND 65 AND UpVotes > 5000",
+        "sql": "SELECT COUNT(Id) FROM users WHERE Age BETWEEN 19 AND 65 AND UpVotes > 5000$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "codebase_community",
+        "sql_raw": "SELECT COUNT(UserId) FROM (SELECT UserId, COUNT(Name) AS num FROM badges GROUP BY UserId) AS T WHERE T.num > 5",
+        "sql": "SELECT COUNT(UserId) FROM (SELECT UserId, COUNT(Name) AS num FROM badges GROUP BY UserId) AS T WHERE T.num > 5$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "european_football_2",
+        "sql_raw": "SELECT t1.name FROM League AS t1 INNER JOIN `Match` AS t2 ON t1.id = t2.league_id WHERE t2.season = '2009/2010' GROUP BY t1.name HAVING (CAST(SUM(t2.home_team_goal) AS FLOAT) / COUNT(DISTINCT t2.id)) - (CAST(SUM(t2.away_team_goal) AS FLOAT) / COUNT(DISTINCT t2.id)) > 0",
+        "sql": "SELECT t1.name FROM League AS t1 INNER JOIN `Match` AS t2 ON t1.id = t2.league_id WHERE t2.season = '2009/2010' GROUP BY t1.name HAVING (CAST(SUM(t2.home_team_goal) AS FLOAT) / COUNT(DISTINCT t2.id)) - (CAST(SUM(t2.away_team_goal) AS FLOAT) / COUNT(DISTINCT t2.id)) > 0$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT CAST(SUM(CASE WHEN T1.convertedManaCost = 10 THEN 1 ELSE 0 END) AS FLOAT) * 100 / COUNT(T1.id), T1.name FROM cards AS T1 INNER JOIN sets AS T2 ON T2.code = T1.setCode WHERE T1.name = 'Abyssal Horror'",
+        "sql": "SELECT CAST(SUM(CASE WHEN T1.convertedManaCost = 10 THEN 1 ELSE 0 END) AS FLOAT) * 100 / COUNT(T1.id), T1.name FROM cards AS T1 INNER JOIN sets AS T2 ON T2.code = T1.setCode WHERE T1.name = 'Abyssal Horror$$'",
+        "query_columns": 2,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT SUM(CASE WHEN availability = 'paper' AND hAND = '3' THEN 1 ELSE 0 END) FROM cards",
+        "sql": "SELECT SUM(CASE WHEN availability = 'paper' AND hAND = '3$$' THEN 1 ELSE 0 END) FROM cards",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "thrombosis_prediction",
+        "sql_raw": "SELECT CAST((SUM(CASE WHEN T2.Date LIKE '1981-11-%' THEN T2.`T-CHO` ELSE 0 END) - SUM(CASE WHEN T2.Date LIKE '1981-12-%' THEN T2.`T-CHO` ELSE 0 END)) AS FLOAT) / SUM(CASE WHEN T2.Date LIKE '1981-12-%' THEN T2.`T-CHO` ELSE 0 END) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T1.Birthday = '1959-02-18'",
+        "sql": "SELECT CAST((SUM(CASE WHEN T2.Date LIKE '1981-11-%' THEN T2.`T-CHO` ELSE 0 END) - SUM(CASE WHEN T2.Date LIKE '1981-12-%' THEN T2.`T-CHO` ELSE 0 END)) AS FLOAT) / SUM(CASE WHEN T2.Date LIKE '1981-12-%' THEN T2.`T-CHO` ELSE 0 END) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T1.Birthday = '1959-02-18$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "financial",
+        "sql_raw": "SELECT T4.birth_date FROM loan AS T1 INNER JOIN account AS T2 ON T1.account_id = T2.account_id INNER JOIN disp AS T3 ON T2.account_id = T3.account_id INNER JOIN client AS T4 ON T3.client_id = T4.client_id WHERE T1.date = '1996-01-03' AND T1.amount = 98832",
+        "sql": "SELECT T4.birth_date FROM loan AS T1 INNER JOIN account AS T2 ON T1.account_id = T2.account_id INNER JOIN disp AS T3 ON T2.account_id = T3.account_id INNER JOIN client AS T4 ON T3.client_id = T4.client_id WHERE T1.date = '1996-01-03' AND T1.amount = 98832$$",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": false,
+        "set": "test"
+    },
+    {
+        "db": "superhero",
+        "sql_raw": "SELECT T3.power_name FROM superhero AS T1 INNER JOIN hero_power AS T2 ON T1.id = T2.hero_id INNER JOIN superpower AS T3 ON T2.power_id = T3.id WHERE T1.full_name = 'Hunter Zolomon'",
+        "sql": "SELECT T3.power_name FROM superhero AS T1 INNER JOIN hero_power AS T2 ON T1.id = T2.hero_id INNER JOIN superpower AS T3 ON T2.power_id = T3.id WHERE T1.full_name = 'Hunter Zolomon$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "train"
+    },
+    {
+        "db": "california_schools",
+        "sql_raw": "SELECT `Free Meal Count (Ages 5-17)` / `Enrollment (Ages 5-17)` FROM frpm WHERE `Educational Option Type` = 'Continuation School' AND NOT `Free Meal Count (Ages 5-17)` / `Enrollment (Ages 5-17)` IS NULL ORDER BY `Free Meal Count (Ages 5-17)` / `Enrollment (Ages 5-17)` ASC LIMIT 3",
+        "sql": "SELECT `Free Meal Count (Ages 5-17)` / `Enrollment (Ages 5-17)` FROM frpm WHERE `Educational Option Type` = 'Continuation School$$' AND NOT `Free Meal Count (Ages 5-17)` / `Enrollment (Ages 5-17)` IS NULL ORDER BY `Free Meal Count (Ages 5-17)` / `Enrollment (Ages 5-17)` ASC LIMIT 3",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    },
+    {
+        "db": "card_games",
+        "sql_raw": "SELECT T1.name FROM cards AS T1 INNER JOIN foreign_data AS T2 ON T1.uuid = T2.uuid WHERE T1.availability = 'paper' AND T2.language = 'Japanese'",
+        "sql": "SELECT T1.name FROM cards AS T1 INNER JOIN foreign_data AS T2 ON T1.uuid = T2.uuid WHERE T1.availability = 'paper' AND T2.language = 'Japanese$$'",
+        "query_columns": 1,
+        "source": "BIRD",
+        "annotator": true,
+        "set": "test"
+    }
+]

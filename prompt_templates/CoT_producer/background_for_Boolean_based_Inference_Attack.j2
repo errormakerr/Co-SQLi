@@ -1,0 +1,26 @@
+Boolean-based Inference Attack
+Attack Principle: When application doesn't display data but has differential responses, infer data bit by bit through true/false conditions
+Feature Detection:
+Multiple AND-connected conditions:
+Complex conditional expressions connected by multiple ANDs
+Length detection functions:
+LENGTH(...), CHAR_LENGTH(...)
+Used to detect field or query result length
+Character extraction functions:
+SUBSTRING(str, pos, len), SUBSTR(...)
+MID(str, pos, len)
+LEFT(str, len), RIGHT(str, len)
+Character encoding conversion:
+ASCII(...), ORD(...): character to ASCII code
+HEX(...): hexadecimal encoding
+BIN(...): binary encoding
+Bit-by-bit comparison:
+SUBSTRING(password,1,1)='a'
+ASCII(SUBSTRING(username,2,1))>97
+Multi-layer nested structures:
+Nested subqueries obscuring core logic
+Complex conditional judgment chains
+Judgment Points:
+Whether character-by-character/bit-by-bit extraction and comparison patterns exist
+Whether complexity of conditional expressions is abnormal
+Whether attempting to infer hidden information

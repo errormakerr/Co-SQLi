@@ -1,0 +1,3624 @@
+[
+  {
+    "database_name": "california_schools",
+    "tables": [
+      {
+        "table_name": "frpm",
+        "columns": [
+          {
+            "column_name": "CDSCode",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "Academic Year",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "County Code",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "District Code",
+            "data_type": "int"
+          },
+          {
+            "column_name": "School Code",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "County Name",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "District Name",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "School Name",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "District Type",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "School Type",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "Educational Option Type",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "NSLP Provision Status",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "Charter School (Y/N)",
+            "data_type": "int"
+          },
+          {
+            "column_name": "Charter School Number",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "Charter Funding Type",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "IRC",
+            "data_type": "int"
+          },
+          {
+            "column_name": "Low Grade",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "High Grade",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "Enrollment (K-12)",
+            "data_type": "double"
+          },
+          {
+            "column_name": "Free Meal Count (K-12)",
+            "data_type": "double"
+          },
+          {
+            "column_name": "Percent (%) Eligible Free (K-12)",
+            "data_type": "double"
+          },
+          {
+            "column_name": "FRPM Count (K-12)",
+            "data_type": "double"
+          },
+          {
+            "column_name": "Percent (%) Eligible FRPM (K-12)",
+            "data_type": "double"
+          },
+          {
+            "column_name": "Enrollment (Ages 5-17)",
+            "data_type": "double"
+          },
+          {
+            "column_name": "Free Meal Count (Ages 5-17)",
+            "data_type": "double"
+          },
+          {
+            "column_name": "Percent (%) Eligible Free (Ages 5-17)",
+            "data_type": "double"
+          },
+          {
+            "column_name": "FRPM Count (Ages 5-17)",
+            "data_type": "double"
+          },
+          {
+            "column_name": "Percent (%) Eligible FRPM (Ages 5-17)",
+            "data_type": "double"
+          },
+          {
+            "column_name": "2013-14 CALPADS Fall 1 Certification Status",
+            "data_type": "int"
+          }
+        ]
+      },
+      {
+        "table_name": "satscores",
+        "columns": [
+          {
+            "column_name": "cds",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "rtype",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "sname",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "dname",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "cname",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "enroll12",
+            "data_type": "int"
+          },
+          {
+            "column_name": "NumTstTakr",
+            "data_type": "int"
+          },
+          {
+            "column_name": "AvgScrRead",
+            "data_type": "int"
+          },
+          {
+            "column_name": "AvgScrMath",
+            "data_type": "int"
+          },
+          {
+            "column_name": "AvgScrWrite",
+            "data_type": "int"
+          },
+          {
+            "column_name": "NumGE1500",
+            "data_type": "int"
+          }
+        ]
+      },
+      {
+        "table_name": "schools",
+        "columns": [
+          {
+            "column_name": "CDSCode",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "NCESDist",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "NCESSchool",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "StatusType",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "County",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "District",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "School",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "Street",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "StreetAbr",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "City",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "Zip",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "State",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "MailStreet",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "MailStrAbr",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "MailCity",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "MailZip",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "MailState",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "Phone",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "Ext",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "Website",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "OpenDate",
+            "data_type": "date"
+          },
+          {
+            "column_name": "ClosedDate",
+            "data_type": "date"
+          },
+          {
+            "column_name": "Charter",
+            "data_type": "int"
+          },
+          {
+            "column_name": "CharterNum",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "FundingType",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "DOC",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "DOCType",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "SOC",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "SOCType",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "EdOpsCode",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "EdOpsName",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "EILCode",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "EILName",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "GSoffered",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "GSserved",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "Virtual",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "Magnet",
+            "data_type": "int"
+          },
+          {
+            "column_name": "Latitude",
+            "data_type": "double"
+          },
+          {
+            "column_name": "Longitude",
+            "data_type": "double"
+          },
+          {
+            "column_name": "AdmFName1",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "AdmLName1",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "AdmEmail1",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "AdmFName2",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "AdmLName2",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "AdmEmail2",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "AdmFName3",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "AdmLName3",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "AdmEmail3",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "LastUpdate",
+            "data_type": "date"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "database_name": "card_games",
+    "tables": [
+      {
+        "table_name": "cards",
+        "columns": [
+          {
+            "column_name": "id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "artist",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "asciiName",
+            "data_type": "text"
+          },
+          {
+            "column_name": "availability",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "borderColor",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "cardKingdomFoilId",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "cardKingdomId",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "colorIdentity",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "colorIndicator",
+            "data_type": "text"
+          },
+          {
+            "column_name": "colors",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "convertedManaCost",
+            "data_type": "double"
+          },
+          {
+            "column_name": "duelDeck",
+            "data_type": "text"
+          },
+          {
+            "column_name": "edhrecRank",
+            "data_type": "int"
+          },
+          {
+            "column_name": "faceConvertedManaCost",
+            "data_type": "double"
+          },
+          {
+            "column_name": "faceName",
+            "data_type": "text"
+          },
+          {
+            "column_name": "flavorName",
+            "data_type": "text"
+          },
+          {
+            "column_name": "flavorText",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "frameEffects",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "frameVersion",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "hand",
+            "data_type": "text"
+          },
+          {
+            "column_name": "hasAlternativeDeckLimit",
+            "data_type": "int"
+          },
+          {
+            "column_name": "hasContentWarning",
+            "data_type": "int"
+          },
+          {
+            "column_name": "hasFoil",
+            "data_type": "int"
+          },
+          {
+            "column_name": "hasNonFoil",
+            "data_type": "int"
+          },
+          {
+            "column_name": "isAlternative",
+            "data_type": "int"
+          },
+          {
+            "column_name": "isFullArt",
+            "data_type": "int"
+          },
+          {
+            "column_name": "isOnlineOnly",
+            "data_type": "int"
+          },
+          {
+            "column_name": "isOversized",
+            "data_type": "int"
+          },
+          {
+            "column_name": "isPromo",
+            "data_type": "int"
+          },
+          {
+            "column_name": "isReprint",
+            "data_type": "int"
+          },
+          {
+            "column_name": "isReserved",
+            "data_type": "int"
+          },
+          {
+            "column_name": "isStarter",
+            "data_type": "int"
+          },
+          {
+            "column_name": "isStorySpotlight",
+            "data_type": "int"
+          },
+          {
+            "column_name": "isTextless",
+            "data_type": "int"
+          },
+          {
+            "column_name": "isTimeshifted",
+            "data_type": "int"
+          },
+          {
+            "column_name": "keywords",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "layout",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "leadershipSkills",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "life",
+            "data_type": "text"
+          },
+          {
+            "column_name": "loyalty",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "manaCost",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "mcmId",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "mcmMetaId",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "mtgArenaId",
+            "data_type": "text"
+          },
+          {
+            "column_name": "mtgjsonV4Id",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "mtgoFoilId",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "mtgoId",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "multiverseId",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "name",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "number",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "originalReleaseDate",
+            "data_type": "text"
+          },
+          {
+            "column_name": "originalText",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "originalType",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "otherFaceIds",
+            "data_type": "text"
+          },
+          {
+            "column_name": "power",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "printings",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "promoTypes",
+            "data_type": "text"
+          },
+          {
+            "column_name": "purchaseUrls",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "rarity",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "scryfallId",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "scryfallIllustrationId",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "scryfallOracleId",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "setCode",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "side",
+            "data_type": "text"
+          },
+          {
+            "column_name": "subtypes",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "supertypes",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "tcgplayerProductId",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "text",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "toughness",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "type",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "types",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "uuid",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "variations",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "watermark",
+            "data_type": "text"
+          }
+        ]
+      },
+      {
+        "table_name": "foreign_data",
+        "columns": [
+          {
+            "column_name": "id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "flavorText",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "language",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "multiverseid",
+            "data_type": "int"
+          },
+          {
+            "column_name": "name",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "text",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "type",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "uuid",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "legalities",
+        "columns": [
+          {
+            "column_name": "id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "format",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "status",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "uuid",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "rulings",
+        "columns": [
+          {
+            "column_name": "id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "date",
+            "data_type": "date"
+          },
+          {
+            "column_name": "text",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "uuid",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "set_translations",
+        "columns": [
+          {
+            "column_name": "id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "language",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "setCode",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "translation",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "sets",
+        "columns": [
+          {
+            "column_name": "id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "baseSetSize",
+            "data_type": "int"
+          },
+          {
+            "column_name": "block",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "booster",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "code",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "isFoilOnly",
+            "data_type": "int"
+          },
+          {
+            "column_name": "isForeignOnly",
+            "data_type": "int"
+          },
+          {
+            "column_name": "isNonFoilOnly",
+            "data_type": "int"
+          },
+          {
+            "column_name": "isOnlineOnly",
+            "data_type": "int"
+          },
+          {
+            "column_name": "isPartialPreview",
+            "data_type": "int"
+          },
+          {
+            "column_name": "keyruneCode",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "mcmId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "mcmIdExtras",
+            "data_type": "int"
+          },
+          {
+            "column_name": "mcmName",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "mtgoCode",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "name",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "parentCode",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "releaseDate",
+            "data_type": "date"
+          },
+          {
+            "column_name": "tcgplayerGroupId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "totalSetSize",
+            "data_type": "int"
+          },
+          {
+            "column_name": "type",
+            "data_type": "varchar"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "database_name": "codebase_community",
+    "tables": [
+      {
+        "table_name": "badges",
+        "columns": [
+          {
+            "column_name": "Id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "UserId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "Name",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "Date",
+            "data_type": "text"
+          }
+        ]
+      },
+      {
+        "table_name": "comments",
+        "columns": [
+          {
+            "column_name": "Id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "PostId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "Score",
+            "data_type": "int"
+          },
+          {
+            "column_name": "Text",
+            "data_type": "text"
+          },
+          {
+            "column_name": "CreationDate",
+            "data_type": "text"
+          },
+          {
+            "column_name": "UserId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "UserDisplayName",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "posthistory",
+        "columns": [
+          {
+            "column_name": "Id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "PostHistoryTypeId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "PostId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "RevisionGUID",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "CreationDate",
+            "data_type": "text"
+          },
+          {
+            "column_name": "UserId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "Text",
+            "data_type": "text"
+          },
+          {
+            "column_name": "Comment",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "UserDisplayName",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "postlinks",
+        "columns": [
+          {
+            "column_name": "Id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "CreationDate",
+            "data_type": "text"
+          },
+          {
+            "column_name": "PostId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "RelatedPostId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "LinkTypeId",
+            "data_type": "int"
+          }
+        ]
+      },
+      {
+        "table_name": "posts",
+        "columns": [
+          {
+            "column_name": "Id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "PostTypeId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "AcceptedAnswerId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "CreaionDate",
+            "data_type": "text"
+          },
+          {
+            "column_name": "Score",
+            "data_type": "int"
+          },
+          {
+            "column_name": "ViewCount",
+            "data_type": "int"
+          },
+          {
+            "column_name": "Body",
+            "data_type": "text"
+          },
+          {
+            "column_name": "OwnerUserId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "LasActivityDate",
+            "data_type": "text"
+          },
+          {
+            "column_name": "Title",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "Tags",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "AnswerCount",
+            "data_type": "int"
+          },
+          {
+            "column_name": "CommentCount",
+            "data_type": "int"
+          },
+          {
+            "column_name": "FavoriteCount",
+            "data_type": "int"
+          },
+          {
+            "column_name": "LastEditorUserId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "LastEditDate",
+            "data_type": "text"
+          },
+          {
+            "column_name": "CommunityOwnedDate",
+            "data_type": "text"
+          },
+          {
+            "column_name": "ParentId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "ClosedDate",
+            "data_type": "text"
+          },
+          {
+            "column_name": "OwnerDisplayName",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "LastEditorDisplayName",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "tags",
+        "columns": [
+          {
+            "column_name": "Id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "TagName",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "Count",
+            "data_type": "int"
+          },
+          {
+            "column_name": "ExcerptPostId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "WikiPostId",
+            "data_type": "int"
+          }
+        ]
+      },
+      {
+        "table_name": "users",
+        "columns": [
+          {
+            "column_name": "Id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "Reputation",
+            "data_type": "int"
+          },
+          {
+            "column_name": "CreationDate",
+            "data_type": "text"
+          },
+          {
+            "column_name": "DisplayName",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "LastAccessDate",
+            "data_type": "text"
+          },
+          {
+            "column_name": "WebsiteUrl",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "Location",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "AboutMe",
+            "data_type": "text"
+          },
+          {
+            "column_name": "Views",
+            "data_type": "int"
+          },
+          {
+            "column_name": "UpVotes",
+            "data_type": "int"
+          },
+          {
+            "column_name": "DownVotes",
+            "data_type": "int"
+          },
+          {
+            "column_name": "AccountId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "Age",
+            "data_type": "int"
+          },
+          {
+            "column_name": "ProfileImageUrl",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "votes",
+        "columns": [
+          {
+            "column_name": "Id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "PostId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "VoteTypeId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "CreationDate",
+            "data_type": "date"
+          },
+          {
+            "column_name": "UserId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "BountyAmount",
+            "data_type": "bigint"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "database_name": "debit_card_specializing",
+    "tables": [
+      {
+        "table_name": "customers",
+        "columns": [
+          {
+            "column_name": "CustomerID",
+            "data_type": "int"
+          },
+          {
+            "column_name": "Segment",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "Currency",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "gasstations",
+        "columns": [
+          {
+            "column_name": "GasStationID",
+            "data_type": "int"
+          },
+          {
+            "column_name": "ChainID",
+            "data_type": "int"
+          },
+          {
+            "column_name": "Country",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "Segment",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "products",
+        "columns": [
+          {
+            "column_name": "ProductID",
+            "data_type": "int"
+          },
+          {
+            "column_name": "Description",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "transactions_1k",
+        "columns": [
+          {
+            "column_name": "TransactionID",
+            "data_type": "int"
+          },
+          {
+            "column_name": "Date",
+            "data_type": "date"
+          },
+          {
+            "column_name": "Time",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "CustomerID",
+            "data_type": "int"
+          },
+          {
+            "column_name": "CardID",
+            "data_type": "int"
+          },
+          {
+            "column_name": "GasStationID",
+            "data_type": "int"
+          },
+          {
+            "column_name": "ProductID",
+            "data_type": "int"
+          },
+          {
+            "column_name": "Amount",
+            "data_type": "int"
+          },
+          {
+            "column_name": "Price",
+            "data_type": "double"
+          }
+        ]
+      },
+      {
+        "table_name": "yearmonth",
+        "columns": [
+          {
+            "column_name": "CustomerID",
+            "data_type": "int"
+          },
+          {
+            "column_name": "Date",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "Consumption",
+            "data_type": "double"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "database_name": "european_football_2",
+    "tables": [
+      {
+        "table_name": "country",
+        "columns": [
+          {
+            "column_name": "id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "name",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "league",
+        "columns": [
+          {
+            "column_name": "id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "country_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "name",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "match",
+        "columns": [
+          {
+            "column_name": "id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "country_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "league_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "season",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "stage",
+            "data_type": "int"
+          },
+          {
+            "column_name": "date",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "match_api_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_team_api_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_team_api_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_team_goal",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_team_goal",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_X1",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_X2",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_X3",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_X4",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_X5",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_X6",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_X7",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_X8",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_X9",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_X10",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_X11",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_X1",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_X2",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_X3",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_X4",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_X5",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_X6",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_X7",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_X8",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_X9",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_X10",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_X11",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_Y1",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_Y2",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_Y3",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_Y4",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_Y5",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_Y6",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_Y7",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_Y8",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_Y9",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_Y10",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_Y11",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_Y1",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_Y2",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_Y3",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_Y4",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_Y5",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_Y6",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_Y7",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_Y8",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_Y9",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_Y10",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_Y11",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_1",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_2",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_3",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_4",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_5",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_6",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_7",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_8",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_9",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_10",
+            "data_type": "int"
+          },
+          {
+            "column_name": "home_player_11",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_1",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_2",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_3",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_4",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_5",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_6",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_7",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_8",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_9",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_10",
+            "data_type": "int"
+          },
+          {
+            "column_name": "away_player_11",
+            "data_type": "int"
+          },
+          {
+            "column_name": "goal",
+            "data_type": "text"
+          },
+          {
+            "column_name": "shoton",
+            "data_type": "text"
+          },
+          {
+            "column_name": "shotoff",
+            "data_type": "text"
+          },
+          {
+            "column_name": "foulcommit",
+            "data_type": "text"
+          },
+          {
+            "column_name": "card",
+            "data_type": "text"
+          },
+          {
+            "column_name": "cross",
+            "data_type": "text"
+          },
+          {
+            "column_name": "corner",
+            "data_type": "text"
+          },
+          {
+            "column_name": "possession",
+            "data_type": "text"
+          },
+          {
+            "column_name": "B365H",
+            "data_type": "double"
+          },
+          {
+            "column_name": "B365D",
+            "data_type": "double"
+          },
+          {
+            "column_name": "B365A",
+            "data_type": "double"
+          },
+          {
+            "column_name": "BWH",
+            "data_type": "double"
+          },
+          {
+            "column_name": "BWD",
+            "data_type": "double"
+          },
+          {
+            "column_name": "BWA",
+            "data_type": "double"
+          },
+          {
+            "column_name": "IWH",
+            "data_type": "double"
+          },
+          {
+            "column_name": "IWD",
+            "data_type": "double"
+          },
+          {
+            "column_name": "IWA",
+            "data_type": "double"
+          },
+          {
+            "column_name": "LBH",
+            "data_type": "double"
+          },
+          {
+            "column_name": "LBD",
+            "data_type": "double"
+          },
+          {
+            "column_name": "LBA",
+            "data_type": "double"
+          },
+          {
+            "column_name": "PSH",
+            "data_type": "double"
+          },
+          {
+            "column_name": "PSD",
+            "data_type": "double"
+          },
+          {
+            "column_name": "PSA",
+            "data_type": "double"
+          },
+          {
+            "column_name": "WHH",
+            "data_type": "double"
+          },
+          {
+            "column_name": "WHD",
+            "data_type": "double"
+          },
+          {
+            "column_name": "WHA",
+            "data_type": "double"
+          },
+          {
+            "column_name": "SJH",
+            "data_type": "double"
+          },
+          {
+            "column_name": "SJD",
+            "data_type": "double"
+          },
+          {
+            "column_name": "SJA",
+            "data_type": "double"
+          },
+          {
+            "column_name": "VCH",
+            "data_type": "double"
+          },
+          {
+            "column_name": "VCD",
+            "data_type": "double"
+          },
+          {
+            "column_name": "VCA",
+            "data_type": "double"
+          },
+          {
+            "column_name": "GBH",
+            "data_type": "double"
+          },
+          {
+            "column_name": "GBD",
+            "data_type": "double"
+          },
+          {
+            "column_name": "GBA",
+            "data_type": "double"
+          },
+          {
+            "column_name": "BSH",
+            "data_type": "double"
+          },
+          {
+            "column_name": "BSD",
+            "data_type": "double"
+          },
+          {
+            "column_name": "BSA",
+            "data_type": "double"
+          }
+        ]
+      },
+      {
+        "table_name": "player",
+        "columns": [
+          {
+            "column_name": "id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "player_api_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "player_name",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "player_fifa_api_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "birthday",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "height",
+            "data_type": "int"
+          },
+          {
+            "column_name": "weight",
+            "data_type": "int"
+          }
+        ]
+      },
+      {
+        "table_name": "player_attributes",
+        "columns": [
+          {
+            "column_name": "id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "player_fifa_api_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "player_api_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "date",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "overall_rating",
+            "data_type": "int"
+          },
+          {
+            "column_name": "potential",
+            "data_type": "int"
+          },
+          {
+            "column_name": "preferred_foot",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "attacking_work_rate",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "defensive_work_rate",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "crossing",
+            "data_type": "int"
+          },
+          {
+            "column_name": "finishing",
+            "data_type": "int"
+          },
+          {
+            "column_name": "heading_accuracy",
+            "data_type": "int"
+          },
+          {
+            "column_name": "short_passing",
+            "data_type": "int"
+          },
+          {
+            "column_name": "volleys",
+            "data_type": "int"
+          },
+          {
+            "column_name": "dribbling",
+            "data_type": "int"
+          },
+          {
+            "column_name": "curve",
+            "data_type": "int"
+          },
+          {
+            "column_name": "free_kick_accuracy",
+            "data_type": "int"
+          },
+          {
+            "column_name": "long_passing",
+            "data_type": "int"
+          },
+          {
+            "column_name": "ball_control",
+            "data_type": "int"
+          },
+          {
+            "column_name": "acceleration",
+            "data_type": "int"
+          },
+          {
+            "column_name": "sprint_speed",
+            "data_type": "int"
+          },
+          {
+            "column_name": "agility",
+            "data_type": "int"
+          },
+          {
+            "column_name": "reactions",
+            "data_type": "int"
+          },
+          {
+            "column_name": "balance",
+            "data_type": "int"
+          },
+          {
+            "column_name": "shot_power",
+            "data_type": "int"
+          },
+          {
+            "column_name": "jumping",
+            "data_type": "int"
+          },
+          {
+            "column_name": "stamina",
+            "data_type": "int"
+          },
+          {
+            "column_name": "strength",
+            "data_type": "int"
+          },
+          {
+            "column_name": "long_shots",
+            "data_type": "int"
+          },
+          {
+            "column_name": "aggression",
+            "data_type": "int"
+          },
+          {
+            "column_name": "interceptions",
+            "data_type": "int"
+          },
+          {
+            "column_name": "positioning",
+            "data_type": "int"
+          },
+          {
+            "column_name": "vision",
+            "data_type": "int"
+          },
+          {
+            "column_name": "penalties",
+            "data_type": "int"
+          },
+          {
+            "column_name": "marking",
+            "data_type": "int"
+          },
+          {
+            "column_name": "standing_tackle",
+            "data_type": "int"
+          },
+          {
+            "column_name": "sliding_tackle",
+            "data_type": "int"
+          },
+          {
+            "column_name": "gk_diving",
+            "data_type": "int"
+          },
+          {
+            "column_name": "gk_handling",
+            "data_type": "int"
+          },
+          {
+            "column_name": "gk_kicking",
+            "data_type": "int"
+          },
+          {
+            "column_name": "gk_positioning",
+            "data_type": "int"
+          },
+          {
+            "column_name": "gk_reflexes",
+            "data_type": "int"
+          }
+        ]
+      },
+      {
+        "table_name": "team",
+        "columns": [
+          {
+            "column_name": "id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "team_api_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "team_fifa_api_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "team_long_name",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "team_short_name",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "team_attributes",
+        "columns": [
+          {
+            "column_name": "id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "team_fifa_api_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "team_api_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "date",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "buildUpPlaySpeed",
+            "data_type": "int"
+          },
+          {
+            "column_name": "buildUpPlaySpeedClass",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "buildUpPlayDribbling",
+            "data_type": "int"
+          },
+          {
+            "column_name": "buildUpPlayDribblingClass",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "buildUpPlayPassing",
+            "data_type": "int"
+          },
+          {
+            "column_name": "buildUpPlayPassingClass",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "buildUpPlayPositioningClass",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "chanceCreationPassing",
+            "data_type": "int"
+          },
+          {
+            "column_name": "chanceCreationPassingClass",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "chanceCreationCrossing",
+            "data_type": "int"
+          },
+          {
+            "column_name": "chanceCreationCrossingClass",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "chanceCreationShooting",
+            "data_type": "int"
+          },
+          {
+            "column_name": "chanceCreationShootingClass",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "chanceCreationPositioningClass",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "defencePressure",
+            "data_type": "int"
+          },
+          {
+            "column_name": "defencePressureClass",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "defenceAggression",
+            "data_type": "int"
+          },
+          {
+            "column_name": "defenceAggressionClass",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "defenceTeamWidth",
+            "data_type": "int"
+          },
+          {
+            "column_name": "defenceTeamWidthClass",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "defenceDefenderLineClass",
+            "data_type": "varchar"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "database_name": "financial",
+    "tables": [
+      {
+        "table_name": "account",
+        "columns": [
+          {
+            "column_name": "account_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "district_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "frequency",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "date",
+            "data_type": "date"
+          }
+        ]
+      },
+      {
+        "table_name": "card",
+        "columns": [
+          {
+            "column_name": "card_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "disp_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "type",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "issued",
+            "data_type": "date"
+          }
+        ]
+      },
+      {
+        "table_name": "client",
+        "columns": [
+          {
+            "column_name": "client_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "gender",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "birth_date",
+            "data_type": "date"
+          },
+          {
+            "column_name": "district_id",
+            "data_type": "int"
+          }
+        ]
+      },
+      {
+        "table_name": "disp",
+        "columns": [
+          {
+            "column_name": "disp_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "client_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "account_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "type",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "district",
+        "columns": [
+          {
+            "column_name": "district_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "A2",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "A3",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "A4",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "A5",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "A6",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "A7",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "A8",
+            "data_type": "int"
+          },
+          {
+            "column_name": "A9",
+            "data_type": "int"
+          },
+          {
+            "column_name": "A10",
+            "data_type": "double"
+          },
+          {
+            "column_name": "A11",
+            "data_type": "int"
+          },
+          {
+            "column_name": "A12",
+            "data_type": "double"
+          },
+          {
+            "column_name": "A13",
+            "data_type": "double"
+          },
+          {
+            "column_name": "A14",
+            "data_type": "int"
+          },
+          {
+            "column_name": "A15",
+            "data_type": "int"
+          },
+          {
+            "column_name": "A16",
+            "data_type": "int"
+          }
+        ]
+      },
+      {
+        "table_name": "loan",
+        "columns": [
+          {
+            "column_name": "loan_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "account_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "date",
+            "data_type": "date"
+          },
+          {
+            "column_name": "amount",
+            "data_type": "int"
+          },
+          {
+            "column_name": "duration",
+            "data_type": "int"
+          },
+          {
+            "column_name": "payments",
+            "data_type": "double"
+          },
+          {
+            "column_name": "status",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "order",
+        "columns": [
+          {
+            "column_name": "order_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "account_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "bank_to",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "account_to",
+            "data_type": "int"
+          },
+          {
+            "column_name": "amount",
+            "data_type": "double"
+          },
+          {
+            "column_name": "k_symbol",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "trans",
+        "columns": [
+          {
+            "column_name": "trans_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "account_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "date",
+            "data_type": "date"
+          },
+          {
+            "column_name": "type",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "operation",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "amount",
+            "data_type": "int"
+          },
+          {
+            "column_name": "balance",
+            "data_type": "int"
+          },
+          {
+            "column_name": "k_symbol",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "bank",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "account",
+            "data_type": "int"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "database_name": "formula_1",
+    "tables": [
+      {
+        "table_name": "circuits",
+        "columns": [
+          {
+            "column_name": "circuitId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "circuitRef",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "name",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "location",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "country",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "lat",
+            "data_type": "double"
+          },
+          {
+            "column_name": "lng",
+            "data_type": "double"
+          },
+          {
+            "column_name": "alt",
+            "data_type": "bigint"
+          },
+          {
+            "column_name": "url",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "constructorresults",
+        "columns": [
+          {
+            "column_name": "constructorResultsId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "raceId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "constructorId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "points",
+            "data_type": "double"
+          },
+          {
+            "column_name": "status",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "constructors",
+        "columns": [
+          {
+            "column_name": "constructorId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "constructorRef",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "name",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "nationality",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "url",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "constructorstandings",
+        "columns": [
+          {
+            "column_name": "constructorStandingsId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "raceId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "constructorId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "points",
+            "data_type": "double"
+          },
+          {
+            "column_name": "position",
+            "data_type": "int"
+          },
+          {
+            "column_name": "positionText",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "wins",
+            "data_type": "int"
+          }
+        ]
+      },
+      {
+        "table_name": "drivers",
+        "columns": [
+          {
+            "column_name": "driverId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "driverRef",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "number",
+            "data_type": "int"
+          },
+          {
+            "column_name": "code",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "forename",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "surname",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "dob",
+            "data_type": "date"
+          },
+          {
+            "column_name": "nationality",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "url",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "driverstandings",
+        "columns": [
+          {
+            "column_name": "driverStandingsId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "raceId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "driverId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "points",
+            "data_type": "double"
+          },
+          {
+            "column_name": "position",
+            "data_type": "int"
+          },
+          {
+            "column_name": "positionText",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "wins",
+            "data_type": "int"
+          }
+        ]
+      },
+      {
+        "table_name": "laptimes",
+        "columns": [
+          {
+            "column_name": "raceId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "driverId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "lap",
+            "data_type": "int"
+          },
+          {
+            "column_name": "position",
+            "data_type": "int"
+          },
+          {
+            "column_name": "time",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "milliseconds",
+            "data_type": "int"
+          }
+        ]
+      },
+      {
+        "table_name": "pitstops",
+        "columns": [
+          {
+            "column_name": "raceId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "driverId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "stop",
+            "data_type": "int"
+          },
+          {
+            "column_name": "lap",
+            "data_type": "int"
+          },
+          {
+            "column_name": "time",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "duration",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "milliseconds",
+            "data_type": "int"
+          }
+        ]
+      },
+      {
+        "table_name": "qualifying",
+        "columns": [
+          {
+            "column_name": "qualifyId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "raceId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "driverId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "constructorId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "number",
+            "data_type": "int"
+          },
+          {
+            "column_name": "position",
+            "data_type": "int"
+          },
+          {
+            "column_name": "q1",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "q2",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "q3",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "races",
+        "columns": [
+          {
+            "column_name": "raceId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "year",
+            "data_type": "int"
+          },
+          {
+            "column_name": "round",
+            "data_type": "int"
+          },
+          {
+            "column_name": "circuitId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "name",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "date",
+            "data_type": "date"
+          },
+          {
+            "column_name": "time",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "url",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "results",
+        "columns": [
+          {
+            "column_name": "resultId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "raceId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "driverId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "constructorId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "number",
+            "data_type": "int"
+          },
+          {
+            "column_name": "grid",
+            "data_type": "int"
+          },
+          {
+            "column_name": "position",
+            "data_type": "int"
+          },
+          {
+            "column_name": "positionText",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "positionOrder",
+            "data_type": "int"
+          },
+          {
+            "column_name": "points",
+            "data_type": "double"
+          },
+          {
+            "column_name": "laps",
+            "data_type": "int"
+          },
+          {
+            "column_name": "time",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "milliseconds",
+            "data_type": "int"
+          },
+          {
+            "column_name": "fastestLap",
+            "data_type": "int"
+          },
+          {
+            "column_name": "rank",
+            "data_type": "int"
+          },
+          {
+            "column_name": "fastestLapTime",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "fastestLapSpeed",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "statusId",
+            "data_type": "int"
+          }
+        ]
+      },
+      {
+        "table_name": "seasons",
+        "columns": [
+          {
+            "column_name": "year",
+            "data_type": "int"
+          },
+          {
+            "column_name": "url",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "status",
+        "columns": [
+          {
+            "column_name": "statusId",
+            "data_type": "int"
+          },
+          {
+            "column_name": "status",
+            "data_type": "varchar"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "database_name": "student_club",
+    "tables": [
+      {
+        "table_name": "attendance",
+        "columns": [
+          {
+            "column_name": "link_to_event",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "link_to_member",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "budget",
+        "columns": [
+          {
+            "column_name": "budget_id",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "category",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "spent",
+            "data_type": "double"
+          },
+          {
+            "column_name": "remaining",
+            "data_type": "double"
+          },
+          {
+            "column_name": "amount",
+            "data_type": "int"
+          },
+          {
+            "column_name": "event_status",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "link_to_event",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "event",
+        "columns": [
+          {
+            "column_name": "event_id",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "event_name",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "event_date",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "type",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "notes",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "location",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "status",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "expense",
+        "columns": [
+          {
+            "column_name": "expense_id",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "expense_description",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "expense_date",
+            "data_type": "date"
+          },
+          {
+            "column_name": "cost",
+            "data_type": "double"
+          },
+          {
+            "column_name": "approved",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "link_to_member",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "link_to_budget",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "income",
+        "columns": [
+          {
+            "column_name": "income_id",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "date_received",
+            "data_type": "date"
+          },
+          {
+            "column_name": "amount",
+            "data_type": "int"
+          },
+          {
+            "column_name": "source",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "notes",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "link_to_member",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "major",
+        "columns": [
+          {
+            "column_name": "major_id",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "major_name",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "department",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "college",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "member",
+        "columns": [
+          {
+            "column_name": "member_id",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "first_name",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "last_name",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "email",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "position",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "t_shirt_size",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "phone",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "zip",
+            "data_type": "int"
+          },
+          {
+            "column_name": "link_to_major",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "zip_code",
+        "columns": [
+          {
+            "column_name": "zip_code",
+            "data_type": "int"
+          },
+          {
+            "column_name": "type",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "city",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "county",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "state",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "short_state",
+            "data_type": "varchar"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "database_name": "superhero",
+    "tables": [
+      {
+        "table_name": "alignment",
+        "columns": [
+          {
+            "column_name": "id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "alignment",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "attribute",
+        "columns": [
+          {
+            "column_name": "id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "attribute_name",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "colour",
+        "columns": [
+          {
+            "column_name": "id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "colour",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "gender",
+        "columns": [
+          {
+            "column_name": "id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "gender",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "hero_attribute",
+        "columns": [
+          {
+            "column_name": "hero_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "attribute_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "attribute_value",
+            "data_type": "int"
+          }
+        ]
+      },
+      {
+        "table_name": "hero_power",
+        "columns": [
+          {
+            "column_name": "hero_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "power_id",
+            "data_type": "int"
+          }
+        ]
+      },
+      {
+        "table_name": "publisher",
+        "columns": [
+          {
+            "column_name": "id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "publisher_name",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "race",
+        "columns": [
+          {
+            "column_name": "id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "race",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "superhero",
+        "columns": [
+          {
+            "column_name": "id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "superhero_name",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "full_name",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "gender_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "eye_colour_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "hair_colour_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "skin_colour_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "race_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "publisher_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "alignment_id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "height_cm",
+            "data_type": "int"
+          },
+          {
+            "column_name": "weight_kg",
+            "data_type": "int"
+          }
+        ]
+      },
+      {
+        "table_name": "superpower",
+        "columns": [
+          {
+            "column_name": "id",
+            "data_type": "int"
+          },
+          {
+            "column_name": "power_name",
+            "data_type": "varchar"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "database_name": "thrombosis_prediction",
+    "tables": [
+      {
+        "table_name": "examination",
+        "columns": [
+          {
+            "column_name": "ID",
+            "data_type": "int"
+          },
+          {
+            "column_name": "Examination Date",
+            "data_type": "date"
+          },
+          {
+            "column_name": "aCL IgG",
+            "data_type": "double"
+          },
+          {
+            "column_name": "aCL IgM",
+            "data_type": "double"
+          },
+          {
+            "column_name": "ANA",
+            "data_type": "int"
+          },
+          {
+            "column_name": "ANA Pattern",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "aCL IgA",
+            "data_type": "int"
+          },
+          {
+            "column_name": "Diagnosis",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "KCT",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "RVVT",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "LAC",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "Symptoms",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "Thrombosis",
+            "data_type": "int"
+          }
+        ]
+      },
+      {
+        "table_name": "laboratory",
+        "columns": [
+          {
+            "column_name": "ID",
+            "data_type": "int"
+          },
+          {
+            "column_name": "Date",
+            "data_type": "date"
+          },
+          {
+            "column_name": "GOT",
+            "data_type": "int"
+          },
+          {
+            "column_name": "GPT",
+            "data_type": "int"
+          },
+          {
+            "column_name": "LDH",
+            "data_type": "int"
+          },
+          {
+            "column_name": "ALP",
+            "data_type": "int"
+          },
+          {
+            "column_name": "TP",
+            "data_type": "double"
+          },
+          {
+            "column_name": "ALB",
+            "data_type": "double"
+          },
+          {
+            "column_name": "UA",
+            "data_type": "double"
+          },
+          {
+            "column_name": "UN",
+            "data_type": "int"
+          },
+          {
+            "column_name": "CRE",
+            "data_type": "double"
+          },
+          {
+            "column_name": "T-BIL",
+            "data_type": "double"
+          },
+          {
+            "column_name": "T-CHO",
+            "data_type": "int"
+          },
+          {
+            "column_name": "TG",
+            "data_type": "int"
+          },
+          {
+            "column_name": "CPK",
+            "data_type": "int"
+          },
+          {
+            "column_name": "GLU",
+            "data_type": "int"
+          },
+          {
+            "column_name": "WBC",
+            "data_type": "double"
+          },
+          {
+            "column_name": "RBC",
+            "data_type": "double"
+          },
+          {
+            "column_name": "HGB",
+            "data_type": "double"
+          },
+          {
+            "column_name": "HCT",
+            "data_type": "double"
+          },
+          {
+            "column_name": "PLT",
+            "data_type": "int"
+          },
+          {
+            "column_name": "PT",
+            "data_type": "double"
+          },
+          {
+            "column_name": "APTT",
+            "data_type": "bigint"
+          },
+          {
+            "column_name": "FG",
+            "data_type": "double"
+          },
+          {
+            "column_name": "PIC",
+            "data_type": "bigint"
+          },
+          {
+            "column_name": "TAT",
+            "data_type": "bigint"
+          },
+          {
+            "column_name": "TAT2",
+            "data_type": "bigint"
+          },
+          {
+            "column_name": "U-PRO",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "IGG",
+            "data_type": "int"
+          },
+          {
+            "column_name": "IGA",
+            "data_type": "int"
+          },
+          {
+            "column_name": "IGM",
+            "data_type": "int"
+          },
+          {
+            "column_name": "CRP",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "RA",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "RF",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "C3",
+            "data_type": "int"
+          },
+          {
+            "column_name": "C4",
+            "data_type": "int"
+          },
+          {
+            "column_name": "RNP",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "SM",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "SC170",
+            "data_type": "text"
+          },
+          {
+            "column_name": "SSA",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "SSB",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "CENTROMEA",
+            "data_type": "text"
+          },
+          {
+            "column_name": "DNA",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "DNA-II",
+            "data_type": "bigint"
+          }
+        ]
+      },
+      {
+        "table_name": "patient",
+        "columns": [
+          {
+            "column_name": "ID",
+            "data_type": "int"
+          },
+          {
+            "column_name": "SEX",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "Birthday",
+            "data_type": "date"
+          },
+          {
+            "column_name": "Description",
+            "data_type": "date"
+          },
+          {
+            "column_name": "First Date",
+            "data_type": "date"
+          },
+          {
+            "column_name": "Admission",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "Diagnosis",
+            "data_type": "varchar"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "database_name": "toxicology",
+    "tables": [
+      {
+        "table_name": "atom",
+        "columns": [
+          {
+            "column_name": "atom_id",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "molecule_id",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "element",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "bond",
+        "columns": [
+          {
+            "column_name": "bond_id",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "molecule_id",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "bond_type",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "connected",
+        "columns": [
+          {
+            "column_name": "atom_id",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "atom_id2",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "bond_id",
+            "data_type": "varchar"
+          }
+        ]
+      },
+      {
+        "table_name": "molecule",
+        "columns": [
+          {
+            "column_name": "molecule_id",
+            "data_type": "varchar"
+          },
+          {
+            "column_name": "label",
+            "data_type": "varchar"
+          }
+        ]
+      }
+    ]
+  }
+]

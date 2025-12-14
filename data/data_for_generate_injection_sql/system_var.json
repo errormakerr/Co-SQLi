@@ -1,0 +1,288 @@
+[
+    {
+      "variable": "@@max_connections",
+      "type": "integer",
+      "description": "最大连接数"
+    },
+    {
+      "variable": "@@max_connect_errors",
+      "type": "integer",
+      "description": "最大连接错误数"
+    },
+    {
+      "variable": "@@connect_timeout",
+      "type": "integer",
+      "description": "连接超时时间"
+    },
+    {
+      "variable": "@@wait_timeout",
+      "type": "integer",
+      "description": "非交互连接超时时间"
+    },
+    {
+      "variable": "@@interactive_timeout",
+      "type": "integer",
+      "description": "交互连接超时时间"
+    },
+    {
+      "variable": "@@sql_mode",
+      "type": "string",
+      "description": "SQL模式, 如STRICT_TRANS_TABLES等"
+    },
+    {
+      "variable": "@@transaction_isolation",
+      "type": "string",
+      "description": "事务隔离级别"
+    },
+    {
+      "variable": "@@foreign_key_checks",
+      "type": "integer",
+      "description": "是否检查外键约束"
+    },
+    {
+      "variable": "@@unique_checks",
+      "type": "integer",
+      "description": "是否检查唯一性约束"
+    },
+    {
+      "variable": "@@innodb_buffer_pool_size",
+      "type": "integer",
+      "description": "InnoDB缓冲池大小"
+    },
+    {
+      "variable": "@@key_buffer_size",
+      "type": "integer",
+      "description": "MyISAM索引缓冲区大小"
+    },
+    {
+      "variable": "@@sort_buffer_size",
+      "type": "integer",
+      "description": "排序缓冲区大小"
+    },
+    {
+      "variable": "@@join_buffer_size",
+      "type": "integer",
+      "description": "连接缓冲区大小"
+    },
+    {
+      "variable": "@@read_buffer_size",
+      "type": "integer",
+      "description": "读缓冲区大小"
+    },
+    {
+      "variable": "@@log_bin",
+      "type": "integer",
+      "description": "是否启用二进制日志"
+    },
+    {
+      "variable": "@@binlog_format",
+      "type": "integer",
+      "description": "二进制日志格式, ROW/STATEMENT/MIXED"
+    },
+    {
+      "variable": "@@expire_logs_days",
+      "type": "integer",
+      "description": "二进制日志过期天数"
+    },
+    {
+      "variable": "@@version",
+      "type": "string",
+      "description": "MySQL版本"
+    },
+    {
+      "variable": "@@version_comment",
+      "type": "string",
+      "description": "MySQL版本注释"
+    },
+    {
+      "variable": "@@hostname",
+      "type": "string",
+      "description": "主机名"
+    },
+    {
+      "variable": "@@port",
+      "type": "integer",
+      "description": "端口号"
+    },
+    {
+      "variable": "@@datadir",
+      "type": "string",
+      "description": "数据目录"
+    },
+    {
+      "variable": "@@basedir",
+      "type": "string",
+      "description": "安装目录"
+    },
+    {
+      "variable": "@@socket",
+      "type": "string",
+      "description": "Socket文件路径"
+    },
+    {
+      "variable": "@@max_allowed_packet",
+      "type": "integer",
+      "description": "最大数据包大小"
+    },
+    {
+      "variable": "@@tmp_table_size",
+      "type": "integer",
+      "description": "内存临时表最大大小"
+    },
+    {
+      "variable": "@@max_heap_table_size",
+      "type": "integer",
+      "description": "内存表最大大小"
+    },
+    {
+      "variable": "@@table_open_cache",
+      "type": "integer",
+      "description": "表缓存数量"
+    },
+    {
+      "variable": "@@thread_cache_size",
+      "type": "integer",
+      "description": "线程缓存大小"
+    },
+    {
+      "variable": "@@innodb_flush_log_at_trx_commit",
+      "type": "integer",
+      "description": "InnoDB日志刷新策略"
+    },
+    {
+      "variable": "@@server_id",
+      "type": "integer",
+      "description": "服务器ID"
+    },
+    {
+      "variable": "@@relay_log",
+      "type": "string",
+      "description": "中继日志"
+    },
+    {
+      "variable": "DATABASE()",
+      "type": "string",
+      "description": "当前数据库名"
+    },
+    {
+      "variable": "USER()",
+      "type": "string",
+      "description": "当前用户名和主机名"
+    },
+    {
+      "variable": "CURRENT_USER()",
+      "type": "string",
+      "description": "当前认证用户"
+    },
+    {
+      "variable": "CONNECTION_ID()",
+      "type": "integer",
+      "description": "当前连接ID"
+    },
+    {
+      "variable": "VERSION()",
+      "type": "string",
+      "description": "MySQL服务器版本"
+    },
+    {
+      "variable": "LAST_INSERT_ID()",
+      "type": "integer",
+      "description": "最后插入的自增ID"
+    },
+    {
+      "variable": "ROW_COUNT()",
+      "type": "integer",
+      "description": "受影响的行数"
+    },
+    {
+      "variable": "FOUND_ROWS()",
+      "type": "integer",
+      "description": "查询总行数"
+    },
+    {
+      "variable": "SELECT SCHEMA_NAME FROM information_schema.SCHEMATA LIMIT 1",
+      "type": "string",
+      "description": "获取一个数据库名"
+    },
+    {
+      "variable": "SELECT GROUP_CONCAT(TABLE_ROWS) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE()",
+      "type": "integer",
+      "description": "获取当前数据库中所有表的行数总和"
+    },
+    {
+      "variable": "SELECT TABLE_NAME FROM information_schema.TABLES ORDER BY DATA_LENGTH DESC LIMIT 1",
+      "type": "string",
+      "description": "获取当前数据库中数据量最大的表名"
+    },
+    {
+      "variable": "SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE DATA_TYPE='int' LIMIT 1",
+      "type": "string",
+      "description": "获取一个整数类型的列名"
+    },
+    {
+      "variable": "SELECT CONCAT(TABLE_NAME,INDEX_NAME) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='performance_schema' LIMIT 1",
+      "type": "string",
+      "description": "获取performance_schema数据库中的一个索引名"
+    },
+    {
+      "variable": "SELECT GROUP_CONCAT(COLUMN_NAME) FROM information_schema.KEY_COLUMN_USAGE WHERE CONSTRAINT_SCHEMA='mysql'",
+      "type": "string",
+      "description": "获取mysql数据库中所有外键列名"
+    },
+    {
+      "variable": "SELECT GROUP_CONCAT(CONCAT(TABLE_NAME,CONSTRAINT_TYPE)) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA=DATABASE()",
+      "type": "string",
+      "description": "获取当前数据库中所有表的约束类型"
+    },
+    {
+      "variable": "SELECT THREAD_OS_ID FROM performance_schema.threads LIMIT 1 OFFSET 9",
+      "type": "integer",
+      "description": "获取performance_schema.threads表中第10个线程的操作系统ID"
+    },
+    {
+      "variable": "SELECT EVENT_NAME FROM performance_schema.memory_summary_global_by_event_name WHERE SUM_NUMBER_OF_BYTES_ALLOC=262144",
+      "type": "string",
+      "description": "获取performance_schema.memory_summary_global_by_event_name表中分配了262144字节的事件名称"
+    },
+    {
+      "variable": "SELECT GROUP_CONCAT(OBJECT_NAME) FROM performance_schema.table_io_waits_summary_by_table WHERE OBJECT_SCHEMA='mysql'",
+      "type": "string",
+      "description": "获取performance_schema.table_io_waits_summary_by_table表中mysql数据库的所有对象名称"
+    },
+    {
+      "variable": "SELECT CURRENT_CONNECTIONS FROM performance_schema.accounts WHERE USER='root'",
+      "type": "integer",
+      "description": "获取performance_schema.accounts表中root用户的当前连接数"
+    },
+    {
+      "variable": "SELECT TOTAL_CONNECTIONS FROM performance_schema.hosts WHERE HOST='localhost'",
+      "type": "integer",
+      "description": "获取performance_schema.hosts表中localhost主机的总连接数"
+    },
+    {
+      "variable": "SELECT USER FROM performance_schema.users WHERE MAX_SESSION_CONTROLLED_MEMORY>1011011",
+      "type": "string",
+      "description": "获取performance_schema.users表中最大会话内存控制大于1011011的用户名"
+    },
+    {
+      "variable": "SELECT table_name FROM sys.schema_table_statistics WHERE total_latency>29 LIMIT 1",
+      "type": "string",
+      "description": "获取sys.schema_table_statistics表中总延迟大于29的表名"
+    },
+    {
+      "variable": "SELECT password_last_changed FROM mysql.user WHERE User='root'",
+      "type": "string",
+      "description": "获取mysql.user表中root用户的密码最后更改时间"
+    },
+    {
+      "variable": "SELECT CONCAT(Select_priv,Insert_priv,Update_priv,Delete_priv,Create_tmp_table_priv) FROM mysql.db LIMIT 1",
+      "type": "string",
+      "description": "获取mysql.db表中一个数据库的权限组合"
+    },
+    {
+      "variable": "SELECT Table_name FROM mysql.tables_priv LIMIT 1",
+      "type": "string",
+      "description": "获取mysql.tables_priv表中的一个表名"
+    }
+]
+
