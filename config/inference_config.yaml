@@ -1,0 +1,16 @@
+
+batch_size: 1
+
+max_new_tokens: 128
+
+max_seq_length: 2048
+
+temperature: 0.1
+
+top_p: 0.9
+
+device: cuda
+
+trust_remote_code: false
+
+max_samples: null

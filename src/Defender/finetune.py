@@ -69,7 +69,6 @@ class TemporarilySeededRandom:
         random.setstate(self.stored_state)
         np.random.set_state(self.stored_np_state)
 
-
 def get_random_k_indices(data, data_prop, seed=42):
     flattened = [(value, i, j) for i, sublist in enumerate(data) for j, value in enumerate(sublist) if value != -100]
     with TemporarilySeededRandom(seed):
@@ -77,275 +76,7 @@ def get_random_k_indices(data, data_prop, seed=42):
     random_k_indices = [(item[1], item[2]) for item in random_k]  # item[2]+1 check the bias
     return random_k_indices
 
-
 logger = get_logger(__name__)
-
-def parse_args():
-    parser = argparse.ArgumentParser(description="Finetune a transformers model on a causal language modeling task")
-    parser.add_argument(
-        "--dataset_name",
-        type=str,
-        default=None,
-        help="The name of the dataset to use (via the datasets library).",
-    )
-    parser.add_argument(
-        "--dataset_config_name",
-        type=str,
-        default=None,
-        help="The configuration name of the dataset to use (via the datasets library).",
-    )
-    parser.add_argument(
-        "--train_file", type=str, default=None, help="A csv or a json file containing the training data."
-    )
-    parser.add_argument(
-        "--model_name_or_path",
-        type=str,
-        help="Path to pretrained model or model identifier from huggingface.co/models.",
-        required=False,
-    )
-    parser.add_argument(
-        "--config_name",
-        type=str,
-        default=None,
-        help="Pretrained config name or path if not the same as model_name",
-    )
-    parser.add_argument(
-        "--model_revision",
-        help="""If given, specifies a model revision (for HuggingFace models). This will 
-        be applied to both the `model_name_or_path` and `config_name` args.""",
-        default="main",
-        required=False,
-    )
-    parser.add_argument(
-        "--use_lora",
-        action="store_true",
-        help="If passed, will use LORA (low-rank parameter-efficient training) to train the model.",
-    )
-    parser.add_argument(
-        "--lora_rank",
-        type=int,
-        default=64,
-        help="The rank of lora.",
-    )
-    parser.add_argument(
-        "--lora_alpha",
-        type=float,
-        default=16,
-        help="The alpha parameter of lora.",
-    )
-    parser.add_argument(
-        "--lora_dropout",
-        type=float,
-        default=0.1,
-        help="The dropout rate of lora modules.",
-    )
-    parser.add_argument(
-        "--use_flash_attn",
-        action="store_true",
-        help="If passed, will use flash attention to train the model.",
-    )
-    parser.add_argument(
-        "--tokenizer_name",
-        type=str,
-        default=None,
-        help="Pretrained tokenizer name or path if not the same as model_name",
-    )
-    parser.add_argument(
-        "--tokenizer_revision",
-        help="""Specifies a revision for the tokenizer. If not given, defaults
-             to the value of the `model_revision` arg. In most cases, the tokenizer
-             revision should be the same as the model revision and this flag shouldn't
-             be needed.""",
-        default=None,
-        required=False,
-    )
-    parser.add_argument(
-        "--use_slow_tokenizer",
-        action="store_true",
-        help="If passed, will use a slow tokenizer (not backed by the 🤗 Tokenizers library).",
-    )
-    parser.add_argument(
-        "--max_seq_length",
-        type=int,
-        default=512,
-        help="The maximum total sequence length (prompt+completion) of each training example.",
-    )
-    parser.add_argument(
-        "--per_device_train_batch_size",
-        type=int,
-        default=8,
-        help="Batch size (per device) for the training dataloader.",
-    )
-    parser.add_argument(
-        "--learning_rate",
-        type=float,
-        default=5e-5,
-        help="Initial learning rate (after the potential warmup period) to use.",
-    )
-    parser.add_argument("--weight_decay", type=float, default=0.0, help="Weight decay to use.")
-    parser.add_argument("--num_train_epochs", type=int, default=3, help="Total number of training epochs to perform.")
-    parser.add_argument(
-        "--max_train_steps",
-        type=int,
-        default=None,
-        help="Total number of training steps to perform. If provided, overrides num_train_epochs.",
-    )
-    parser.add_argument(
-        "--gradient_accumulation_steps",
-        type=int,
-        default=1,
-        help="Number of updates steps to accumulate before performing a backward/update pass.",
-    )
-    parser.add_argument(
-        "--lr_scheduler_type",
-        type=SchedulerType,
-        default="linear",
-        help="The scheduler type to use.",
-        choices=["linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup"],
-    )
-    parser.add_argument(
-        "--warmup_ratio", type=float, default=0, help="Ratio of total training steps used for warmup."
-    )
-    parser.add_argument("--output_dir", type=str, default=None, help="Where to store the final model.")
-    parser.add_argument("--seed", type=int, default=42, help="A seed for reproducible training.")
-    parser.add_argument(
-        "--preprocessing_num_workers",
-        type=int,
-        default=None,
-        help="The number of processes to use for the preprocessing.",
-    )
-    parser.add_argument(
-        "--overwrite_cache", action="store_true", help="Overwrite the cached training and evaluation sets"
-    )
-    parser.add_argument(
-        "--checkpointing_steps",
-        type=str,
-        default=None,
-        help="Whether the various states should be saved at the end of every n steps, or 'epoch' for each epoch.",
-    )
-    parser.add_argument(
-        "--logging_steps",
-        type=int,
-        default=None,
-        help="Log the training loss and learning rate every logging_steps steps.",
-    )
-    parser.add_argument(
-        "--resume_from_checkpoint",
-        type=str,
-        default=None,
-        help="If the training should continue from a checkpoint folder.",
-    )
-    parser.add_argument(
-        "--with_tracking",
-        action="store_true",
-        help="Whether to enable experiment trackers for logging.",
-    )
-    parser.add_argument(
-        "--report_to",
-        type=str,
-        default="all",
-        help=(
-            'The integration to report the results and logs to. Supported platforms are `"tensorboard"`,'
-            ' `"wandb"`, `"comet_ml"` and `"clearml"`. Use `"all"` (default) to report to all integrations.'
-            "Only applicable when `--with_tracking` is passed."
-        ),
-    )
-    parser.add_argument(
-        "--low_cpu_mem_usage",
-        action="store_true",
-        help=(
-            "It is an option to create the model as an empty shell, then only materialize its parameters when the pretrained weights are loaded."
-            "If passed, LLM loading time and RAM consumption will be benefited."
-        ),
-    )
-    parser.add_argument(
-        "--gradient_checkpointing",
-        action="store_true",
-        help=(
-            "Turn on gradient checkpointing. Saves memory but slows training."
-        ),
-    )
-    parser.add_argument(
-        "--use_qlora",
-        action="store_true",
-        help=(
-            "Use qLoRA training - main thing is initialising model in quantised form. Not compatible with deepspeed."
-        ),
-    )
-    parser.add_argument(
-        '--clip_grad_norm',
-        type=float,
-        default=-1,
-        help='Clip gradient norm. Not compatible with deepspeed (use deepspeed config instead).',
-    )
-    parser.add_argument(
-        '--use_8bit_optimizer',
-        action='store_true',
-        help='Use 8bit optimizer from bitsandbytes. Not compatible with deepspeed (use deepspeed config instead).',
-    )
-    parser.add_argument(
-        '--add_bos',
-        action='store_true',
-        help='Forcibly add bos token to the beginning of the input sequence. Use only when tokenizer does not add bos token by default (e.g., olmo).',
-    )
-    parser.add_argument(
-        '--timeout',
-        type=int,
-        default=1800,
-        help='Timeout for the training process. Useful if tokenization process is long. Default is 1800 seconds (30 minutes).',
-    )
-    parser.add_argument(
-        '--trust_remote_code',
-        action='store_true',
-        help='Trust remote code when loading pretrained models and tokenizers. Use only when you trust the remote code.',
-    )
-    parser.add_argument(
-        '--reduce_loss',
-        default='mean',
-        choices=['mean', 'sum'],
-        help='How to reduce loss over tokens. Default is mean, but using sum can improve chat model performance.',
-    )
-    parser.add_argument(
-        '--wandb_entity', 
-        type=str,
-        default=None,
-        help='Entity to use for logging to wandb.'
-    )
-    parser.add_argument(
-        '--train_data_tag',
-        default='random',
-        help='default data set',
-    )
-
-    parser.add_argument(
-        '--token_select_pattern',
-        default='default',
-        choices=['token_cleaning', 'random', 'default'],
-        help='Pattern for token selection. You can select one or more of: "token_cleaning", "random". Default is "default"',
-    )
-    parser.add_argument(
-        "--data_prop", type=float, default=0.6, help="Selected token proportion"
-    )
-    parser.add_argument(
-        "--with_prompt_token", type=str2bool, default=False, help="whether to add prompt tokens in the selection process"
-    )
-
-    parser.add_argument(
-        "--label_path", default="results/label/", help="token label path"
-    )
-
-    args = parser.parse_args()
-    # Sanity checks
-    if args.dataset_name is None and args.train_file is None:
-        raise ValueError("Need either a dataset name or a training file.")
-    else:
-        if args.train_file is not None:
-            extension = args.train_file.split(".")[-1]
-            assert extension in ["json", "jsonl"], "`train_file` should be a json/jsonl file."
-    return args
-
-
-
 
 def encode_with_prompt_completion_format(example, tokenizer, max_seq_length, with_prompt_token, add_bos=False):
     '''
@@ -376,7 +107,6 @@ def encode_with_prompt_completion_format(example, tokenizer, max_seq_length, wit
         'labels': labels.flatten(),
         'attention_mask': attention_mask.flatten(),
     }
-
 
 def encode_with_messages_format(example, tokenizer, max_seq_length, with_prompt_token, add_bos=False):
     '''
@@ -442,7 +172,6 @@ def encode_with_messages_format(example, tokenizer, max_seq_length, with_prompt_
         'attention_mask': attention_mask.flatten(),
     }
 
-
 def save_with_accelerate(accelerator, model, tokenizer, output_dir, args):
     # set the generation config to an empty setting to be safe.
     # we usually do greedy decoding for generation, so this should be okay.
@@ -472,10 +201,7 @@ def save_with_accelerate(accelerator, model, tokenizer, output_dir, args):
             safe_serialization=False
         )
 
-
-def main():
-    args = parse_args()
-
+def run_finetune(args):
     # Initialize the accelerator. We will let the accelerator handle device placement for us in this example.
     # If we're using tracking, we also need to initialize it here and it will by default pick up all supported trackers
     # in the environment
@@ -612,7 +338,7 @@ def main():
                 quantization_config=bnb_config,
                 trust_remote_code=args.trust_remote_code,
                 torch_dtype=torch.bfloat16,
-                use_flash_attention_2=True if args.use_flash_attn else False,
+                # use_flash_attention_2=True if args.use_flash_attn else False,
                 revision=args.model_revision,
                 token=os.getenv("HF_TOKEN", None),
             )
@@ -623,7 +349,7 @@ def main():
                 config=config,
                 trust_remote_code=args.trust_remote_code,
                 low_cpu_mem_usage=args.low_cpu_mem_usage,
-                use_flash_attention_2=True if args.use_flash_attn else False,
+                # use_flash_attention_2=True if args.use_flash_attn else False,
                 revision=args.model_revision,
                 token=os.getenv("HF_TOKEN", None),
             )
@@ -749,8 +475,7 @@ def main():
 
         ### Token Cleaning ##
         if args.token_select_pattern == 'token_cleaning': 
-            print("*** Using cleaned tokens ***") 
-            # selected_labels = torch.load(args.label_path + f"token_labels_{args.train_data_tag}.pt")    
+            print("*** Using cleaned tokens ***")    
             selected_labels = torch.load(args.label_path + f"token_labels_{args.train_data_tag}.pt")        
             
         ## random selection ##
@@ -852,12 +577,17 @@ def main():
     # We need to initialize the trackers we use, and also store our configuration.
     # The trackers initializes automatically on the main process.
     if args.with_tracking:
-        experiment_config = vars(args)
-        # TensorBoard cannot log Enums, need the raw value
-        experiment_config["lr_scheduler_type"] = experiment_config["lr_scheduler_type"].value
-        accelerator.init_trackers("open_instruct_sft", 
-                                  experiment_config, 
-                                  init_kwargs={"wandb": {"entity": args.wandb_entity}})
+        experiment_config = vars(args).copy()
+        v = experiment_config["lr_scheduler_type"]
+        if isinstance(v, SchedulerType):
+            experiment_config["lr_scheduler_type"] = v.value
+        else:
+            experiment_config["lr_scheduler_type"] = str(v)
+        accelerator.init_trackers(
+            "open_instruct_sft",
+            experiment_config,
+            init_kwargs={"wandb": {"entity": args.wandb_entity}}
+        )
 
 
     # Train!
@@ -1014,6 +744,91 @@ def main():
     if args.with_tracking:
         accelerator.end_training()
 
- 
-if __name__ == "__main__":
+def parse_args():
+    parser = argparse.ArgumentParser()
+
+    # 这里只列出你 run_pipeline / 命令行里用到的参数，其他保持原脚本中的默认值或自行补充
+    parser.add_argument("--model_name_or_path", type=str, required=True)
+    parser.add_argument("--tokenizer_name", type=str, default=None)
+    parser.add_argument("--train_file", type=str, required=True)
+    parser.add_argument("--max_seq_length", type=int, default=1024)
+    parser.add_argument("--preprocessing_num_workers", type=int, default=16)
+    parser.add_argument("--checkpointing_steps", type=str, default="25")
+    parser.add_argument("--per_device_train_batch_size", type=int, default=2)
+    parser.add_argument("--gradient_accumulation_steps", type=int, default=2)
+    parser.add_argument("--learning_rate", type=float, default=1e-4)
+    parser.add_argument(
+        "--lr_scheduler_type",
+        type=str,
+        default="linear",
+        choices=[e.value for e in SchedulerType],
+    )
+
+    parser.add_argument("--warmup_ratio", type=float, default=0.03)
+    parser.add_argument("--weight_decay", type=float, default=0.0)
+    parser.add_argument("--num_train_epochs", type=int, default=1)
+    parser.add_argument("--output_dir", type=str, required=True)
+    parser.add_argument("--logging_steps", type=int, default=50)
+
+    # 你在 run_pipeline 中额外传入的这些参数
+    parser.add_argument("--train_data_tag", type=str, default="default")
+    parser.add_argument(
+        "--token_select_pattern",
+        type=str,
+        choices=["default", "random", "token_cleaning"],
+        default="default",
+    )
+    parser.add_argument("--data_prop", type=float, default=1.0)
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--with_prompt_token", type=str2bool, default=False)
+    parser.add_argument("--gradient_checkpointing", action="store_true")
+    parser.add_argument("--use_lora", action="store_true")
+    parser.add_argument("--lora_rank", type=int, default=64)
+    parser.add_argument("--lora_alpha", type=float, default=16)
+    parser.add_argument("--lora_dropout", type=float, default=0.1)
+
+    # 其他在脚本里用到、但你没在命令行里传的，给个合理默认
+    parser.add_argument("--dataset_name", type=str, default=None)
+    parser.add_argument("--dataset_config_name", type=str, default=None)
+    parser.add_argument("--config_name", type=str, default=None)
+    parser.add_argument("--trust_remote_code", type=str2bool, default=True)
+    parser.add_argument("--model_revision", type=str, default="main")
+    parser.add_argument("--tokenizer_revision", type=str, default=None)
+    parser.add_argument("--use_slow_tokenizer", action="store_true")
+    parser.add_argument("--use_qlora", action="store_true")
+    parser.add_argument("--use_flash_attn", action="store_true")
+    parser.add_argument("--low_cpu_mem_usage", type=str2bool, default=True)
+    parser.add_argument("--add_bos", type=str2bool, default=False)
+    parser.add_argument("--label_path", type=str, default="./")
+    parser.add_argument("--overwrite_cache", action="store_true")
+    parser.add_argument(
+        "--reduce_loss",
+        type=str,
+        choices=["mean", "sum"],
+        default="mean",
+    )
+    parser.add_argument("--max_train_steps", type=int, default=None)
+    parser.add_argument("--resume_from_checkpoint", type=str, default=None)
+    parser.add_argument("--clip_grad_norm", type=float, default=0.0)
+    parser.add_argument("--with_tracking", action="store_true")
+    parser.add_argument("--report_to", type=str, default="tensorboard")
+    parser.add_argument("--wandb_entity", type=str, default=None)
+    parser.add_argument("--timeout", type=int, default=1800)
+    parser.add_argument("--use_8bit_optimizer", action="store_true")
+
+    args = parser.parse_args()
+    return args
+
+def main():
+    print(">>> ENTERED finetune.py main() <<<", file=sys.stderr, flush=True)
+    try:
+        args = parse_args()
+        print(">>> ARGS PARSED OK <<<", file=sys.stderr, flush=True)
+    except SystemExit as e:
+        # argparse 出错时会调用 sys.exit，这里把错误捕获并打印出来
+        print(f">>> argparse SystemExit: code={e.code}", file=sys.stderr, flush=True)
+        raise
+    run_finetune(args)
+
+if __name__ in ("__main__", "__mp_main__"):
     main()

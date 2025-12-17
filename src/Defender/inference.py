@@ -86,7 +86,6 @@ def parse_args():
     
     return parser.parse_args()
 
-
 def load_test_data(file_path: str, max_samples: int = None) -> List[Dict]:
     """加载测试数据"""
     print(f"📖 加载测试数据: {file_path}")
@@ -98,7 +97,6 @@ def load_test_data(file_path: str, max_samples: int = None) -> List[Dict]:
             data.append(json.loads(line.strip()))
     print(f"✅ 加载了 {len(data)} 条测试数据")
     return data
-
 
 def build_prompt_from_messages(messages: List[Dict]) -> str:
     """
@@ -116,7 +114,6 @@ def build_prompt_from_messages(messages: List[Dict]) -> str:
             prompt_text += "<|assistant|>\n"
             break
     return prompt_text.strip()
-
 
 def extract_answer(text: str) -> str:
     """
@@ -161,59 +158,12 @@ def extract_answer(text: str) -> str:
             return words[0]
         return text
 
-
 def get_ground_truth(messages: List[Dict]) -> str:
     """从messages中提取真实答案"""
     for message in messages:
         if message["role"] == "assistant":
             return message["content"].strip().lower()
     return ""
-
-
-def calculate_metrics(y_true: List[str], y_pred: List[str]) -> Dict[str, float]:
-    """
-    计算二分类指标：precision, recall, f1
-    专门针对 benign vs malicious 二分类任务
-    """
-    # 将标签转换为二进制格式：malicious=1, benign=0
-    def label_to_binary(label):
-        return 1 if label.lower() == 'malicious' else 0
-    
-    y_true_binary = [label_to_binary(label) for label in y_true]
-    y_pred_binary = [label_to_binary(label) for label in y_pred]
-    
-    # 计算二分类指标
-    precision = precision_score(y_true_binary, y_pred_binary, zero_division=0)
-    recall = recall_score(y_true_binary, y_pred_binary, zero_division=0)
-    f1 = f1_score(y_true_binary, y_pred_binary, zero_division=0)
-    
-    # 计算每个类别的指标（二分类）
-    precision_per_class = precision_score(y_true_binary, y_pred_binary, average=None, zero_division=0)
-    recall_per_class = recall_score(y_true_binary, y_pred_binary, average=None, zero_division=0)
-    f1_per_class = f1_score(y_true_binary, y_pred_binary, average=None, zero_division=0)
-    
-    # 构建每个类别的详细指标
-    per_class_metrics = {
-        'benign': {
-            'precision': float(precision_per_class[0]) if len(precision_per_class) > 0 else 0.0,
-            'recall': float(recall_per_class[0]) if len(recall_per_class) > 0 else 0.0,
-            'f1': float(f1_per_class[0]) if len(f1_per_class) > 0 else 0.0
-        },
-        'malicious': {
-            'precision': float(precision_per_class[1]) if len(precision_per_class) > 1 else 0.0,
-            'recall': float(recall_per_class[1]) if len(recall_per_class) > 1 else 0.0,
-            'f1': float(f1_per_class[1]) if len(f1_per_class) > 1 else 0.0
-        }
-    }
-    
-    return {
-        'precision': float(precision),
-        'recall': float(recall),
-        'f1': float(f1),
-        'per_class_metrics': per_class_metrics,
-        'labels': ['benign', 'malicious']
-    }
-
 
 def run_inference(args):
     """执行推理"""
@@ -333,67 +283,12 @@ def run_inference(args):
     # 4. 计算准确率和分类指标
     accuracy = correct / total if total > 0 else 0
     
-    # 提取真实标签和预测标签用于计算分类指标
-    y_true = [result["ground_truth"] for result in results]
-    y_pred = [result["predicted_answer"] for result in results]
-    
-    # 计算分类指标
-    metrics = calculate_metrics(y_true, y_pred)
-    
-    print("\n" + "="*80)
-    print("📊 评估结果")
-    print("="*80)
-    print(f"总样本数: {total}")
-    print(f"正确数量: {correct}")
-    print(f"准确率: {accuracy:.4f} ({accuracy*100:.2f}%)")
-    print()
-    print("📈 二分类指标:")
-    print(f"  Precision: {metrics['precision']:.4f}")
-    print(f"  Recall: {metrics['recall']:.4f}")
-    print(f"  F1: {metrics['f1']:.4f}")
-    print()
-    print("📊 各类别详细指标:")
-    for label, class_metrics in metrics['per_class_metrics'].items():
-        print(f"  {label}:")
-        print(f"    Precision: {class_metrics['precision']:.4f}")
-        print(f"    Recall: {class_metrics['recall']:.4f}")
-        print(f"    F1: {class_metrics['f1']:.4f}")
-    print("="*80)
-    
     # 5. 保存结果
     print(f"\n💾 保存推理结果到: {args.output_file}")
     with open(args.output_file, 'w', encoding='utf-8') as f:
         for result in results:
             f.write(json.dumps(result, ensure_ascii=False) + '\n')
     
-    # 保存统计信息
-    stats_file = args.output_file.replace('.jsonl', '_stats.json')
-    stats = {
-        "total_samples": total,
-        "correct": correct,
-        "incorrect": total - correct,
-        "accuracy": accuracy,
-        "classification_metrics": {
-            "precision": metrics['precision'],
-            "recall": metrics['recall'],
-            "f1": metrics['f1'],
-            "per_class_metrics": metrics['per_class_metrics'],
-            "labels": metrics['labels']
-        },
-        "model_path": args.model_path,
-        "test_file": args.test_file,
-        "hyperparameters": {
-            "max_new_tokens": args.max_new_tokens,
-            "temperature": args.temperature,
-            "top_p": args.top_p,
-            "batch_size": args.batch_size
-        }
-    }
-    
-    with open(stats_file, 'w', encoding='utf-8') as f:
-        json.dump(stats, f, indent=2, ensure_ascii=False)
-    
-    print(f"💾 保存统计信息到: {stats_file}")
     print("\n✅ 完成!")
     
     return accuracy, results
@@ -401,7 +296,6 @@ def run_inference(args):
 
 def main():
     args = parse_args()
-    
     # 打印配置
     print("\n⚙️  配置信息:")
     print(f"  - 模型路径: {args.model_path}")
