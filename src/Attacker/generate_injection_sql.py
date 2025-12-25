@@ -916,10 +916,10 @@ class SystemInformationTemplateFiller:
             return False
 
 mysql_config = load_yaml_to_dict("config/database_connection.yaml")
-gpt = LLM(api_key="37b6a23e010b4a1da5cec77107e0386b04f7c1e7544e4fb49dcb69686618125b", base_url=HKUST_BASE_URL)
+gpt = LLM(api_key="", base_url="https://aigc-api.hkust-gz.edu.cn/v1/chat/completions")
 checker = SymbolChecker()
 
-def pipeline(sql_example, payload_template, db_schemas, sys_schemas, system_vars, comment_list, comment_rate):
+def pipeline(sql_example, payload_template, db_schemas, sys_schemas, system_vars, comment_list, comment_flag):
     
     def identify_difficulty(annotator, comment, information_features):
         if annotator and comment and information_features == "constant":
@@ -1048,7 +1048,6 @@ def pipeline(sql_example, payload_template, db_schemas, sys_schemas, system_vars
             print(f"插入payload时出错: {e}")
             return None
 
-    comment_flag = False
     mysql_config['database'] = sql_example['db']
     injection_sql_example = None
     
@@ -1069,12 +1068,13 @@ def pipeline(sql_example, payload_template, db_schemas, sys_schemas, system_vars
             filler_for_specific_databse = SpecificDatabaseTemplateFiller(schema, mysql_config)
             raw_payload = filler_for_specific_databse.fill_template(payload_template)
     
-    if random.random() < comment_rate:
+    if not sql_example['annotator']:
+        comment_flag =False
+    
+    if comment_flag:
         payload = str(raw_payload) + str(generate_comment(payload_template['type'], payload_template['payload'], raw_payload, comment_list))
-        comment_flag = True
     else:
         payload = str(raw_payload)
-        comment_flag = False
         
     if sql_example['sql'] == None or payload == None:
         return injection_sql_example
@@ -1101,8 +1101,12 @@ def batch_generate_injection_sqls(expected_exmaple_num, raw_sqls, payloads, db_s
     count = 0
     injection_sql_examples = []
     while count < expected_exmaple_num:
-        injection_sql_example = pipeline(random.choice(raw_sqls), random.choice(payloads), db_schemas, sys_schemas, system_vars, comment_list, comment_rate)
-        injection_sql_examples.append(injection_sql_example)
+        comment_flag = False
+        if random.random() < comment_rate:
+            comment_flag = True
+        injection_sql_example = pipeline(random.choice(raw_sqls), random.choice(payloads), db_schemas, sys_schemas, system_vars, comment_list, comment_flag)
+        if injection_sql_example!=None:
+            injection_sql_examples.append(injection_sql_example)
         count += 1
     return injection_sql_examples
 

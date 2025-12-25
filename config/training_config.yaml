@@ -4,12 +4,6 @@
 cuda_visible_devices: "0,1,2,3"
 num_gpus: 4
 
-# 基座模型 & 数据
-base_model: "/home/linxiaotian/llamafactory/LLaMA-Factory/model/Qwen/Qwen2.5-Coder-1.5B-Instruct"
-train_file: "/home/linxiaotian/panhao/train_test/train_sqls.jsonl"
-
-# 训练输出根目录
-output_root: "/home/linxiaotian/llamafactory/LLaMA-Factory/model/test1/Qwen2.5-Coder-1.5B-Instruct_lora_test"
 
 # token 相关策略
 token_select_pattern: "default"   # default / random / token_cleaning

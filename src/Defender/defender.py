@@ -18,84 +18,31 @@ FINETUNE_PY = os.path.join(PROJECT_ROOT, "finetune.py")
 
 
 class Defender:
-    def __init__(
-        self,
-        base_model: str,
-        valid_file: str,
-        train_file: str,
-        output_root: str,
-        training_config_path: str,
-        inference_config_path: str,
-    ):
-
-        self.base_model = base_model
+    def __init__(self,valid_file: str,training_config_path: str,inference_config_path: str,):
         self.valid_file = valid_file
-        self.train_file = train_file
-        self.output_root = output_root
 
-        # 加载配置
         self.training_config_path = training_config_path
         self.inference_config_path = inference_config_path
         self.training_cfg = load_yaml_to_dict(self.training_config_path)
         self.inference_cfg = load_yaml_to_dict(self.inference_config_path)
 
-        # ✅ 使用 training_cfg，而不是不存在的 self.cfg
-        self.train_data_tag = self.build_train_data_tag(
-            self.train_file,
-            self.training_cfg["token_select_pattern"],
-            self.training_cfg["data_prop"],
-        )
 
-    def set_base_model(self, base_model: str):
-        self.base_model = base_model
-
-    def set_train_file(self, train_file: str):
-        self.train_file = train_file
-        # ✅ 同样用 training_cfg
-        self.train_data_tag = self.build_train_data_tag(
-            self.train_file,
-            self.training_cfg["token_select_pattern"],
-            self.training_cfg["data_prop"],
-        )
-
-    def set_output_root(self, output_root: str):
-        self.output_root = output_root
-
-    @staticmethod
-    def build_train_data_tag(
-        train_file: str, token_select_pattern: str, data_prop
-    ) -> str:
-        """
-        根据数据文件名、token 策略和数据占比生成一个 tag，
-        用于区分不同实验的输出目录。
-        """
-        base = os.path.basename(train_file)
-        name, _ = os.path.splitext(base)
-
-        # ✅ 更鲁棒的写法，兼容字符串/数字
-        try:
-            prop_str = f"{float(data_prop):g}"
-        except (TypeError, ValueError):
-            prop_str = str(data_prop)
-
-        return f"{name}_{token_select_pattern}_prop{prop_str}"
-
-    def run_finetune(self) -> str | None:
+    def run_finetune(self, base_model, train_file, output_root) -> str | None:
         """
         调用 accelerate 启动多卡训练，返回 LoRA 输出目录。
         """
         cfg = self.training_cfg
         num_gpus = cfg["num_gpus"]
 
-        lora_output_dir = os.path.join(self.output_root, "adapter")
+        lora_output_dir = os.path.join(output_root, "adapter")
         os.makedirs(lora_output_dir, exist_ok=True)
 
         print(
-            f"*** Training {self.base_model} using {num_gpus} GPUs, "
+            f"*** Training {base_model} using {num_gpus} GPUs, "
             f"{cfg['batch_size_per_gpu']} batch size per GPU, "
             f"{cfg['gradient_accumulation_steps']} gradient accumulation steps ***"
         )
-        print(f"*** Training data path: {self.train_file} ***")
+        print(f"*** Training data path: {train_file} ***")
         print(f"*** Selected data proportion: {cfg['data_prop']} ***")
         print(f"*** Random seed: {cfg['random_seed']} ***")
 
@@ -114,11 +61,11 @@ class Defender:
             str(cfg["main_process_port"]),
             FINETUNE_PY,
             "--model_name_or_path",
-            self.base_model,
+            base_model,
             "--tokenizer_name",
-            self.base_model,
+            base_model,
             "--train_file",
-            self.train_file,
+            train_file,
             "--max_seq_length",
             str(cfg["max_seq_length"]),
             "--preprocessing_num_workers",
@@ -143,8 +90,8 @@ class Defender:
             lora_output_dir,
             "--logging_steps",
             str(cfg["logging_steps"]),
-            "--train_data_tag",
-            self.train_data_tag,
+            # "--train_data_tag",
+            # self.train_data_tag,
             "--token_select_pattern",
             cfg["token_select_pattern"],
             "--data_prop",
@@ -191,7 +138,7 @@ class Defender:
 
         return lora_output_dir
 
-    def run_merge(self, lora_output_dir: str) -> str:
+    def run_merge(self, base_model, output_root, lora_output_dir: str) -> str:
         """
         调用 merge_lora.py，把 LoRA/QLoRA 权重合并回基座模型。
         """
@@ -199,18 +146,18 @@ class Defender:
 
         cfg = self.training_cfg
 
-        merged_output_dir = os.path.join(self.output_root, "merged_model")
+        merged_output_dir = os.path.join(output_root, "merged_model")
         os.makedirs(merged_output_dir, exist_ok=True)
 
         print(
             f"*** Merging LoRA from {lora_output_dir} "
-            f"into base model {self.base_model} ***"
+            f"into base model {base_model} ***"
         )
         print(f"*** Saving merged model to {merged_output_dir} ***")
 
         args = SimpleNamespace(
             lora_model_name_or_path=lora_output_dir,
-            base_model_name_or_path=self.base_model,
+            base_model_name_or_path=base_model,
             tokenizer_name_or_path=None,
             output_dir=merged_output_dir,
             qlora=cfg.get("merge", {}).get("qlora", cfg.get("use_qlora", False)),
@@ -223,17 +170,11 @@ class Defender:
 
         return merged_output_dir
 
-    def run_inference(self, model_path: str):
-        """
-        使用外部 inference.py 中的 run_inference 进行评估。
-        model_path: 一般为合并后的模型目录（merged_output_dir）
-        """
+    def run_inference(self, model_path: str, output_root: str) -> Any:
         from inference import run_inference as external_run_inference
-
         infer_cfg = self.inference_cfg
-
         # 推理输出目录：output_root/inference
-        inference_output_dir = os.path.join(self.output_root, "inference")
+        inference_output_dir = os.path.join(output_root, "inference")
         os.makedirs(inference_output_dir, exist_ok=True)
 
         output_file = os.path.join(inference_output_dir, "results.jsonl")
@@ -270,46 +211,39 @@ class Defender:
         print(f"[Defender] 推理完成，准确率: {accuracy:.4f}")
         return accuracy, results
 
-    def run_all(self, do_inference: bool = True):
+    def run_all(self, base_model, train_file, output_root, do_inference: bool = True):
         """
         一键流程：训练 → 合并 → (可选) 推理
         """
-        lora_dir = self.run_finetune()
+        lora_dir = self.run_finetune(base_model=base_model, train_file=train_file, output_root=output_root)
         if not lora_dir:
             print("训练失败/未产生 LoRA，停止后续流程。")
             return None
 
-        merged_dir = self.run_merge(lora_dir)
+        merged_dir = self.run_merge(base_model=base_model, output_root=output_root, lora_output_dir=lora_dir)
 
         if do_inference:
-            self.run_inference(model_path=merged_dir)
+            accuracy, results = self.run_inference(model_path=merged_dir, output_root=output_root)
 
-        return merged_dir
+        return results
 
 
 def main():
-    base_model = "/home/linxiaotian/llamafactory/LLaMA-Factory/model/Qwen/Qwen2.5-Coder-1.5B-Instruct"
-    train_file = "/home/linxiaotian/panhao/train_test/few_train_sqls.jsonl"
+    
     valid_file = "/home/linxiaotian/panhao/eval_test/few_test_sqls.jsonl"
-    output_root = "/home/linxiaotian/panhao/output"
     training_config_path = "/home/linxiaotian/panhao/new_train_test/config.yaml"
     inference_config_path = "/home/linxiaotian/panhao/new_train_test/inference_config.yaml"
+    
+    base_model = "/home/linxiaotian/llamafactory/LLaMA-Factory/model/Qwen/Qwen2.5-Coder-1.5B-Instruct"
+    train_file = "/home/linxiaotian/panhao/train_test/few_train_sqls.jsonl"
+    output_root = "/home/linxiaotian/panhao/output"
 
-    defender = Defender(
-        base_model=base_model,
-        valid_file=valid_file,
-        train_file=train_file,
-        output_root=output_root,
-        training_config_path=training_config_path,
-        inference_config_path=inference_config_path,
-    )
+    defender = Defender(valid_file=valid_file,training_config_path=training_config_path,inference_config_path=inference_config_path,)
 
-    # 你可以选择只跑某一段：
     # defender.run_finetune()
     # defender.run_merge(...)
     # defender.run_inference(model_path="...")
 
-    # 或者一键跑全流程：
     defender.run_all(do_inference=True)
 
 

@@ -196,7 +196,7 @@ def create_sft_format(sql_entry: Dict, schema_text: str, format_type: str = "ins
     else:
         raise ValueError(f"Unknown format_type: {format_type}")
 
-def process_data(sql_file: str, schema_file: str, output_file: str, format_type: str = "instruction"):
+def process_data_original(sql_file: str, schema_file: str, output_file: str, format_type: str = "instruction"):
     """
     主处理函数：合并 SQL 数据和 Schema，生成 SFT 格式数据
     """
@@ -244,6 +244,42 @@ def process_data(sql_file: str, schema_file: str, output_file: str, format_type:
     
     print(f"Done! Output saved to {output_file}")
     print(f"Successfully processed: {len(output_data)}/{len(sql_data)} entries")
+
+def process_data(sql_data: List, schemas: Dict, format_type: str = "openai"):
+    """
+    主处理函数：合并 SQL 数据和 Schema，生成 SFT 格式数据
+    """
+    print(f"Generating SFT format data...")
+    output_data = []
+    missing_schemas = set()
+    
+    for idx, sql_entry in enumerate(sql_data):
+        # 尝试从多个位置获取数据库名
+        db_name = sql_entry.get("db")
+        if db_name is None and "original_sql" in sql_entry:
+            db_name = sql_entry["original_sql"].get("db")
+        
+        if db_name is None or db_name not in schemas:
+            missing_schemas.add(str(db_name))
+            continue
+        
+        # 获取对应的 schema 并转换为 CREATE TABLE 语句
+        schema_text = schema_to_create_statements(schemas[db_name])
+        
+        # 生成 SFT 格式
+        sft_entry = create_sft_format(sql_entry, schema_text, format_type)
+        output_data.append(sft_entry)
+        
+        if (idx + 1) % 1000 == 0:
+            print(f"Processed {idx + 1}/{len(sql_data)} entries...")
+    
+    if missing_schemas:
+        print(f"\nWarning: {len(missing_schemas)} database(s) not found in schema file:")
+        for db in sorted(missing_schemas):
+            print(f"  - {db}")
+    return output_data
+    
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

@@ -3,54 +3,77 @@ from __future__ import annotations
 import os
 from typing import Dict,Optional
 
-from utils.json_operation import read_jsonl_file
-from eval import ClusterStat, cluster_injection_sqls, compute_cluster_reward
+from utils.json_operation import read_jsonl_file, read_json_file
+from typing import Any, Dict, List, Optional
+from utils.cluster import *
+import math
+from .eval import cluster_results, compute_cluster_reward
+
 
 
 
 class Verifier:
-    def __init__(
-        self,
-        save_dir: Optional[str] = None,
-    ):
+    def __init__(self,cluster_list: List[str],):
         """
         :param results_file: defender 的预测结果 jsonl 文件路径
         :param save_dir: 可选，保存 cluster 统计与 reward 的目录
         """
-        self.save_dir = save_dir
-
-        self._cluster_stats: Dict[str, ClusterStat] = {}
-        self._cluster_rewards: Dict[str, float] = {}
-        self._cluster_weight: Dict[str, float] = {}
-
-    # ----- 对外主流程 -----
-
-    def get_reward(self, results_file) -> Dict[str, float]:
-        datas = read_jsonl_file(results_file)
-        print(f"[Verifier] 读取到 {len(datas)} 条样本。")
-
-        clusters = cluster_injection_sqls(datas)
-        self._cluster_stats = compute_cluster_reward(clusters)
-        self._cluster_rewards = {
-            key: 1.0 - stat.acc for key, stat in self._cluster_stats.items()
+  
+        self.cluster_list = cluster_list
+        self.cluster_rewards: Dict[str, float] = {
+            key : 0 for key in cluster_list
         }
+        self.cluster_weight: Dict[str, float] = {
+            key : 1 for key in cluster_list
+        }
+        
+    def get_weights(self) -> Dict[str, float]:
+        return self.cluster_weight
 
-        return self._cluster_rewards
+    def update_reward(self, results) -> Dict[str, float]:
+
+        clusters = cluster_results(results)
+        cluster_stats = compute_cluster_reward(clusters)
+        new_cluster_rewards = {
+            key: 1.0 - stat.acc for key, stat in cluster_stats.items()
+        }
+        for key, reward in new_cluster_rewards.items():
+            self.cluster_rewards[key] = reward
+
     
-    def get_weight(self, ):
-        pass
-    
+    def update_weight(self, gamma, cluster_probability_distribution):
+        for key, weight in self.cluster_weight.items():
+            self.cluster_weight[key] = weight * math.exp(gamma/len(self.cluster_list) * self.cluster_rewards[key]/cluster_probability_distribution[key])
+
 
 
 # ========= 一个简单的 main 示例 =========
 
 def main():
-    results_file = r"D:\project\SQLI-main\SQLI-main\results.jsonl"
-    save_dir = r"D:\project\SQLI-main\SQLI-main\verifier_output"
-
-    verifier = Verifier(results_file=results_file, save_dir=save_dir)
-    clusters_reward_distribution = verifier.evaluate()
-
+    results_file = r"data\temp_data\results.jsonl"
+    results = read_jsonl_file(results_file)
+    cluster_list = cluster_injection_sqls(read_json_file(r"data\temp_data\test_sqls.json")).keys()
+    
+    init_prob = 1.0 / len(cluster_list)
+    clusters_probability_distribution = {key: init_prob for key in cluster_list}
+    print(len(cluster_list))
+    verifier = Verifier(cluster_list=cluster_list)
+    # for key, reward in verifier.cluster_rewards.items():
+    #     print(key, reward)
+    # print("\n")
+    # for key, weight in verifier.cluster_weight.items():
+    #     print(key, weight)
+    # print("\n")
+        
+    verifier.update_reward(results=results)
+    for key, reward in verifier.cluster_rewards.items():
+        print(key, reward)
+    print("\n")
+    verifier.update_weight(gamma=0.5, cluster_probability_distribution=clusters_probability_distribution)
+    for key, weight in verifier.cluster_weight.items():
+        print(key, weight)
+    print("\n")
+    print(verifier.cluster_weight)
     # 之后可以把 clusters_reward_distribution 直接传给 Attacker:
     # attacker.generate_training_sqls(
     #     gamma=0.2,

@@ -1,34 +1,32 @@
-from CoT_producer.generate_thinking_of_ground_truth import *
-from CoT_producer.perplexity import *
-from utils.LLM import *
-from utils.schema import *
+# from CoT_producer.generate_thinking_of_ground_truth import *
+# from CoT_producer.perplexity import *
+# from utils.LLM import *
+from .schema_reprecess import process_data, load_schemas
+from utils.json_operation import read_json_file
 
 class CoT_producer:
-    def __init__(self, training_sqls, schemas):
-        self.training_sqls = training_sqls
-        self.schemas = schemas
+    def __init__(self, schemas_file):
+        self.schemas = load_schemas(schemas_file)
     
-    def _run(self):
-        training_datas = []
-        for sql_example in self.training_sqls:
-            sql = sql_example['sql']
-            schema_text = get_schema(sql_example['db'], self.schemas)
-            label = sql_example['label']
-            data = {
-            "messages": [
-                    {
-                        "role": "system",
-                        "content": "You are a SQL security expert. Your task is to analyze SQL queries and determine whether they are malicious (contain SQL injection attacks) or benign (normal queries). You must classify each SQL query as either 'malicious' (contains SQL injection attacks) or 'benign' (normal query). Output exactly one word: either 'malicious' or 'benign'. Do not output anything else."
-                    },
-                    {
-                        "role": "user",
-                        "content": f"SQL Query:\n{sql}\n\nDatabase Schema:\n{schema_text}\n\nIs this SQL query malicious or benign?"
-                    },
-                    {
-                        "role": "assistant",
-                        "content": "malicious" if not label else "benign"
-                    }
-                ]
-            }
-            training_datas.append(data)
-        return training_datas
+    def run(self, training_sqls):
+        # 处理数据，生成 CoT 格式数据
+        training_data = process_data(
+            sql_data=training_sqls,
+            schemas=self.schemas,
+            format_type="openai",
+        )
+        return training_data
+    
+def main():
+    schemas_file = r"data\raw_datas_for_generation\schema.json"
+    cot_producer = CoT_producer(schemas_file=schemas_file)
+    
+    # 示例输入 SQL 列表
+    training_sqls = read_json_file(r"data\temp_data\train_sqls.json")[:10]
+    
+    training_datas = cot_producer.run(training_sqls=training_sqls)
+    for item in training_datas:
+        print(item, "\n")
+        
+if __name__ == "__main__":
+    main()
