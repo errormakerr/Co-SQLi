@@ -31,7 +31,7 @@ def cluster_results(datas):
     return clusters
     
 
-def compute_cluster_reward(clusters: Dict[str, List[Dict[str, Any]]]) -> Dict[str, ClusterStat]:
+def compute_cluster_acc(clusters: Dict[str, List[Dict[str, Any]]]) -> Dict[str, ClusterStat]:
     """
     计算每个 cluster 的 ACC:
         ACC = #correct / #total
@@ -58,7 +58,7 @@ def main():
         return
     clusters = cluster_results(datas)
     print(f"共得到 {len(clusters)} 个聚类。")
-    stats = compute_cluster_reward(clusters)
+    stats = compute_cluster_acc(clusters)
     print("\n==== 每个聚类的统计信息 ====")
     for key, stat in stats.items():
         print(f"{key}:   ACC={stat.acc:.3f}")# , total={stat.total}, correct={stat.correct}

@@ -7,7 +7,7 @@ from utils.json_operation import read_jsonl_file, read_json_file
 from typing import Any, Dict, List, Optional
 from utils.cluster import *
 import math
-from .eval import cluster_results, compute_cluster_reward
+from .eval import cluster_results, compute_cluster_acc
 
 
 
@@ -33,7 +33,7 @@ class Verifier:
     def update_reward(self, results) -> Dict[str, float]:
 
         clusters = cluster_results(results)
-        cluster_stats = compute_cluster_reward(clusters)
+        cluster_stats = compute_cluster_acc(clusters)
         new_cluster_rewards = {
             key: 1.0 - stat.acc for key, stat in cluster_stats.items()
         }
