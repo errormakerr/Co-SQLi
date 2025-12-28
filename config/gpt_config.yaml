@@ -1,0 +1,5 @@
+base_url: https://vip.yi-zhan.top/v1
+api_key: sk-PhWga2qw2g8QgLq0F7A49c3039F8430aB80f5f0bA46d65Fb
+model: gpt-4o
+temperature: 0.5
+max_tokens: 1500

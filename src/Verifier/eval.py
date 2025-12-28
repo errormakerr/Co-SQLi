@@ -2,6 +2,11 @@ from utils.json_operation import read_jsonl_file
 from typing import Dict, List, Any
 from dataclasses import dataclass
 
+def str2bool(s: str) -> bool:
+    if s.lower() in ['true', 'True']:
+        return True
+    elif s.lower() in ['false', 'False']:
+        return False
 
 @dataclass
 class ClusterStat:
@@ -12,9 +17,9 @@ class ClusterStat:
 def get_single_key_of_result(data_item):
     if not data_item['label']:
         type = data_item['type']
-        annotator = data_item['annotator']
-        information_features = data_item['information_features']
-        comment = data_item.get('comment')
+        annotator = str2bool(data_item['annotator']) if isinstance(data_item.get('annotator'), str) else data_item['annotator']
+        information_features = data_item['information_features'] 
+        comment = str2bool(data_item.get('comment')) if isinstance(data_item.get('comment'), str) else data_item.get('comment')
         key = f"{type}||{annotator}||{information_features}||{comment}"
     else:
         key = "normal||normal||normal||normal"

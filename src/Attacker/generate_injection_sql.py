@@ -8,6 +8,7 @@ from datetime import time
 from datetime import date, timedelta
 import string
 import pymysql
+from pathlib import Path
 
 class SymbolChecker:
     def __init__(self):
@@ -915,8 +916,37 @@ class SystemInformationTemplateFiller:
             print(f"✗ MySQL 连接失败: {e}")
             return False
 
-mysql_config = load_yaml_to_dict("config/database_connection.yaml")
-gpt = LLM(api_key="37b6a23e010b4a1da5cec77107e0386b04f7c1e7544e4fb49dcb69686618125b", base_url="https://aigc-api.hkust-gz.edu.cn/v1/chat/completions")
+_MYSQL_CONFIG_CACHE = None
+
+def get_mysql_config(config_path: str | Path | None = None, *, force_reload: bool = False) -> Dict[str, Any]:
+    global _MYSQL_CONFIG_CACHE
+
+    if _MYSQL_CONFIG_CACHE is not None and not force_reload:
+        return _MYSQL_CONFIG_CACHE
+
+    if config_path is None:
+
+        project_root = Path(__file__).resolve().parents[2]
+        config_path = project_root / "config" / "database_connection.yaml"
+    else:
+        config_path = Path(config_path)
+
+    _MYSQL_CONFIG_CACHE = load_yaml_to_dict(str(config_path))
+    return _MYSQL_CONFIG_CACHE
+
+def get_gpt_config(config_path: str | Path | None = None, *, force_reload: bool = False) -> Dict[str, Any]:
+    if config_path is None:
+        # 文件位置：.../SQLI/src/Attacker/generate_injection_sql.py
+        # parents[2] -> .../SQLI
+        project_root = Path(__file__).resolve().parents[2]
+        config_path = project_root / "config" / "gpt_config.yaml"
+    else:
+        config_path = Path(config_path)
+
+    return load_yaml_to_dict(str(config_path))
+
+gpt_config = get_gpt_config()
+gpt = LLM(api_key=gpt_config['api_key'], base_url=gpt_config.get('base_url', None))
 checker = SymbolChecker()
 
 def pipeline(sql_example, payload_template, db_schemas, sys_schemas, system_vars, comment_list, comment_flag):
@@ -954,7 +984,7 @@ def pipeline(sql_example, payload_template, db_schemas, sys_schemas, system_vars
             return random.choice(selected_comment_list)['comment']
         if selected_type == "Rational explanation":
             prompt = load_prompt_template("prompt_templates", "generate_comment.j2").render(payload_type = payload_type, payload_template = payload_template, payload = payload)
-            return gpt.generate_by_hkust(prompt = prompt, model="gpt-4")
+            return gpt.generate(prompt = prompt, model=gpt_config.get('model', 'gpt-3.5-turbo'), temperature=gpt_config.get('temperature', 0.5), max_tokens=gpt_config.get('max_tokens', 1024))
 
     def insert_payload(sql, payload):
         def remove_first_char(text):
@@ -1048,7 +1078,9 @@ def pipeline(sql_example, payload_template, db_schemas, sys_schemas, system_vars
             print(f"插入payload时出错: {e}")
             return None
 
+    mysql_config = get_mysql_config().copy()
     mysql_config['database'] = sql_example['db']
+
     injection_sql_example = None
     
     if payload_template['expected_types'] == None:

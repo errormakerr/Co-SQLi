@@ -10,6 +10,8 @@ from typing import Any, Dict
 
 
 from utils.yaml_operation import load_yaml_to_dict
+from pathlib import Path
+
 
 
 # 假设 finetune.py 和 merge_lora.py 与本文件在同一目录
@@ -119,7 +121,7 @@ class Defender:
 
         if "cuda_visible_devices" in cfg and cfg["cuda_visible_devices"]:
             os.environ["CUDA_VISIBLE_DEVICES"] = cfg["cuda_visible_devices"]
-
+        cmd = [str(x) for x in cmd]
         print("Running command:")
         print(" ".join(cmd))
 
@@ -142,7 +144,8 @@ class Defender:
         """
         调用 merge_lora.py，把 LoRA/QLoRA 权重合并回基座模型。
         """
-        from merge_lora import run_merge_lora
+        from .merge_lora import run_merge_lora
+
 
         cfg = self.training_cfg
 
@@ -153,6 +156,18 @@ class Defender:
             f"*** Merging LoRA from {lora_output_dir} "
             f"into base model {base_model} ***"
         )
+        print(f"*** Saving merged model to {merged_output_dir} ***")
+
+        cfg = self.training_cfg
+
+        merged_output_dir = os.path.join(output_root, "merged_model")
+        os.makedirs(merged_output_dir, exist_ok=True)
+        
+        base_model = str(base_model)
+        lora_output_dir = str(lora_output_dir)
+        merged_output_dir = str(merged_output_dir)
+
+        print(f"*** Merging LoRA from {lora_output_dir} into base model {base_model} ***")
         print(f"*** Saving merged model to {merged_output_dir} ***")
 
         args = SimpleNamespace(
@@ -167,11 +182,12 @@ class Defender:
 
         run_merge_lora(args)
         print("*** Merge finished. ***")
-
         return merged_output_dir
 
+
     def run_inference(self, model_path: str, output_root: str) -> Any:
-        from inference import run_inference as external_run_inference
+        from .inference import run_inference as external_run_inference
+
         infer_cfg = self.inference_cfg
         # 推理输出目录：output_root/inference
         inference_output_dir = os.path.join(output_root, "inference")

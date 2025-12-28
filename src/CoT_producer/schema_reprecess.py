@@ -158,8 +158,8 @@ def create_sft_format(sql_entry: Dict, schema_text: str, format_type: str = "ins
             "information_features": information_features,
             "type": type,
             "difficulty": difficulty,
-            "annotator": annotator, 
-            "comment": comment
+            "annotator": str(annotator), 
+            "comment": str(comment)
         }
     
     elif format_type == "conversation":

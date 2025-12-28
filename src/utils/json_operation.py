@@ -45,7 +45,7 @@ def read_jsonl_file(file_path):
         print(f"读取文件时发生错误：{e}")
         return []
     
-def write_jsonl_file(data, file_path) -> bool:
+def write_jsonl_file(file_path, data) -> bool:
     try:
         
         with open(file_path, 'w', encoding='utf-8') as file:
