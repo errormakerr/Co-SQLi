@@ -10,8 +10,6 @@ import math
 from .eval import cluster_results, compute_cluster_acc
 
 
-
-
 class Verifier:
     def __init__(self,cluster_list: List[str],):
         """

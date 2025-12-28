@@ -3,7 +3,6 @@ debug: false
 
 distributed_type: FSDP
 
-# 和你实际使用的 GPU 数保持一致
 num_machines: 1
 num_processes: 4
 
@@ -19,27 +18,13 @@ tpu_use_cluster: false
 tpu_use_sudo: false
 
 fsdp_config:
-  # 继续启用激活检查点，省显存
   fsdp_activation_checkpointing: true
-
-  # auto-wrap 使用 transformer 基础策略，适合 Qwen 这类
   fsdp_auto_wrap_policy: TRANSFORMER_BASED_WRAP
-
-  # 预取策略可以先用 NO_PREFETCH，降低内存峰值波动
   fsdp_backward_prefetch_policy: BACKWARD_PRE #NO_PREFETCH
   fsdp_forward_prefetch: false
-
-  # 从磁盘加载时更省内存，OK
   fsdp_cpu_ram_efficient_loading: true
-
-  # 不做 CPU offload，先保持 false，如果还是 OOM 再考虑打开
   fsdp_offload_params: false
-
-  # FULL_SHARD 继续保留，但要配合上面这些更保守的设置
   fsdp_sharding_strategy: FULL_SHARD
-
   fsdp_state_dict_type: SHARDED_STATE_DICT
   fsdp_sync_module_states: true
-
-  # 对 PEFT & QLoRA 一般推荐 use_orig_params=true
   fsdp_use_orig_params: true

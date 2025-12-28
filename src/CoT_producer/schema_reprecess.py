@@ -287,17 +287,17 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--sql_file",
-        default="D:/project/generate_payloads/data/normal&injection/test_sqls.json",
+        default=r"data\benchmark\validate_sqls.json",
         help="Path to SQL data file (train_sqls.json)"
     )
     parser.add_argument(
         "--schema_file",
-        default="D:/project/generate_payloads/data/raw_data/schema.json",
+        default=r"data\raw_datas_for_generation\schema.json",
         help="Path to schema file (mysql_schema.json)"
     )
     parser.add_argument(
         "--output",
-        default="test_datas.jsonl",
+        default=r"D:\project\generate_payloads\new_repo\valid_datas.jsonl",
         help="Output file path (JSONL format)"
     )
     parser.add_argument(
@@ -309,7 +309,7 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    process_data(
+    process_data_original(
         sql_file=args.sql_file,
         schema_file=args.schema_file,
         output_file=args.output,

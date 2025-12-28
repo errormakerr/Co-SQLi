@@ -916,7 +916,7 @@ class SystemInformationTemplateFiller:
             return False
 
 mysql_config = load_yaml_to_dict("config/database_connection.yaml")
-gpt = LLM(api_key="", base_url="https://aigc-api.hkust-gz.edu.cn/v1/chat/completions")
+gpt = LLM(api_key="37b6a23e010b4a1da5cec77107e0386b04f7c1e7544e4fb49dcb69686618125b", base_url="https://aigc-api.hkust-gz.edu.cn/v1/chat/completions")
 checker = SymbolChecker()
 
 def pipeline(sql_example, payload_template, db_schemas, sys_schemas, system_vars, comment_list, comment_flag):

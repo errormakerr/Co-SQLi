@@ -20,7 +20,6 @@ class Attacker:
         if not self.cluster_list:
             raise ValueError("cluster_list 不能为空")
 
-        # 初始时，各个聚类概率分布平均
         init_prob = 1.0 / len(cluster_list)
         self.clusters_probability_distribution: Dict[str, float] = {
             key: init_prob for key in cluster_list
@@ -28,7 +27,6 @@ class Attacker:
         self.number_of_training_sqls = number_of_training_sqls
         self.rate_of_injection_sqls = 1-(10*self.clusters_probability_distribution['normal||normal||normal||normal'])
         
-        # -------- 加载数据 --------
         if normal_sqls_path is None:
             raise ValueError("normal_sqls_path 不能为空")
         if raw_datas_dir is None:
@@ -37,7 +35,6 @@ class Attacker:
         self.normal_sqls: List[Dict[str, Any]] = read_json_file(normal_sqls_path)
 
         raw_sqls = read_json_file(f"{raw_datas_dir}/sql_data_with_injection_point.json")
-        # 只留 train set
         self.train_raw_sqls: List[Dict[str, Any]] = [
             sql for sql in raw_sqls if sql.get("set") == "train"
         ]
@@ -56,10 +53,6 @@ class Attacker:
         self.comment_list = read_json_file(f"{raw_datas_dir}/comment_repository.json")
 
     def _sample_normal_sqls(self, k: int, replace: bool = False) -> List[Dict[str, Any]]:
-        """
-        从 normal_sqls 中采样 k 条。
-        :param replace: False 则为无放回采样，True 则允许有放回。
-        """
         total = len(self.normal_sqls)
         if total == 0:
             raise RuntimeError("normal_sqls 为空，无法采样")
@@ -77,11 +70,6 @@ class Attacker:
         return random.sample(self.normal_sqls, k=k)
 
     def _update_clusters_probability_distribution(self, gamma: float, clusters_weight_distribution: Dict[str, float],) -> None:
-        """
-        根据 weight 更新 cluster 的概率分布，带 gamma 平滑。
-        当所有 weight 为 0 时，退化为均匀分布。
-        """
-        # 保证所有 cluster 都有 weight（缺失视作 0）
         weights = {
             key: float(clusters_weight_distribution.get(key, 0.0))
             for key in self.cluster_list
@@ -90,7 +78,6 @@ class Attacker:
         all_weight = sum(weights.values())
 
         if all_weight <= 0:
-            # 全部 weight 为 0 -> 均匀分布
             uniform_prob = 1.0 / len(self.cluster_list)
             self.clusters_probability_distribution = {
                 k: uniform_prob for k in self.cluster_list
@@ -103,11 +90,8 @@ class Attacker:
             weight = weights[key]
             prob = (1.0 - gamma) * (weight / all_weight) + gamma / n
             new_dist[key] = prob
-
-        # 归一化以避免浮点误差累积
         s = sum(new_dist.values())
         if s <= 0:
-            # 理论上不会发生，兜底一下
             uniform_prob = 1.0 / n
             self.clusters_probability_distribution = {
                 k: uniform_prob for k in self.cluster_list
@@ -118,11 +102,6 @@ class Attacker:
             }
 
     def _select_clusters(self, strategy="by_probability", k=10) -> List[str]:
-        """
-        按策略选出需要使用的 cluster：
-        - "top_k": 根据当前概率，从大到小取前 k 个；
-        - "by_probability": 按概率分布做无放回随机采样 k 个。
-        """
         clusters_probability_distribution = {k: v for k, v in self.clusters_probability_distribution.items() if k != "normal||normal||normal||normal"}
         if k <= 0:
             raise ValueError(f"_select_clusters: k 必须 > 0，当前为 {k}")
@@ -146,10 +125,8 @@ class Attacker:
                 dtype=float,
             )
 
-            # 归一化概率，避免浮点误差
             total = probs_arr.sum()
             if total <= 0:
-                # 退化为均匀分布
                 probs_arr = np.full_like(probs_arr, 1.0 / len(probs_arr))
             else:
                 probs_arr = probs_arr / total
@@ -161,13 +138,8 @@ class Attacker:
         raise ValueError(f"_select_clusters: 不支持的 strategy: {strategy!r}")
 
     def _get_raw_data_by_cluster_feature(self,cluster: str,) -> tuple[Dict[str, Any], Dict[str, Any], int]:
-        """
-        根据 cluster 字符串，从 train_raw_sqls 和 train_payloads_clusters 中
-        各选出一条样本，并返回 (sql_example, payload_example, comment_flag)。
-        """
         cluster_key = ClusterKey.from_str(cluster)
 
-        # 1. 选 SQL
         sql_candidates = [
             sql
             for sql in self.train_raw_sqls
@@ -180,7 +152,6 @@ class Attacker:
             )
         sql_example = random.choice(sql_candidates)
 
-        # 2. 选 payload
         payload_key = cluster_key.payload_cluster_key()
         payload_candidates = self.train_payloads_clusters.get(payload_key)
         if payload_candidates is None or not payload_candidates:
@@ -190,7 +161,6 @@ class Attacker:
             )
         payload_example = random.choice(payload_candidates)
 
-        # 3. comment -> comment_flag
         comment_flag = cluster_key.comment
 
         return sql_example, payload_example, comment_flag

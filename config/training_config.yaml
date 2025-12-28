@@ -1,16 +1,13 @@
 # config.yaml
 
-# 使用的 GPU 相关（可选）
 cuda_visible_devices: "0,1,2,3"
 num_gpus: 4
 
 
-# token 相关策略
 token_select_pattern: "default"   # default / random / token_cleaning
 data_prop: 1.0
 random_seed: 42
 
-# 训练超参数
 batch_size_per_gpu: 2
 gradient_accumulation_steps: 2
 max_seq_length: 1024
@@ -23,24 +20,20 @@ checkpointing_steps: 25
 logging_steps: 50
 with_prompt_token: false
 
-# LoRA 配置
 use_lora: true
 lora_rank: 64
 lora_alpha: 16
 lora_dropout: 0.1
-use_qlora: false           # 当前是全精度 LoRA，可留着做开关
+use_qlora: false
 
-# 训练监控
 with_tracking: true
 report_to: "tensorboard"
 
-# accelerate 配置
 accelerate_config_file: "/home/linxiaotian/panhao/new_train_test/fsdp_config.yaml"
 mixed_precision: "bf16"
 main_process_port: 29522
 
-# merge 配置
 merge:
   save_tokenizer: true
   use_fast_tokenizer: true
-  qlora: false            # 如果以后改成 QLoRA，这里改成 true
+  qlora: false

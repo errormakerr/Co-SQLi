@@ -68,6 +68,7 @@ class LLM:
                 data=json.dumps(data),
                 timeout=60,
             )
+            # print(response)
             response.raise_for_status()  # 检查 HTTP 错误
             result = response.json()
             return result["choices"][0]["message"]["content"]
@@ -358,7 +359,7 @@ async def test_async_sdk():
 
 if __name__ == "__main__":
     # 1. 测试 HKUST 同步
-    # test_sync_hkust()
+    test_sync_hkust()
 
     # 2. 测试 HKUST 异步
     # asyncio.run(test_async_hkust())
