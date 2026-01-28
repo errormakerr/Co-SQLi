@@ -27,8 +27,11 @@ class Verifier:
         
     def get_weights(self) -> Dict[str, float]:
         return self.cluster_weight
+    
+    def set_weights(self, weights: Dict[str, float]):
+        self.cluster_weight = weights
 
-    def update_reward(self, results) -> Dict[str, float]:
+    def update_reward(self, results):
 
         clusters = cluster_results(results)
         cluster_stats = compute_cluster_acc(clusters)
@@ -48,9 +51,9 @@ class Verifier:
 # ========= 一个简单的 main 示例 =========
 
 def main():
-    results_file = r"data\temp_data\results.jsonl"
+    results_file = r"/home/panhao/model/temp_data/round_0/inference/results.jsonl"
     results = read_jsonl_file(results_file)
-    cluster_list = cluster_injection_sqls(read_json_file(r"data\temp_data\test_sqls.json")).keys()
+    cluster_list = cluster_injection_sqls(read_json_file(r"/home/panhao/project/SQLI/data/benchmark/test_sqls.json")).keys()
     
     init_prob = 1.0 / len(cluster_list)
     clusters_probability_distribution = {key: init_prob for key in cluster_list}

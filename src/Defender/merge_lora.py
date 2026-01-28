@@ -79,7 +79,8 @@ def run_merge_lora(args):
             else peft_config.base_model_name_or_path,
             torch_dtype=torch.bfloat16,
             quantization_config=quantization_config,
-            device_map={"": 0} if torch.cuda.is_available() else None,
+            # device_map={"": 0} if torch.cuda.is_available() else None,
+            device_map="cpu",
         )
         base_model = dequantize_model(base_model, device="cpu")
     else:

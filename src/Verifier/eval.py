@@ -3,10 +3,20 @@ from typing import Dict, List, Any
 from dataclasses import dataclass
 
 def str2bool(s: str) -> bool:
+<<<<<<< HEAD
     if s.lower() in ['true', 'True']:
         return True
     elif s.lower() in ['false', 'False']:
         return False
+=======
+    v = s.strip().lower()
+    if v == "true":
+        return True
+    if v == "false":
+        return False
+    raise ValueError(f"Invalid boolean string: {s!r}")
+
+>>>>>>> d702884 (stable version)
 
 @dataclass
 class ClusterStat:

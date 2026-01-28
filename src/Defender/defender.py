@@ -10,6 +10,10 @@ from typing import Any, Dict
 
 
 from utils.yaml_operation import load_yaml_to_dict
+<<<<<<< HEAD
+=======
+from utils.json_operation import read_jsonl_file
+>>>>>>> d702884 (stable version)
 from pathlib import Path
 
 
@@ -17,6 +21,9 @@ from pathlib import Path
 # 假设 finetune.py 和 merge_lora.py 与本文件在同一目录
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 FINETUNE_PY = os.path.join(PROJECT_ROOT, "finetune.py")
+MERGE_PY = os.path.join(PROJECT_ROOT, "merge_lora.py")
+INFER_PY = os.path.join(PROJECT_ROOT, "inference.py")
+
 
 
 class Defender:
@@ -119,13 +126,19 @@ class Defender:
             cmd.append("--with_tracking")
             cmd.extend(["--report_to", cfg.get("report_to", "tensorboard")])
 
+<<<<<<< HEAD
         if "cuda_visible_devices" in cfg and cfg["cuda_visible_devices"]:
             os.environ["CUDA_VISIBLE_DEVICES"] = cfg["cuda_visible_devices"]
+=======
+        env = os.environ.copy()
+        if cfg.get("cuda_visible_devices"):
+            env["CUDA_VISIBLE_DEVICES"] = cfg["cuda_visible_devices"]
+>>>>>>> d702884 (stable version)
         cmd = [str(x) for x in cmd]
         print("Running command:")
         print(" ".join(cmd))
 
-        result = subprocess.run(cmd, stdout=sys.stdout, stderr=sys.stderr)
+        result = subprocess.run(cmd, env=env, stdout=sys.stdout, stderr=sys.stderr)
         if result.returncode != 0:
             print("Finetuning failed with return code", result.returncode)
             return None
@@ -139,25 +152,27 @@ class Defender:
             return None
 
         return lora_output_dir
-
+    
+    
     def run_merge(self, base_model, output_root, lora_output_dir: str) -> str:
         """
-        调用 merge_lora.py，把 LoRA/QLoRA 权重合并回基座模型。
+        子进程执行 merge 脚本：python merge_*.py --...
         """
+<<<<<<< HEAD
         from .merge_lora import run_merge_lora
 
 
+=======
+>>>>>>> d702884 (stable version)
         cfg = self.training_cfg
 
         merged_output_dir = os.path.join(output_root, "merged_model")
         os.makedirs(merged_output_dir, exist_ok=True)
 
-        print(
-            f"*** Merging LoRA from {lora_output_dir} "
-            f"into base model {base_model} ***"
-        )
+        print(f"*** Merging LoRA from {lora_output_dir} into base model {base_model} ***")
         print(f"*** Saving merged model to {merged_output_dir} ***")
 
+<<<<<<< HEAD
         cfg = self.training_cfg
 
         merged_output_dir = os.path.join(output_root, "merged_model")
@@ -179,53 +194,109 @@ class Defender:
             save_tokenizer=cfg.get("merge", {}).get("save_tokenizer", True),
             use_fast_tokenizer=cfg.get("merge", {}).get("use_fast_tokenizer", True),
         )
+=======
+        cmd = [
+            sys.executable, MERGE_PY,
+            "--lora_model_name_or_path", str(lora_output_dir),
+            "--base_model_name_or_path", str(base_model),
+            "--output_dir", str(merged_output_dir),
+        ]
 
-        run_merge_lora(args)
+        # 是否 qlora：沿用你原本的逻辑
+        qlora_flag = cfg.get("merge", {}).get("qlora", cfg.get("use_qlora", False))
+        if qlora_flag:
+            cmd.append("--qlora")
+
+        if cfg.get("merge", {}).get("save_tokenizer", True):
+            cmd.append("--save_tokenizer")
+        if cfg.get("merge", {}).get("use_fast_tokenizer", True):
+            cmd.append("--use_fast_tokenizer")
+
+        # merge 的 CUDA_VISIBLE_DEVICES（可选）
+        env = os.environ.copy()
+        merge_visible = cfg.get("merge", {}).get("cuda_visible_devices", None)
+        if merge_visible:
+            env["CUDA_VISIBLE_DEVICES"] = merge_visible
+        # 如果 merge 纯 CPU（你 merge 脚本现在 device_map="cpu"），也可以不设
+
+        print("Running command:")
+        print(" ".join([str(x) for x in cmd]))
+
+        subprocess.run([str(x) for x in cmd], env=env, check=True, stdout=sys.stdout, stderr=sys.stderr)
+>>>>>>> d702884 (stable version)
+
         print("*** Merge finished. ***")
         return merged_output_dir
 
+<<<<<<< HEAD
 
     def run_inference(self, model_path: str, output_root: str) -> Any:
         from .inference import run_inference as external_run_inference
 
+=======
+    
+    def run_inference(self, model_path: str, output_root: str):
+>>>>>>> d702884 (stable version)
         infer_cfg = self.inference_cfg
-        # 推理输出目录：output_root/inference
+
         inference_output_dir = os.path.join(output_root, "inference")
         os.makedirs(inference_output_dir, exist_ok=True)
 
         output_file = os.path.join(inference_output_dir, "results.jsonl")
 
-        # ==== 参数检查 ====
         if not model_path:
             raise ValueError("run_inference 需要 model_path")
-
-        valid_file = self.valid_file
-        if not valid_file:
+        if not self.valid_file:
             raise ValueError("run_inference 需要 valid_file")
 
-        # ==== 构造 args，带默认值 ====
-        args = SimpleNamespace(
-            model_path=model_path,
-            test_file=valid_file,     # 注意：外部脚本参数名是 test_file
-            output_file=output_file,
-            batch_size=infer_cfg.get("batch_size", 1),
-            max_new_tokens=infer_cfg.get("max_new_tokens", 128),
-            max_seq_length=infer_cfg.get("max_seq_length", 2048),
-            temperature=infer_cfg.get("temperature", 0.1),
-            top_p=infer_cfg.get("top_p", 0.9),
-            device=infer_cfg.get("device", "cuda"),
-            trust_remote_code=infer_cfg.get("trust_remote_code", False),
-            max_samples=infer_cfg.get("max_samples", None),
-        )
+        # 注意：device 建议用 cuda:0 而不是 cuda
+        device = infer_cfg.get("device", "cuda:0")
 
-        print("\n[Defender] 开始推理评估:")
-        print(f"  - 模型: {args.model_path}")
-        print(f"  - 测试集: {args.test_file}")
-        print(f"  - 输出: {args.output_file}")
+        cmd = [
+            sys.executable, INFER_PY,
+            "--model_path", str(model_path),
+            "--test_file", str(self.valid_file),
+            "--output_file", str(output_file),
+            "--batch_size", str(infer_cfg.get("batch_size", 1)),
+            "--max_new_tokens", str(infer_cfg.get("max_new_tokens", 128)),
+            "--max_seq_length", str(infer_cfg.get("max_seq_length", 2048)),
+            "--temperature", str(infer_cfg.get("temperature", 0.1)),
+            "--top_p", str(infer_cfg.get("top_p", 0.9)),
+            "--device", str(device),
+        ]
 
-        accuracy, results = external_run_inference(args)
-        print(f"[Defender] 推理完成，准确率: {accuracy:.4f}")
-        return accuracy, results
+        if infer_cfg.get("trust_remote_code", False):
+            cmd.append("--trust_remote_code")
+
+        if infer_cfg.get("max_samples", None) is not None:
+            cmd.extend(["--max_samples", str(infer_cfg["max_samples"])])
+
+        # inference 子进程的可见 GPU（强烈建议单独指定，避免污染训练卡）
+        env = os.environ.copy()
+        infer_visible = infer_cfg.get("cuda_visible_devices", None)
+        if infer_visible:
+            env["CUDA_VISIBLE_DEVICES"] = infer_visible
+
+        print("\n[Defender] 开始推理评估 (subprocess):")
+        print("Running command:")
+        print(" ".join([str(x) for x in cmd]))
+
+        subprocess.run([str(x) for x in cmd], env=env, check=True, stdout=sys.stdout, stderr=sys.stderr)
+        results = read_jsonl_file(output_file)
+        # 从 metrics.json 读取 accuracy（建议你在 inference.py 里写这个文件）
+        import json
+        metrics_path = os.path.join(inference_output_dir, "metrics.json")
+        if os.path.exists(metrics_path):
+            with open(metrics_path, "r", encoding="utf-8") as f:
+                metrics = json.load(f)
+            accuracy = metrics.get("accuracy", None)
+            print(f"[Defender] 推理完成，准确率: {accuracy}")
+            return accuracy, results
+
+        # 如果你还没加 metrics.json，就先返回 output_file
+        print("[Defender] 推理完成（未找到 metrics.json），结果文件:", output_file)
+        return None, results
+
 
     def run_all(self, base_model, train_file, output_root, do_inference: bool = True):
         """
@@ -235,7 +306,7 @@ class Defender:
         if not lora_dir:
             print("训练失败/未产生 LoRA，停止后续流程。")
             return None
-
+        
         merged_dir = self.run_merge(base_model=base_model, output_root=output_root, lora_output_dir=lora_dir)
 
         if do_inference:
@@ -244,24 +315,24 @@ class Defender:
         return results
 
 
-def main():
+# def main():
     
-    valid_file = "/home/linxiaotian/panhao/eval_test/few_test_sqls.jsonl"
-    training_config_path = "/home/linxiaotian/panhao/new_train_test/config.yaml"
-    inference_config_path = "/home/linxiaotian/panhao/new_train_test/inference_config.yaml"
+#     valid_file = "/home/linxiaotian/panhao/eval_test/few_test_sqls.jsonl"
+#     training_config_path = "/home/linxiaotian/panhao/new_train_test/config.yaml"
+#     inference_config_path = "/home/linxiaotian/panhao/new_train_test/inference_config.yaml"
     
-    base_model = "/home/linxiaotian/llamafactory/LLaMA-Factory/model/Qwen/Qwen2.5-Coder-1.5B-Instruct"
-    train_file = "/home/linxiaotian/panhao/train_test/few_train_sqls.jsonl"
-    output_root = "/home/linxiaotian/panhao/output"
+#     base_model = "/home/linxiaotian/llamafactory/LLaMA-Factory/model/Qwen/Qwen2.5-Coder-1.5B-Instruct"
+#     train_file = "/home/linxiaotian/panhao/train_test/few_train_sqls.jsonl"
+#     output_root = "/home/linxiaotian/panhao/output"
 
-    defender = Defender(valid_file=valid_file,training_config_path=training_config_path,inference_config_path=inference_config_path,)
+#     defender = Defender(valid_file=valid_file,training_config_path=training_config_path,inference_config_path=inference_config_path,)
 
-    # defender.run_finetune()
-    # defender.run_merge(...)
-    # defender.run_inference(model_path="...")
+#     # defender.run_finetune()
+#     # defender.run_merge(...)
+#     # defender.run_inference(model_path="...")
 
-    defender.run_all(do_inference=True)
+#     defender.run_all(do_inference=True)
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()

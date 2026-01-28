@@ -289,6 +289,16 @@ def run_inference(args):
         for result in results:
             f.write(json.dumps(result, ensure_ascii=False) + '\n')
     
+    metrics_path = os.path.join(os.path.dirname(args.output_file), "metrics.json")
+    with open(metrics_path, "w", encoding="utf-8") as f:
+        json.dump(
+            {"accuracy": accuracy, "total": total, "correct": correct},
+            f,
+            ensure_ascii=False,
+            indent=2
+        )
+    print(f"📊 指标已保存: {metrics_path}")
+    
     print("\n✅ 完成!")
     
     return accuracy, results

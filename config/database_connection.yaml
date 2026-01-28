@@ -1,5 +1,5 @@
-'host': 'localhost'
-'port': 3306
-'user': 'root'
-'password': 'panhao314,'
+'host': '127.0.0.1'
+'port': 13306
+'user': 'root' # 'linxiaotian'
+'password': 'panhao314,' # 'hkustgz666'
 'charset': 'utf8mb4'

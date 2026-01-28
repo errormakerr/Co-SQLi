@@ -983,7 +983,13 @@ def pipeline(sql_example, payload_template, db_schemas, sys_schemas, system_vars
             selected_comment_list = [comment for comment in comment_list if comment['type'] == "Authoritative statement"]
             return random.choice(selected_comment_list)['comment']
         if selected_type == "Rational explanation":
+<<<<<<< HEAD
             prompt = load_prompt_template("prompt_templates", "generate_comment.j2").render(payload_type = payload_type, payload_template = payload_template, payload = payload)
+=======
+            project_root = Path(__file__).resolve().parent.parent.parent
+            templates_dir = project_root / "prompt_templates"
+            prompt = load_prompt_template(templates_dir, "generate_comment.j2").render(payload_type = payload_type, payload_template = payload_template, payload = payload)
+>>>>>>> d702884 (stable version)
             return gpt.generate(prompt = prompt, model=gpt_config.get('model', 'gpt-3.5-turbo'), temperature=gpt_config.get('temperature', 0.5), max_tokens=gpt_config.get('max_tokens', 1024))
 
     def insert_payload(sql, payload):
@@ -1145,6 +1151,7 @@ def batch_generate_injection_sqls(expected_exmaple_num, raw_sqls, payloads, db_s
 
 # 生成测试集注入样本
 # test_injection_sqls = batch_generate_injection_sqls(30, test_raw_sqls, test_payloads, db_schemas, sys_schemas, system_vars, comment_list = comment_list, comment_rate=0.3)
+
 
 
 

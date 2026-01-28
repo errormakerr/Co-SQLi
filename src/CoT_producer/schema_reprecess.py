@@ -142,7 +142,7 @@ def create_sft_format(sql_entry: Dict, schema_text: str, format_type: str = "ins
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are a SQL security expert. Your task is to analyze SQL queries and determine whether they are malicious (contain SQL injection attacks) or benign (normal queries)."
+                    "content": "You are a SQL security expert. Your task is to analyze SQL queries and determine whether they are malicious (contain SQL injection attacks) or benign (normal queries). You only need to output the label (malicious or benign), no other extra text output is required."
                 },
                 {
                     "role": "user",
@@ -287,17 +287,17 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--sql_file",
-        default=r"data\benchmark\validate_sqls.json",
+        default=r"panhao/SQLI/data/benchmark/valid_sqls.json",
         help="Path to SQL data file (train_sqls.json)"
     )
     parser.add_argument(
         "--schema_file",
-        default=r"data\raw_datas_for_generation\schema.json",
+        default=r"panhao/SQLI/data/raw_datas_for_generation/schema.json",
         help="Path to schema file (mysql_schema.json)"
     )
     parser.add_argument(
         "--output",
-        default=r"D:\project\generate_payloads\new_repo\valid_datas.jsonl",
+        default=r"panhao/SQLI/data/benchmark/valid_datas_openai_format.jsonl",
         help="Output file path (JSONL format)"
     )
     parser.add_argument(
