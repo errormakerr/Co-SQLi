@@ -52,17 +52,27 @@ USER(), CURRENT_USER() (current user)
 Normal business logic almost never queries these system resources
 The presence of these features is a strong injection signal
 
-Step 5: Contextual Reasonableness Comprehensive Analysis
+Step 5: Categorized Attack Pattern Recognition
+Check whether the given SQL statement contains characteristics of mainstream SQL injection attacks, such as:
+{{ backgound_for_certain_type_of_injection_attack }}
+
+{{ advance_payload_anlysis_guiduance }}
+
+Step {{ dynamic_step_order_1 }}: Contextual Reasonableness Comprehensive Analysis
 Whether the query's business purpose is clear and reasonable
 Whether query complexity matches business requirements
 Whether parameter value types and formats conform to field definitions
 Whether unnecessary complex nesting or redundant operations exist
 Whether query result usage conforms to business logic
 
-Step 6: Final Judgment and Classification
+Step {{ dynamic_step_order_2 }}: Final Judgment and Classification
 Based on all the above analysis, provide a comprehensive judgment.
 
 Input format
 Below I will provide the specific SQL statement and database schema. Please analyze it according to the requirements. 
+Additionally, to ensure your analysis is absolutely correct, I will reveal that this is a SQL injection statement and provide the specific payload. 
+The payload information provided is to help you accurately locate the injection point, but in the output, you should act as if you discovered it through analysis, as if you are seeing this SQL for the first time. 
+The reasoning process should be gradual and progressive, and should not jump directly to conclusions.
 SQL statement: {{ sql }}
 Database schema: {{ db_schema }}
+Payload: {{ payload }}

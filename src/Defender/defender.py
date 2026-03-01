@@ -10,10 +10,7 @@ from typing import Any, Dict
 
 
 from utils.yaml_operation import load_yaml_to_dict
-<<<<<<< HEAD
-=======
 from utils.json_operation import read_jsonl_file
->>>>>>> d702884 (stable version)
 from pathlib import Path
 
 
@@ -126,14 +123,9 @@ class Defender:
             cmd.append("--with_tracking")
             cmd.extend(["--report_to", cfg.get("report_to", "tensorboard")])
 
-<<<<<<< HEAD
-        if "cuda_visible_devices" in cfg and cfg["cuda_visible_devices"]:
-            os.environ["CUDA_VISIBLE_DEVICES"] = cfg["cuda_visible_devices"]
-=======
         env = os.environ.copy()
         if cfg.get("cuda_visible_devices"):
             env["CUDA_VISIBLE_DEVICES"] = cfg["cuda_visible_devices"]
->>>>>>> d702884 (stable version)
         cmd = [str(x) for x in cmd]
         print("Running command:")
         print(" ".join(cmd))
@@ -158,12 +150,6 @@ class Defender:
         """
         子进程执行 merge 脚本：python merge_*.py --...
         """
-<<<<<<< HEAD
-        from .merge_lora import run_merge_lora
-
-
-=======
->>>>>>> d702884 (stable version)
         cfg = self.training_cfg
 
         merged_output_dir = os.path.join(output_root, "merged_model")
@@ -172,29 +158,6 @@ class Defender:
         print(f"*** Merging LoRA from {lora_output_dir} into base model {base_model} ***")
         print(f"*** Saving merged model to {merged_output_dir} ***")
 
-<<<<<<< HEAD
-        cfg = self.training_cfg
-
-        merged_output_dir = os.path.join(output_root, "merged_model")
-        os.makedirs(merged_output_dir, exist_ok=True)
-        
-        base_model = str(base_model)
-        lora_output_dir = str(lora_output_dir)
-        merged_output_dir = str(merged_output_dir)
-
-        print(f"*** Merging LoRA from {lora_output_dir} into base model {base_model} ***")
-        print(f"*** Saving merged model to {merged_output_dir} ***")
-
-        args = SimpleNamespace(
-            lora_model_name_or_path=lora_output_dir,
-            base_model_name_or_path=base_model,
-            tokenizer_name_or_path=None,
-            output_dir=merged_output_dir,
-            qlora=cfg.get("merge", {}).get("qlora", cfg.get("use_qlora", False)),
-            save_tokenizer=cfg.get("merge", {}).get("save_tokenizer", True),
-            use_fast_tokenizer=cfg.get("merge", {}).get("use_fast_tokenizer", True),
-        )
-=======
         cmd = [
             sys.executable, MERGE_PY,
             "--lora_model_name_or_path", str(lora_output_dir),
@@ -212,31 +175,26 @@ class Defender:
         if cfg.get("merge", {}).get("use_fast_tokenizer", True):
             cmd.append("--use_fast_tokenizer")
 
+        # merge 设备配置（优先使用配置中的设备，否则自动选择）
+        merge_device = cfg.get("merge", {}).get("device", "auto")
+        cmd.extend(["--device", str(merge_device)])
+
         # merge 的 CUDA_VISIBLE_DEVICES（可选）
         env = os.environ.copy()
         merge_visible = cfg.get("merge", {}).get("cuda_visible_devices", None)
         if merge_visible:
             env["CUDA_VISIBLE_DEVICES"] = merge_visible
-        # 如果 merge 纯 CPU（你 merge 脚本现在 device_map="cpu"），也可以不设
 
         print("Running command:")
         print(" ".join([str(x) for x in cmd]))
 
         subprocess.run([str(x) for x in cmd], env=env, check=True, stdout=sys.stdout, stderr=sys.stderr)
->>>>>>> d702884 (stable version)
 
         print("*** Merge finished. ***")
         return merged_output_dir
 
-<<<<<<< HEAD
-
-    def run_inference(self, model_path: str, output_root: str) -> Any:
-        from .inference import run_inference as external_run_inference
-
-=======
     
     def run_inference(self, model_path: str, output_root: str):
->>>>>>> d702884 (stable version)
         infer_cfg = self.inference_cfg
 
         inference_output_dir = os.path.join(output_root, "inference")

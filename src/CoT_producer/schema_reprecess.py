@@ -287,17 +287,17 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--sql_file",
-        default=r"panhao/SQLI/data/benchmark/valid_sqls.json",
+        default=r"/home/panhao/project/SQLI/data/benchmark/test_sqls.json",
         help="Path to SQL data file (train_sqls.json)"
     )
     parser.add_argument(
         "--schema_file",
-        default=r"panhao/SQLI/data/raw_datas_for_generation/schema.json",
+        default=r"/home/panhao/project/SQLI/data/raw_datas_for_generation/schema.json",
         help="Path to schema file (mysql_schema.json)"
     )
     parser.add_argument(
         "--output",
-        default=r"panhao/SQLI/data/benchmark/valid_datas_openai_format.jsonl",
+        default=r"/home/panhao/project/SQLI/data/benchmark/test_datas_openai_format.jsonl",
         help="Output file path (JSONL format)"
     )
     parser.add_argument(

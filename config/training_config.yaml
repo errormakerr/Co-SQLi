@@ -1,18 +1,17 @@
 # config.yaml
 
-cuda_visible_devices: "1,2,3,6"
-num_gpus: 4
+cuda_visible_devices: "3,6"
+num_gpus: 2
 
-
-token_select_pattern: "default"   # default / random / token_cleaning
+token_select_pattern: "default"
 data_prop: 1.0
 random_seed: 42
 
 batch_size_per_gpu: 2
 gradient_accumulation_steps: 4
-max_seq_length: 2048
+max_seq_length: 4096
 num_train_epochs: 2
-learning_rate: 1e-4 # 1e-4 5e-5
+learning_rate: 5e-5 
 lr_scheduler_type: "linear"
 warmup_ratio: 0.03
 weight_decay: 0.0
@@ -21,8 +20,8 @@ logging_steps: 50
 with_prompt_token: false
 
 use_lora: true
-lora_rank: 64
-lora_alpha: 16  
+lora_rank: 16
+lora_alpha: 32
 lora_dropout: 0.1
 use_qlora: false
 
@@ -37,3 +36,5 @@ merge:
   save_tokenizer: true
   use_fast_tokenizer: true
   qlora: false
+  device: "auto"  # 可选: "auto", "cuda", "cuda:0", "cpu" 等。auto 会自动选择可用的 GPU
+  # cuda_visible_devices: "3"  # 可选：指定 merge 使用的 GPU（如果与训练不同）

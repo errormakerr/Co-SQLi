@@ -408,6 +408,9 @@ def run_finetune(args):
 
 
     if args.use_lora:
+        if args.gradient_checkpointing:
+            model.gradient_checkpointing_enable()
+        
         if args.use_qlora:
             model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=args.gradient_checkpointing)
 

@@ -58,10 +58,29 @@ def parse_args():
     parser.add_argument("--qlora", action="store_true")  # qlora requires special treatment.
     parser.add_argument("--save_tokenizer", action="store_true")
     parser.add_argument("--use_fast_tokenizer", action="store_true")
+    parser.add_argument("--device", type=str, default="auto", 
+                       help="Device to use for merge: 'auto', 'cuda', 'cpu', or 'cuda:0', 'cuda:1', etc.")
     return parser.parse_args()
 
 def run_merge_lora(args):
-
+    # 确定使用的设备
+    if args.device == "auto":
+        if torch.cuda.is_available():
+            device = "cuda:0"
+            device_map = {"": 0}
+        else:
+            device = "cpu"
+            device_map = None
+    elif args.device.startswith("cuda"):
+        device = args.device
+        device_id = int(args.device.split(":")[1]) if ":" in args.device else 0
+        device_map = {"": device_id}
+    else:
+        device = "cpu"
+        device_map = None
+    
+    print(f"🚀 使用设备: {device} 进行模型合并")
+    
     peft_config = PeftConfig.from_pretrained(args.lora_model_name_or_path)
     print("Loading the base model...")
 
@@ -79,15 +98,16 @@ def run_merge_lora(args):
             else peft_config.base_model_name_or_path,
             torch_dtype=torch.bfloat16,
             quantization_config=quantization_config,
-            # device_map={"": 0} if torch.cuda.is_available() else None,
-            device_map="cpu",
+            device_map=device_map,
         )
-        base_model = dequantize_model(base_model, device="cpu")
+        base_model = dequantize_model(base_model, device=device)
     else:
         base_model = AutoModelForCausalLM.from_pretrained(
             args.base_model_name_or_path
             if args.base_model_name_or_path
             else peft_config.base_model_name_or_path,
+            torch_dtype=torch.bfloat16 if device.startswith("cuda") else None,
+            device_map=device_map,
         )
 
     # 2. 加载 tokenizer
@@ -145,13 +165,22 @@ def run_merge_lora(args):
     lora_model = PeftModel.from_pretrained(base_model, args.lora_model_name_or_path)
     print("Merging the lora modules...")
     merged_model = lora_model.merge_and_unload()
+    
+    # 如果使用 GPU，在保存前将模型移到 CPU 以节省显存（可选）
+    # 但通常直接保存更快，因为保存过程会处理设备转换
+    if device.startswith("cuda"):
+        print(f"💾 模型在 {device} 上，准备保存...")
 
     # 5. 保存
     output_dir = args.output_dir if args.output_dir else args.lora_model_name_or_path
     os.makedirs(output_dir, exist_ok=True)
 
     print(f"Saving merged model to {output_dir}...")
-    merged_model.save_pretrained(output_dir)
+    # 使用 safetensors 格式可以加速保存（如果支持）
+    merged_model.save_pretrained(
+        output_dir,
+        safe_serialization=True,  # 使用 safetensors 格式，更快更安全
+    )
 
     if args.save_tokenizer:
         print(f"Saving the tokenizer to {output_dir}...")

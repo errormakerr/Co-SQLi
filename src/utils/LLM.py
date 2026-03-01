@@ -17,10 +17,6 @@ class LLM:
         self.api_key = api_key
         self.base_url = base_url
 
-<<<<<<< HEAD
-        # 如果是 HKUST 接口，用 requests/aiohttp 自己调，不初始化 SDK 客户端
-=======
->>>>>>> d702884 (stable version)
         if base_url == HKUST_BASE_URL:
             self.sync_client: Optional[OpenAI] = None
             self.async_client: Optional[AsyncOpenAI] = None
@@ -52,10 +48,7 @@ class LLM:
             temperature=temperature,
             max_tokens=max_tokens,
         )
-<<<<<<< HEAD
-=======
         # print(response)
->>>>>>> d702884 (stable version)
         return response.choices[0].message.content
 
     def generate_by_hkust(self, prompt: str, model: str, temperature: float = 0.5, max_tokens: int = 6000,) -> str:
@@ -75,10 +68,7 @@ class LLM:
                 data=json.dumps(data),
                 timeout=60,
             )
-<<<<<<< HEAD
-=======
             # print(response)
->>>>>>> d702884 (stable version)
             response.raise_for_status()  # 检查 HTTP 错误
             result = response.json()
             return result["choices"][0]["message"]["content"]
@@ -180,22 +170,11 @@ class LLM:
             except (KeyError, IndexError) as e:
                 raise Exception(f"HKUST API 响应格式错误: {str(e)}")
 
-<<<<<<< HEAD
-    async def async_batch_generate(self, prompts: List[str], model: str, temperature: float = 0.5, max_tokens: int = 6000, batch_size: int = 5, retry_failed: bool = True, max_retries: int = 2,) -> List[Dict]:
-        """
-        异步批量生成，使用 SDK 接口。
-        """
-        async def process_single(idx: int, prompt: str, retry_count: int = 0) -> Dict:
-            try:
-                content = await self.async_generate(prompt, model, temperature, max_tokens)
-                return {
-=======
     async def async_batch_generate(self,prompts: List[str],model: str,temperature: float = 0.5,max_tokens: int = 6000,batch_size: int = 5,retry_failed: bool = True,max_retries: int = 2,measure: bool = False,) -> List[Dict]:
         async def process_single(idx: int, prompt: str, retry_count: int = 0) -> Dict:
             try:
                 content, metrics = await self.async_generate(prompt, model, temperature, max_tokens, measure=measure)
                 out = {
->>>>>>> d702884 (stable version)
                     "index": idx,
                     "prompt": prompt,
                     "response": content,
@@ -203,15 +182,12 @@ class LLM:
                     "error": None,
                     "retry_count": retry_count,
                 }
-<<<<<<< HEAD
-=======
 
                 if measure and metrics:
                     out.update(metrics)
 
                 return out
 
->>>>>>> d702884 (stable version)
             except Exception as e:
                 if retry_failed and retry_count < max_retries:
                     await asyncio.sleep(1 * (retry_count + 1))
@@ -230,16 +206,8 @@ class LLM:
         total_batches = (len(prompts) + batch_size - 1) // batch_size
 
         for batch_idx in range(0, len(prompts), batch_size):
-<<<<<<< HEAD
-            batch = prompts[batch_idx : batch_idx + batch_size]
-            tasks = [
-                process_single(batch_idx + j, p)
-                for j, p in enumerate(batch)
-            ]
-=======
             batch = prompts[batch_idx: batch_idx + batch_size]
             tasks = [process_single(batch_idx + j, p) for j, p in enumerate(batch)]
->>>>>>> d702884 (stable version)
             batch_results = await asyncio.gather(*tasks)
             results.extend(batch_results)
 
@@ -336,16 +304,10 @@ async def test_async_hkust():
 
 def test_sync_sdk():
     print("=" * 20, "同步 SDK 接口测试", "=" * 20)
-<<<<<<< HEAD
-    gpt = LLM(
-        api_key="你的OPENAI_COMPAT_API_KEY",
-        base_url="https://api.openai.com/v1",  # 举例：官方/其他兼容服务
-=======
     
     gpt = LLM(
         api_key="你的OPENAI_COMPAT_API_KEY",
         base_url="https://api.openai.com/v1",
->>>>>>> d702884 (stable version)
     )
 
     # 1. 单个请求
@@ -371,13 +333,8 @@ def test_sync_sdk():
 async def test_async_sdk():
     print("=" * 20, "异步 SDK 接口测试", "=" * 20)
     gpt = LLM(
-<<<<<<< HEAD
-        api_key="你的OPENAI_COMPAT_API_KEY",
-        base_url="https://api.openai.com/v1",  # 举例
-=======
         api_key="sk-PhWga2qw2g8QgLq0F7A49c3039F8430aB80f5f0bA46d65Fb",
         base_url="https://vip.yi-zhan.top/v1",
->>>>>>> d702884 (stable version)
     )
 
     # 1. 单个请求
@@ -396,18 +353,11 @@ async def test_async_sdk():
         max_retries=2,
     )
     for r in results:
-<<<<<<< HEAD
-        print(f"index={r['index']} success={r['success']} retry={r['retry_count']}")
-        print("  prompt :", r["prompt"])
-        print("  resp   :", r["response"])
-        print("-" * 40)
-=======
         print(r)
         # print(f"index={r['index']} success={r['success']} retry={r['retry_count']}")
         # print("  prompt :", r["prompt"])
         # print("  resp   :", r["response"])
         # print("-" * 40)
->>>>>>> d702884 (stable version)
 
 if __name__ == "__main__":
     # 1. 测试 HKUST 同步
@@ -420,10 +370,6 @@ if __name__ == "__main__":
     # test_sync_sdk()
 
     # 4. 测试 SDK 异步
-<<<<<<< HEAD
-    # asyncio.run(test_async_sdk())
-=======
     asyncio.run(test_async_sdk())
->>>>>>> d702884 (stable version)
 
     pass
