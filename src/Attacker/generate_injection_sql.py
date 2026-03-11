@@ -127,9 +127,20 @@ class SpecificDatabaseTemplateFiller:
     TYPE_MAPPING = {
         'number': ['int', 'integer', 'bigint', 'smallint', 'tinyint', 
                    'real', 'float', 'double', 'numeric', 'decimal'],
+        # 'integer' 与 'number' 映射到相同的数值类型
+        # （推断器或 payloads.json 中 $sysInfo$ 有时标记为 'integer'）
+        'integer': ['int', 'integer', 'bigint', 'smallint', 'tinyint',
+                    'real', 'float', 'double', 'numeric', 'decimal'],
+        'float': ['real', 'float', 'double', 'numeric', 'decimal'],
         'string': ['varchar', 'char', 'text', 'nvarchar', 'nchar', 
                    'clob', 'blob', 'string'],
         'date': ['date', 'datetime', 'timestamp', 'time'],
+        # 'time' 单独处理，映射到时间相关列
+        'time': ['time', 'datetime', 'timestamp'],
+        # 'hex' 可以对应任意类型（hex 值替换字面量，不约束列类型）
+        'hex': None,
+        # 'character' 对应字符串类型列
+        'character': ['varchar', 'char', 'text', 'nvarchar', 'nchar'],
         'boolean': ['bool', 'boolean', 'bit'],
         'all': None  # None 表示不限制
     }
@@ -193,40 +204,62 @@ class SpecificDatabaseTemplateFiller:
         if isinstance(template_input, str):
             template = template_input
             expected_types = []
+            information_features = "specific database"  # 字符串输入默认为 specific database
             if debug:
                 print("📝 输入类型: 字符串（无类型约束）")
         elif isinstance(template_input, dict):
             template = template_input.get('payload', '')
-            expected_types = template_input.get('expected_types', [])
+            # 必须复制一份，避免直接修改原始 dict 中的 list（.pop() 会破坏原始数据，
+            # 导致同一 payload 模板被重复使用时 expected_types 越来越短）
+            expected_types = list(template_input.get('expected_types', []))
+            information_features = template_input.get('information_features', 'specific database')
             if debug:
                 print(f"📝 输入类型: 字典")
                 print(f"📝 expected_types: {expected_types}")
+                print(f"📝 information_features: {information_features}")
         else:
             raise ValueError("template_input 必须是字符串或字典")
         
-        if "$int$" in template:
-            template = template.replace("$int$", GetRandomAttribute.random_int_number())
-            expected_types = [item for item in expected_types if item != "integer"]
-        
-        if "$float$" in template:
-            template = template.replace("$float$", GetRandomAttribute.random_float_number())
-            expected_types = [item for item in expected_types if item != "float"]
-        
-        if "$hex$" in template:
-            template = template.replace("$hex$", GetRandomAttribute.random_hex_number())
-            expected_types = [item for item in expected_types if item != "hex"]
-        
-        if "$time$" in template:
-            template = template.replace("$time$", GetRandomAttribute.random_time())
-            expected_types = [item for item in expected_types if item != "time"]
-            
-        if "$character$" in template:
-            template = template.replace("$character$", GetRandomAttribute.random_character())
-            expected_types = [item for item in expected_types if item != "character"]
-            
-        if "$date$" in template:
-            template = template.replace("$date$", GetRandomAttribute.random_date())
-            expected_types = [item for item in expected_types if item != "date"]
+        # 按位置移除固定类型占位符对应的 expected_types 项
+        # 注意：必须按位置而非按值过滤，否则当 $sysInfo$ 与 $int$ 同为 "integer" 类型时
+        # 会错误地把 $sysInfo$ 的类型约束也删除
+        FIXED_PLACEHOLDER_TYPE_MAP = {
+            "$int$": "integer",
+            "$float$": "float",
+            "$hex$": "hex",
+            "$time$": "time",
+            "$character$": "character",
+            "$date$": "date",
+        }
+        FIXED_PLACEHOLDER_REPLACEMENTS = {
+            "$int$": GetRandomAttribute.random_int_number,
+            "$float$": GetRandomAttribute.random_float_number,
+            "$hex$": GetRandomAttribute.random_hex_number,
+            "$time$": GetRandomAttribute.random_time,
+            "$character$": GetRandomAttribute.random_character,
+            "$date$": GetRandomAttribute.random_date,
+        }
+
+        if expected_types:
+            # 构建原始模板的占位符顺序（替换前），按位置找到固定类型占位符的下标
+            import re as _re
+            all_ph_matches = list(_re.finditer(r'\$\w+\$', template))
+            indices_to_remove = set()
+            for m in all_ph_matches:
+                ph = m.group(0)
+                if ph in FIXED_PLACEHOLDER_TYPE_MAP:
+                    # 找到该占位符在 expected_types 中的对应位置
+                    ph_order = sum(1 for mm in all_ph_matches if mm.start() < m.start())
+                    if ph_order < len(expected_types):
+                        indices_to_remove.add(ph_order)
+            # 移除固定类型占位符对应的 expected_types 项（从后往前，保持下标稳定）
+            for idx in sorted(indices_to_remove, reverse=True):
+                expected_types.pop(idx)
+
+        # 替换固定类型占位符（允许 replace_all）
+        for ph, replacer in FIXED_PLACEHOLDER_REPLACEMENTS.items():
+            while ph in template:
+                template = template.replace(ph, str(replacer()), 1)
         
         # Step 1: 解析模板，提取所有占位符
         placeholders = self._parse_marked_template(template)
@@ -273,7 +306,7 @@ class SpecificDatabaseTemplateFiller:
         replacement_values = []
         
         for i, placeholder in enumerate(placeholders):
-            value = self._get_marked_replacement(placeholder, table_assignments, template_input['information_features'], debug)
+            value = self._get_marked_replacement(placeholder, table_assignments, information_features, debug)
             replacement_values.append(value)
             if debug:
                 print(f"  {placeholder['full_match']} → {value}")
@@ -838,11 +871,22 @@ class SystemInformationTemplateFiller:
         used_sysinfo = []
         
         # 1. 替换 $sysInfo$ 占位符
-        sysinfo_count = payload.count('$sysInfo$')
-        for i in range(sysinfo_count):
-            # 获取对应位置的期望类型
-            if i < len(expected_types):
-                expected_type = expected_types[i]
+        # 修复：使用全局位置（在所有占位符中的顺序）索引 expected_types，
+        # 而不是在 $sysInfo$ 内部的相对顺序，否则当 $int$/$character$ 等
+        # 固定类型占位符出现在 $sysInfo$ 前面时会错误地取到前者的类型
+        import re as _re
+        all_ph_positions = [(m.start(), m.group(0))
+                            for m in _re.finditer(r'\$\w+\$', payload)]
+        # 按位置顺序，找出每个 $sysInfo$ 对应的全局下标
+        sysinfo_global_indices = [
+            idx for idx, (_, ph) in enumerate(all_ph_positions)
+            if ph == '$sysInfo$'
+        ]
+        
+        for global_idx in sysinfo_global_indices:
+            # 用全局下标在 expected_types 里取类型
+            if global_idx < len(expected_types):
+                expected_type = expected_types[global_idx]
             else:
                 expected_type = 'all'
             
@@ -1085,7 +1129,7 @@ def pipeline(sql_example, payload_template, db_schemas, sys_schemas, system_vars
 
     injection_sql_example = None
     
-    if payload_template['expected_types'] == None:
+    if payload_template['expected_types'] is None:
         raw_payload = payload_template['payload']
     else:
         if payload_template['information_features'] == "system information":
@@ -1096,21 +1140,23 @@ def pipeline(sql_example, payload_template, db_schemas, sys_schemas, system_vars
             else:
                 filler_for_system_information = SystemInformationTemplateFiller(system_vars, mysql_config)
                 raw_payload = filler_for_system_information.fill_template(payload_template)
-        
-        if payload_template['information_features'] == "specific database":
+        elif payload_template['information_features'] == "specific database":
             schema = next((s for s in db_schemas if s['database_name'] == sql_example['db']), {})
             filler_for_specific_databse = SpecificDatabaseTemplateFiller(schema, mysql_config)
             raw_payload = filler_for_specific_databse.fill_template(payload_template)
+        else:
+            # constant 类型或其他类型：expected_types 非 None 但无占位符，直接使用原始 payload
+            raw_payload = payload_template['payload']
     
     if not sql_example['annotator']:
-        comment_flag =False
+        comment_flag = False
     
     if comment_flag:
         payload = str(raw_payload) + str(generate_comment(payload_template['type'], payload_template['payload'], raw_payload, comment_list))
     else:
         payload = str(raw_payload)
         
-    if sql_example['sql'] == None or payload == None:
+    if sql_example['sql'] is None or payload is None:
         return injection_sql_example
     
     injection_sql = insert_payload(sql_example['sql'], payload)

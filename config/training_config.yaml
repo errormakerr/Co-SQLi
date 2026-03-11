@@ -1,6 +1,6 @@
 # config.yaml
 
-cuda_visible_devices: "3,6"
+cuda_visible_devices: "6,7"
 num_gpus: 2
 
 token_select_pattern: "default"

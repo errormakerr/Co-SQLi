@@ -11,7 +11,7 @@ from CoT_producer.CoT_producer import CoT_producer
 from Defender.defender import Defender
 from Verifier.verifier import Verifier
 from utils.cluster import cluster_injection_sqls
-from utils.json_operation import read_json_file, read_jsonl_file, write_jsonl_file
+from utils.json_operation import read_json_file, read_jsonl_file, write_jsonl_file, write_json_file
 
 
 # ==================== 配置常量 ====================
@@ -33,7 +33,7 @@ class ProjectPaths:
             project_root=project_root,
             raw_datas_dir=project_root / "data" / "raw_datas_for_generation",
             benchmark_dir=project_root / "data" / "benchmark",
-            temp_datas_dir=Path("/home/panhao/model/temp_data/Qwen2.5-Coder-1.5B-Instruct_without_modify"),
+            temp_datas_dir=Path("/home/panhao/model/temp_data/Qwen2.5-Coder-1.5B-Instruct_with_modify_v1.2"),
             config_dir=project_root / "config",
             base_model_path=Path("/home/panhao/model/base_model/Qwen2.5-Coder-1.5B-Instruct"),
         )
@@ -49,6 +49,12 @@ ATTACKER_STRATEGY_TOP_K = "top_k"     # 后期使用的策略
 ATTACKER_K = 8
 # 策略切换点：前 PROBABILITY_ROUNDS 轮使用概率采样，之后使用 top-k 采样
 PROBABILITY_ROUNDS = NUM_ROUNDS - 2  # 前6轮使用概率采样，后2轮使用 top-k
+
+# ==================== Payload 变异参数 ====================
+ENABLE_PAYLOAD_MUTATION = True       # 是否启用 payload 变异
+MODIFY_PAYLOAD_PROB_START = 0.1      # 初始轮次的变异概率
+MODIFY_PAYLOAD_PROB_END = 0.4        # 后期轮次的变异概率（恢复至0.5；提示词与路由已修复，噪声风险已降低）
+MUTATION_MODEL = None                # 变异使用的模型，None 表示使用配置文件中的默认模型
 
 
 # ==================== 工具函数 ====================
@@ -89,6 +95,8 @@ def initialize_components(paths: ProjectPaths) -> Tuple[Attacker, CoT_producer, 
         cluster_list=cluster_list,
         normal_sqls_path=str(normal_sqls_path),
         raw_datas_dir=str(paths.raw_datas_dir),
+        enable_payload_mutation=ENABLE_PAYLOAD_MUTATION,
+        mutation_model=MUTATION_MODEL,
     )
     
     cot_producer = CoT_producer(schemas_file=str(paths.raw_datas_dir / "schema.json"))
@@ -147,12 +155,20 @@ def run_training_round(
     round_output_dir = paths.temp_datas_dir / f"round_{round_idx}"
     round_output_dir.mkdir(parents=True, exist_ok=True)
     
+    # 计算当前轮次的 payload 变异概率（随轮次线性增加）
+    modify_payload_prob = MODIFY_PAYLOAD_PROB_START + \
+        (MODIFY_PAYLOAD_PROB_END - MODIFY_PAYLOAD_PROB_START) * (round_idx / max(NUM_ROUNDS - 1, 1))
+    
+    if ENABLE_PAYLOAD_MUTATION:
+        print(f"🧬 Payload 变异概率: {modify_payload_prob:.2%}")
+    
     # 1. 生成训练 SQL
     train_sqls, clusters_probability_distribution = attacker.generate_training_sqls(
         gamma=ATTACKER_GAMMA,
         clusters_weight_distribution=verifier.get_weights(),
         strategy=strategy,
         k=ATTACKER_K,
+        modify_payload_prob=modify_payload_prob,
     )
     
     # 2. 转换为训练数据格式
@@ -186,7 +202,23 @@ def run_training_round(
         weights_data,
     )
     
-    # 6. 清理上一轮的模型（节省空间）
+    # 6. 保存变异后的 payload（如果启用了变异）
+    if ENABLE_PAYLOAD_MUTATION:
+        mutated_payloads = attacker.get_mutated_payloads()
+        if mutated_payloads:
+            write_json_file(
+                str(round_output_dir / "mutated_payloads.json"),
+                mutated_payloads,
+            )
+            print(f"📝 保存了 {len(mutated_payloads)} 个变异后的 payload 到 mutated_payloads.json")
+        
+        # 持久化 MutationMemory，供断点恢复使用
+        if attacker.mutation_memory is not None:
+            memory_save_path = str(round_output_dir / "mutation_memory.json")
+            attacker.mutation_memory.save(memory_save_path)
+            print(f"💾 MutationMemory 已保存到 mutation_memory.json")
+    
+    # 7. 清理上一轮的模型（节省空间）
     if round_idx > 0:
         prev_model_dir = paths.temp_datas_dir / f"round_{round_idx-1}" / "merged_model"
         delete_folder_if_exists(str(prev_model_dir))
@@ -200,7 +232,7 @@ def run_training_loop(start_round: int = 0, breakpoint_round: int = -1) -> None:
     # 初始化组件
     attacker, cot_producer, defender, verifier = initialize_components(paths)
     
-    # 如果从断点恢复，加载权重
+    # 如果从断点恢复，加载权重和 MutationMemory
     if breakpoint_round >= 0:
         weights_file = paths.temp_datas_dir / f"round_{breakpoint_round}" / "cluster_weights.jsonl"
         if weights_file.exists():
@@ -212,6 +244,21 @@ def run_training_loop(start_round: int = 0, breakpoint_round: int = -1) -> None:
             print(f"✓ 从 round {breakpoint_round} 恢复权重")
         else:
             print(f"⚠ 警告: 未找到断点权重文件 {weights_file}")
+        
+        # 恢复 MutationMemory（如果启用变异）
+        if ENABLE_PAYLOAD_MUTATION and attacker.mutation_memory is not None:
+            from Attacker.payload_mutation.memory import MutationMemory
+            memory_file = paths.temp_datas_dir / f"round_{breakpoint_round}" / "mutation_memory.json"
+            if memory_file.exists():
+                restored_memory = MutationMemory.load(str(memory_file))
+                # 将恢复的状态合并到现有 memory 对象中（保持 mutator 内部引用不变）
+                attacker.mutation_memory.categories = restored_memory.categories
+                attacker.mutation_memory.global_fingerprints = restored_memory.global_fingerprints
+                print(f"✓ 从 round {breakpoint_round} 恢复 MutationMemory "
+                      f"({len(restored_memory.global_fingerprints)} 个指纹, "
+                      f"{len(restored_memory.categories)} 个类别)")
+            else:
+                print(f"⚠ 警告: 未找到断点 MutationMemory 文件 {memory_file}，将使用空 memory")
     
     # 执行训练循环
     for round_idx in range(start_round, NUM_ROUNDS):
