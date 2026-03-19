@@ -1,144 +1,128 @@
-# SQLI — Adversarial Training for SQL Injection Detection
+<div align="center">
 
-An adversarial training framework that iteratively improves a language model's ability to detect SQL injection attacks. An **Attacker** generates diverse malicious SQL samples guided by a Multi-Armed Bandit (EXP3) algorithm, a **Defender** fine-tunes the detection model via LoRA, and a **Verifier** updates the bandit weights so that future training automatically focuses on the model's weakest areas.
+# 🛡️ SQLI
+**Adversarial Training Framework for SQL Injection Detection**
 
-## Architecture
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
+[![LoRA Support](https://img.shields.io/badge/Fine--Tuning-LoRA%2FQLoRA-orange.svg)]()
+[![Model](https://img.shields.io/badge/Base_Model-Qwen2.5--Coder-purple.svg)]()
 
+</div>
+
+---
+
+**SQLI** is a robust adversarial training framework designed to iteratively enhance a Large Language Model's (LLM) ability to detect SQL injection attacks. By simulating a continuous arms race between an **Attacker** and a **Defender**, guided by a Multi-Armed Bandit algorithm, the model naturally focuses its learning on its weakest vulnerabilities.
+
+## 🌟 Core Architecture
+
+The framework operates in an automated, closed-loop cycle consisting of three primary agents:
+
+```mermaid
+graph TD
+    classDef attacker fill:#ffe8e8,stroke:#ff6b6b,stroke-width:2px,color:#333;
+    classDef defender fill:#e8f4fc,stroke:#4dabf7,stroke-width:2px,color:#333;
+    classDef verifier fill:#ebfbee,stroke:#51cf66,stroke-width:2px,color:#333;
+    classDef formatter fill:#f8f9fa,stroke:#ced4da,stroke-width:2px,stroke-dasharray: 4 4,color:#333;
+
+    A[🗡️ Attacker<br><i>MAB-Guided Generator</i>]:::attacker -->|Generates SQLs + Mutates Payloads| SFT[📄 SFT Formatter<br><i>Schema to OpenAI Msgs</i>]:::formatter
+    SFT -->|Formats SFT Data| D[🛡️ Defender<br><i>Model Training & Eval</i>]:::defender
+    D -->|1. LoRA Finetune<br>2. Merge Weights| M[(Merged Model)]:::formatter
+    M -->|Inference on Valid Set| V[⚖️ Verifier<br><i>Weight Updater</i>]:::verifier
+    V -->|Updates EXP3 Weights<br>Reward = 1 - Accuracy| A
 ```
-┌──────────────────────────────────────────────────────────┐
-│                  Adversarial Training Loop                │
-│                                                          │
-│   ┌──────────┐     ┌─────────────┐     ┌──────────┐     │
-│   │ Attacker │ ──► │CoT Producer │ ──► │ Defender │     │
-│   │ (MAB     │     │ (SFT data   │     │ (LoRA    │     │
-│   │  guided  │     │  formatter) │     │  fine-   │     │
-│   │  sample  │     └─────────────┘     │  tune +  │     │
-│   │  gen.)   │                         │  infer)  │     │
-│   └────▲─────┘                         └────┬─────┘     │
-│        │                                    │           │
-│        │         ┌──────────┐               │           │
-│        └──────── │ Verifier │ ◄─────────────┘           │
-│                  │ (EXP3    │                           │
-│                  │  weight  │                           │
-│                  │  update) │                           │
-│                  └──────────┘                           │
-└──────────────────────────────────────────────────────────┘
-```
 
-Each round:
-1. **Attacker** samples attack clusters based on EXP3 probabilities, generates injection SQLs (optionally with LLM-based payload mutation), and mixes in benign samples.
-2. **CoT Producer** pairs each SQL with its database schema and formats the data into OpenAI-style messages for SFT.
-3. **Defender** fine-tunes the base model with LoRA, merges the adapter, and runs inference on a validation set.
-4. **Verifier** computes per-cluster accuracy, calculates EXP3 rewards (`1 − accuracy`), and updates cluster weights — clusters the model struggles with get higher weight in the next round.
+### How a Round Works:
+1. **Attacker**: Samples attack clusters based on EXP3 probabilities. Generates injection SQLs (optionally mutating payloads via an LLM to increase diversity) and mixes them with benign samples.
+2. **SFT Formatter**: Pairs each SQL query with its corresponding database schema and formats the data into OpenAI-style conversational SFT data.
+3. **Defender**: Fine-tunes the base model (e.g., *Qwen2.5-Coder-1.5B*) using LoRA, merges the trained adapter into the base weights, and runs inference evaluations.
+4. **Verifier**: Computes per-cluster accuracy from the Defender's inference results. It calculates EXP3 rewards (`1 − accuracy`) and updates cluster weights, ensuring the next round forces the model to confront its weakest areas.
 
-## Directory Structure
+---
 
-```
+## 📂 Directory Structure
+
+```text
 SQLI/
-├── config/                          # YAML configuration files
-│   ├── training_config.yaml         #   Fine-tuning hyperparameters
-│   ├── inference_config.yaml        #   Inference settings
-│   ├── gpt_config.yaml              #   LLM API config (mutation)
-│   ├── database_connection.yaml     #   MySQL connection details
-│   └── fsdp_config.yaml             #   FSDP / DeepSpeed config
-├── data/
-│   ├── raw_datas_for_generation/    # Raw materials for sample generation
-│   │   ├── payloads.json            #   Payload templates by attack type
-│   │   ├── sql_data_with_injection_point.json
-│   │   ├── schema.json              #   Database schemas
-│   │   ├── system_variables.json    #   MySQL system variables
-│   │   ├── comments.json            #   Deceptive comments library
-│   │   └── normal_sqls.json         #   Benign SQL samples
-│   └── benchmark/                   # Benchmark datasets
-│       ├── train_sqls.json / test_sqls.json
-│       └── *_openai_format.jsonl    #   Pre-formatted SFT data
-├── ddl/                             # DDL scripts for 11 databases
-├── prompt_templates/                # Jinja2 prompt templates
-│   ├── generate_comment.j2
-│   └── CoT_producer/               #   Background knowledge templates
-├── src/
-│   ├── main.py                      # Training loop entry point
-│   ├── Attacker/
-│   │   ├── Attacker.py              #   MAB-guided sample generator
-│   │   ├── generate_injection_sql.py#   SQL injection pipeline
-│   │   └── payload_mutation/        #   LLM-based mutation subsystem
-│   ├── CoT_producer/
-│   │   ├── CoT_producer.py          #   SFT data formatter
-│   │   ├── schema_reprocess.py      #   Schema loading & DDL generation
-│   │   └── generate_thinking_of_ground_truth.py
-│   ├── Defender/
-│   │   ├── defender.py              #   Training pipeline orchestrator
-│   │   ├── finetune.py              #   LoRA/QLoRA fine-tuning script
-│   │   ├── merge_lora.py            #   LoRA adapter merge script
-│   │   └── inference.py             #   Model inference & evaluation
-│   ├── Verifier/
-│   │   ├── verifier.py              #   EXP3 weight updater
-│   │   └── eval.py                  #   Per-cluster accuracy computation
-│   └── utils/                       #   Shared utilities
-├── .gitignore
-├── requirements.txt
-└── README.md
+├── config/                          # ⚙️ YAML configuration files
+│   ├── training_config.yaml         # Fine-tuning hyperparameters
+│   ├── inference_config.yaml        # Inference settings
+│   ├── gpt_config.yaml              # LLM API config (for payload mutation)
+│   ├── database_connection.yaml     # MySQL connection details
+│   └── fsdp_config.yaml             # Distributed training config (FSDP/DeepSpeed)
+├── data/                            # 📊 Datasets and Materials
+│   ├── raw_datas_for_generation/    # Raw SQLs, schemas, and payload templates
+│   └── benchmark/                   # Training/Testing benchmark datasets
+├── ddl/                             # 🗄️ Reference DDL scripts for databases
+├── prompt_templates/                # 📝 Prompt files (e.g. generate_comment.j2)
+└── src/                             # 💻 Source Code
+    ├── main.py                      # Multi-round training entry point
+    ├── Attacker/                    # Generator & LLM mutation logic
+    ├── Defender/                    # LoRA fine-tuning, merging, and inference
+    ├── Verifier/                    # Acc metrics & MAB weight processing
+    └── utils/                       # Shared tools (formatting, clustering)
 ```
 
-## Prerequisites
+---
 
-- Python 3.10+
-- CUDA-capable GPU(s) (tested with 2× GPUs)
-- MySQL server (for template filling with real schema data)
-- Access to an OpenAI-compatible LLM API (for payload mutation)
+## 🚀 Getting Started
 
-## Installation
+### Prerequisites
+- **Python:** 3.10 or higher
+- **Hardware:** CUDA-capable GPU(s) (Framework tested with multi-GPU setups)
+- **Database:** MySQL server (required for template filling with real schema data)
+- **API:** Access to an OpenAI-compatible API (required if payload mutation is enabled)
 
-```bash
-git clone <repository-url>
-cd SQLI
-pip install -r requirements.txt
-```
+### Installation
 
-## Configuration
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd SQLI
+   ```
+2. Install the required dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-All configuration files are in the `config/` directory:
+---
 
-| File | Purpose |
-|------|---------|
-| `training_config.yaml` | GPU allocation, batch size, LoRA rank/alpha/dropout, learning rate, accelerate config path |
-| `inference_config.yaml` | Inference batch size, temperature, max sequence length, device |
-| `gpt_config.yaml` | LLM API key, base URL, model name (for payload mutation) |
-| `database_connection.yaml` | MySQL host, port, user, password, database |
-| `fsdp_config.yaml` | FSDP / DeepSpeed distributed training configuration |
+## ⚙️ Configuration
 
-### Key Training Parameters (in `main.py`)
+Before running the framework, ensure the files in the `config/` directory are properly configured:
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `NUM_ROUNDS` | 8 | Total adversarial training rounds |
-| `NUM_TRAINING_SQLS` | 300 | Samples generated per round |
-| `ATTACKER_GAMMA` | 0.7 | MAB exploration factor for sampling |
-| `VERIFIER_GAMMA` | 0.3 | EXP3 learning rate for weight updates |
-| `ATTACKER_K` | 8 | Number of clusters selected per round |
-| `PROBABILITY_ROUNDS` | 6 | Rounds using probability sampling (rest use top-k) |
-| `ENABLE_PAYLOAD_MUTATION` | True | Toggle LLM-based payload mutation |
-| `MODIFY_PAYLOAD_PROB_START` | 0.1 | Initial mutation probability |
-| `MODIFY_PAYLOAD_PROB_END` | 0.4 | Final mutation probability (linearly interpolated) |
+| Configuration File | Description |
+|--------------------|-------------|
+| `training_config.yaml` | Controls GPU allocation, batch size, LoRA params (rank/alpha/dropout), learning rate, and accelerate paths. |
+| `inference_config.yaml` | Sets inference batch size, temperature, seq length, and target device. |
+| `gpt_config.yaml` | Stores LLM API keys and model names used by the Attacker for payload mutation. |
+| `database_connection.yaml`| Credentials for the MySQL template database. |
+| `fsdp_config.yaml` | Multi-GPU distributed training configuration. |
 
-## Usage
+### Key Training Parameters (`src/main.py`)
+You can tweak the core loop behaviour directly in `main.py`:
+- `NUM_ROUNDS = 8`: Total adversarial training iterations.
+- `NUM_TRAINING_SQLS = 300`: Volume of samples generated per round.
+- `ATTACKER_GAMMA = 0.7` / `VERIFIER_GAMMA = 0.3`: MAB exploration/learning rates.
+- `ENABLE_PAYLOAD_MUTATION = True`: Toggles dynamic LLM-based SQL payload mutations.
 
-### Running the Full Training Loop
+---
 
+## 💻 Usage
+
+### Launching the Full Adversarial Loop
+To run the automated Attack-Defend-Verify loop across all configured rounds:
 ```bash
 cd SQLI
 python src/main.py
 ```
 
-The training loop can be resumed from a breakpoint by setting `breakpoint_round` in `main.py`:
+*🔥 Tip: You can resume training from a specific breakpoint by modifying the `breakpoint_round` argument in `main.py` -> `run_training_loop(start_round=0, breakpoint_round=3)`.*
 
-```python
-run_training_loop(start_round=0, breakpoint_round=3)  # Resume from round 3
-```
+### Running Individual Components Manually
 
-### Running Individual Components
+If you need to isolate specific behaviors, you can run the Defender scripts individually:
 
-**Fine-tune only** (via `accelerate`):
+**1. Fine-Tune (via Accelerate):**
 ```bash
 accelerate launch --config_file config/fsdp_config.yaml \
     src/Defender/finetune.py \
@@ -148,7 +132,7 @@ accelerate launch --config_file config/fsdp_config.yaml \
     --use_lora --lora_rank 16
 ```
 
-**Merge LoRA adapter**:
+**2. Merge LoRA Adapter:**
 ```bash
 python src/Defender/merge_lora.py \
     --lora_model_name_or_path /path/to/adapter \
@@ -156,7 +140,7 @@ python src/Defender/merge_lora.py \
     --save_tokenizer
 ```
 
-**Run inference**:
+**3. Run Inference:**
 ```bash
 python src/Defender/inference.py \
     --model_path /path/to/merged_model \
@@ -164,42 +148,33 @@ python src/Defender/inference.py \
     --output_file /path/to/results.jsonl
 ```
 
-## Attack Cluster Taxonomy
+---
 
-Each SQL injection sample is characterized by a 4-dimensional key:
+## 🔬 Technical Deep-Dive
 
-| Dimension | Values |
-|-----------|--------|
-| **Attack Type** | Tautologies, Error-based, Union-query, Piggy-backed, Boolean Inference, Time Inference |
-| **Annotator** | True / False |
-| **Information Features** | constant, system information, specific database |
-| **Comment** | True / False |
+### Attack Cluster Taxonomy
+SQL injection samples are dynamically categorised using a 4-dimensional space:
+1. **Attack Type**: `Tautologies`, `Error-based`, `Union-query`, `Piggy-backed`, `Boolean Inference`, `Time Inference`.
+2. **Annotator**: True / False.
+3. **Information Features**: `constant`, `system information`, `specific database`.
+4. **Comment**: True / False.
 
-Normal (benign) SQL samples use the fixed key `normal||normal||normal||normal`.
+*Benign SQL samples are mapped to a static `normal||normal||normal||normal` key.*
 
-## Technical Details
+### Multi-Armed Bandit (EXP3)
+The framework mathematically guarantees the model confronts its weakest areas:
+- **Reward Function**: $Reward = 1 - Accuracy$
+- **Weight Update**: $W_{k} = W_{k} \times \exp(\frac{\gamma}{N} \times \frac{Reward_{k}}{Prob_{k}})$
+- MAB heavily samples clusters with high weights (low detection accuracy) in subsequent rounds.
 
-### Base Model
-- **Qwen2.5-Coder-1.5B-Instruct** (configurable in `ProjectPaths`)
+### LLM Payload Mutation
+When enabled, the Attacker uses LLM capabilities to mutate SQL injection payloads on the fly:
+- **Type-focused Mutation**: Alters the implementation technique of the attack.
+- **Info-focused Mutation**: Alters the query structure seamlessly.
+- Includes an 18-category memory system to prevent repetitive generations and employs anti-imitation few-shot prompting.
 
-### Fine-Tuning
-- LoRA with rank=16, alpha=32, dropout=0.1
-- BF16 mixed precision
-- Multi-GPU via HuggingFace Accelerate + DeepSpeed/FSDP
+---
 
-### MAB Algorithm (EXP3)
-- Probability update: `p(k) = (1−γ)·w(k)/Σw + γ/N`
-- Weight update: `w(k) *= exp(γ/n · reward(k)/prob(k))`
-- Reward: `1 − accuracy` (clusters the model already handles well get low reward)
-
-### Payload Mutation
-- LLM-driven mutation with two strategies:
-  - **Type-focused**: Changes the attack implementation technique
-  - **Info-focused**: Changes the SQL query structure
-- 18-category memory system (6 attack types × 3 info features)
-- Anti-imitation few-shot prompting
-- Separate `expected_types` inference for semantic understanding
-
-## License
-
-This project is for academic research purposes.
+<div align="center">
+<i>This project is developed for academic research and defensive security purposes.</i>
+</div>
