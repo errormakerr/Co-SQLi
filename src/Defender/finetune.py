@@ -1,5 +1,18 @@
 #!/usr/bin/env python
 # coding=utf-8
+"""
+LoRA / QLoRA Fine-Tuning Script
+
+Supervised fine-tuning of a causal language model using LoRA (or QLoRA) and
+HuggingFace Accelerate for multi-GPU training.
+
+This script is launched via ``accelerate launch`` from ``Defender.run_finetune()``
+and should not typically be invoked directly.
+
+Supported training data formats:
+- ``prompt`` + ``completion`` fields (instruction-completion format).
+- ``messages`` field (OpenAI conversation format).
+"""
 import sys
 import argparse
 import logging
@@ -38,19 +51,24 @@ from transformers import (
 )
 from peft import LoraConfig, TaskType, get_peft_model, prepare_model_for_kbit_training
 
-def str2bool(value):
+def str2bool(value: str) -> bool:
+    """Convert a string representation of a boolean to a Python bool."""
     if isinstance(value, bool):
         return value
-    if value.lower() in ('true', '1', 'yes'):
+    if value.lower() in ("true", "1", "yes"):
         return True
-    elif value.lower() in ('false', '0', 'no'):
+    if value.lower() in ("false", "0", "no"):
         return False
-    else:
-        raise argparse.ArgumentTypeError(f"Boolean value expected, got {value}.")
+    raise argparse.ArgumentTypeError(f"Boolean value expected, got {value!r}.")
 
 class TemporarilySeededRandom:
-    def __init__(self, seed):
-        """Temporarily set the random seed, and then restore it when exiting the context."""
+    """Context manager that temporarily overrides the global random seed."""
+
+    def __init__(self, seed: int) -> None:
+        """
+        Args:
+            seed: The seed to use inside the context.
+        """
         self.seed = seed
         self.stored_state = None
         self.stored_np_state = None
@@ -69,113 +87,160 @@ class TemporarilySeededRandom:
         random.setstate(self.stored_state)
         np.random.set_state(self.stored_np_state)
 
-def get_random_k_indices(data, data_prop, seed=42):
-    flattened = [(value, i, j) for i, sublist in enumerate(data) for j, value in enumerate(sublist) if value != -100]
+def get_random_k_indices(data, data_prop: float, seed: int = 42):
+    """
+    Sample a random proportion of non-masked token positions from *data*.
+
+    Args:
+        data:      Nested list of label tensors (``-100`` entries are masked).
+        data_prop: Fraction (0–1) of non-masked tokens to retain.
+        seed:      Random seed for reproducibility.
+
+    Returns:
+        List of ``(sample_idx, token_idx)`` tuples for the selected tokens.
+    """
+    flattened = [
+        (value, i, j)
+        for i, sublist in enumerate(data)
+        for j, value in enumerate(sublist)
+        if value != -100
+    ]
     with TemporarilySeededRandom(seed):
-        random_k = random.sample(flattened, int(len(flattened)* data_prop))
-    random_k_indices = [(item[1], item[2]) for item in random_k]  # item[2]+1 check the bias
-    return random_k_indices
+        random_k = random.sample(flattened, int(len(flattened) * data_prop))
+    return [(item[1], item[2]) for item in random_k]
 
 logger = get_logger(__name__)
 
 def encode_with_prompt_completion_format(example, tokenizer, max_seq_length, with_prompt_token, add_bos=False):
-    '''
-    Here we assume each example has 'prompt' and 'completion' fields.
-    We concatenate prompt and completion and tokenize them together because otherwise prompt will be padded/trancated 
-    and it doesn't make sense to follow directly with the completion.
-    '''
-    # if prompt doesn't end with space and completion doesn't start with space, add space
-    if not example['prompt'].endswith((' ', '\n', '\t')) and not example['completion'].startswith((' ', '\n', '\t')):
-        example_text = example['prompt'] + ' ' + example['completion']
+    """
+    Tokenise a ``prompt``/``completion`` example.
+
+    The prompt and completion are concatenated *before* tokenisation so that
+    the prompt is not padded/truncated independently.  The prompt portion of
+    the labels is masked (set to -100) unless *with_prompt_token* is True.
+    """
+    # Ensure there is a whitespace boundary between prompt and completion
+    if (
+        not example["prompt"].endswith((" ", "\n", "\t"))
+        and not example["completion"].startswith((" ", "\n", "\t"))
+    ):
+        example_text = example["prompt"] + " " + example["completion"]
     else:
-        example_text = example['prompt'] + example['completion']
+        example_text = example["prompt"] + example["completion"]
+
     example_text = example_text + tokenizer.eos_token
     if add_bos:
         example_text = tokenizer.bos_token + example_text
-    tokenized_example = tokenizer(example_text, return_tensors='pt', max_length=max_seq_length, truncation=True)
+
+    tokenized_example = tokenizer(
+        example_text, return_tensors="pt", max_length=max_seq_length, truncation=True
+    )
     input_ids = tokenized_example.input_ids
     labels = input_ids.clone()
-    tokenized_prompt = tokenizer(example['prompt'], return_tensors='pt', max_length=max_seq_length, truncation=True)
-    
-    # mask the prompt part for avoiding loss
+
+    tokenized_prompt = tokenizer(
+        example["prompt"], return_tensors="pt", max_length=max_seq_length, truncation=True
+    )
     if not with_prompt_token:
-        labels[:, :tokenized_prompt.input_ids.shape[1]] = -100
-        
+        # Mask prompt tokens so the loss is only computed on the completion
+        labels[:, : tokenized_prompt.input_ids.shape[1]] = -100
+
     attention_mask = torch.ones_like(input_ids)
     return {
-        'input_ids': input_ids.flatten(),
-        'labels': labels.flatten(),
-        'attention_mask': attention_mask.flatten(),
+        "input_ids": input_ids.flatten(),
+        "labels": labels.flatten(),
+        "attention_mask": attention_mask.flatten(),
     }
 
 def encode_with_messages_format(example, tokenizer, max_seq_length, with_prompt_token, add_bos=False):
-    '''
-    Here we assume each example has a 'messages' field Each message is a dict with 'role' and 'content' fields.
-    We concatenate all messages with the roles as delimiters and tokenize them together.
-    '''
-    messages = example['messages']
+    """
+    Tokenise an OpenAI-style ``messages`` example.
+
+    All messages are concatenated with role delimiters and tokenised together.
+    Non-assistant turn tokens are masked in the labels (set to -100) unless
+    *with_prompt_token* is True.
+    """
+    messages = example["messages"]
     if len(messages) == 0:
-        raise ValueError('messages field is empty.')
-    
-    def _concat_messages(messages):
-        message_text = ""
-        for message in messages:
-            if message["role"] == "system":
-                message_text += "<|system|>\n" + message["content"].strip() + "\n"
-            elif message["role"] == "user":
-                message_text += "<|user|>\n" + message["content"].strip() + "\n"
-            elif message["role"] == "assistant":
-                message_text += "<|assistant|>\n" + message["content"].strip() + tokenizer.eos_token + "\n"
+        raise ValueError("messages field is empty.")
+
+    def _concat_messages(msgs):
+        text = ""
+        for msg in msgs:
+            if msg["role"] == "system":
+                text += "<|system|>\n" + msg["content"].strip() + "\n"
+            elif msg["role"] == "user":
+                text += "<|user|>\n" + msg["content"].strip() + "\n"
+            elif msg["role"] == "assistant":
+                text += "<|assistant|>\n" + msg["content"].strip() + tokenizer.eos_token + "\n"
             else:
-                raise ValueError("Invalid role: {}".format(message["role"]))
-        return message_text
-        
+                raise ValueError(f"Invalid role: {msg['role']!r}")
+        return text
+
     example_text = _concat_messages(messages).strip()
     if add_bos:
         example_text = tokenizer.bos_token + example_text
-    tokenized_example = tokenizer(example_text, return_tensors='pt', max_length=max_seq_length, truncation=True)
+
+    tokenized_example = tokenizer(
+        example_text, return_tensors="pt", max_length=max_seq_length, truncation=True
+    )
     input_ids = tokenized_example.input_ids
     labels = input_ids.clone()
 
-    # mask the non-assistant part for avoiding loss
+    # Mask non-assistant turns so the loss is only computed on assistant tokens
     for message_idx, message in enumerate(messages):
         if message["role"] != "assistant":
-            if message_idx == 0:
-                message_start_idx = 0
-            else:
-                message_start_idx = tokenizer(
-                    _concat_messages(messages[:message_idx]), return_tensors='pt', max_length=max_seq_length, truncation=True
+            message_start_idx = (
+                0
+                if message_idx == 0
+                else tokenizer(
+                    _concat_messages(messages[:message_idx]),
+                    return_tensors="pt",
+                    max_length=max_seq_length,
+                    truncation=True,
                 ).input_ids.shape[1]
-            if message_idx < len(messages) - 1 and messages[message_idx+1]["role"] == "assistant":
-                # here we also ignore the role of the assistant
-                messages_so_far = _concat_messages(messages[:message_idx+1]) + "<|assistant|>\n"
+            )
+            # Include the assistant role tag in the masked region so it is
+            # not used for loss computation either.
+            if (
+                message_idx < len(messages) - 1
+                and messages[message_idx + 1]["role"] == "assistant"
+            ):
+                messages_so_far = _concat_messages(messages[: message_idx + 1]) + "<|assistant|>\n"
             else:
-                messages_so_far = _concat_messages(messages[:message_idx+1])
+                messages_so_far = _concat_messages(messages[: message_idx + 1])
+
             message_end_idx = tokenizer(
                 messages_so_far,
-                return_tensors='pt', 
-                max_length=max_seq_length, 
-                truncation=True
+                return_tensors="pt",
+                max_length=max_seq_length,
+                truncation=True,
             ).input_ids.shape[1]
-            
-            ### mask prompt loss
+
             if not with_prompt_token:
                 labels[:, message_start_idx:message_end_idx] = -100
-            
+
             if message_end_idx >= max_seq_length:
                 break
 
     attention_mask = torch.ones_like(input_ids)
     return {
-        'input_ids': input_ids.flatten(),
-        'labels': labels.flatten(),
-        'attention_mask': attention_mask.flatten(),
+        "input_ids": input_ids.flatten(),
+        "labels": labels.flatten(),
+        "attention_mask": attention_mask.flatten(),
     }
 
 def save_with_accelerate(accelerator, model, tokenizer, output_dir, args):
-    # set the generation config to an empty setting to be safe.
-    # we usually do greedy decoding for generation, so this should be okay.
-    # otherwise, we get an error thrown at save time.
+    """
+    Save model weights (and tokenizer) using Accelerate's state-dict helpers.
+
+    When using multi-GPU training the state dict must be gathered across all
+    processes via ``accelerator.get_state_dict()`` to avoid saving only a
+    partial shard.  LoRA models use ``PeftModel.save_pretrained()`` which
+    handles adapter-only saving automatically.
+    """
+    # Use an empty GenerationConfig to avoid errors when saving; greedy
+    # decoding does not require any generation config fields.
     model.generation_config = transformers.GenerationConfig(
         temperature=None,
         top_p=None,
@@ -202,9 +267,12 @@ def save_with_accelerate(accelerator, model, tokenizer, output_dir, args):
         )
 
 def run_finetune(args):
-    # Initialize the accelerator. We will let the accelerator handle device placement for us in this example.
-    # If we're using tracking, we also need to initialize it here and it will by default pick up all supported trackers
-    # in the environment
+    """
+    Run the full LoRA/QLoRA fine-tuning loop.
+
+    Args:
+        args: Parsed command-line arguments from :func:`parse_args`.
+    """
     accelerator_log_kwargs = {}
 
     if args.with_tracking:
@@ -233,18 +301,15 @@ def run_finetune(args):
         datasets.utils.logging.set_verbosity_error()
         transformers.utils.logging.set_verbosity_error()
 
-    # If passed along, set the training seed now.
     if args.seed is not None:
         set_seed(args.seed)
 
-    if accelerator.is_main_process:
-        if args.output_dir is not None:
-            os.makedirs(args.output_dir, exist_ok=True)
-    
+    if accelerator.is_main_process and args.output_dir is not None:
+        os.makedirs(args.output_dir, exist_ok=True)
+
     accelerator.wait_for_everyone()
 
     if args.dataset_name is not None:
-        # Downloading and loading a dataset from the hub.
         raw_datasets = load_dataset(
             args.dataset_name,
             args.dataset_config_name,
@@ -260,7 +325,7 @@ def run_finetune(args):
             **dataset_args,
         )
     
-    # Load pretrained model and tokenizer
+    # --- Load model configuration ---
     if args.config_name:
         config = AutoConfig.from_pretrained(
             args.config_name,
@@ -281,19 +346,15 @@ def run_finetune(args):
         )
 
     tokenizer_revision = (
-        args.model_revision
-        if args.tokenizer_revision is None
-        else args.tokenizer_revision
+        args.model_revision if args.tokenizer_revision is None else args.tokenizer_revision
     )
-
     if tokenizer_revision != args.model_revision:
-        # Warn user if tokenizer and model use different revisions; this is an unusual use case.
-        warning = f"""Requested tokenizer revision `{tokenizer_revision}` is different
-                   from the model revision `{args.model_revision}`."""
-        logger.warn(warning)
-        
-    
-    
+        logger.warning(
+            f"Requested tokenizer revision `{tokenizer_revision}` differs from "
+            f"model revision `{args.model_revision}`."
+        )
+
+    # --- Load tokenizer ---
     if args.tokenizer_name:
         tokenizer = AutoTokenizer.from_pretrained(
             args.tokenizer_name,
@@ -319,6 +380,7 @@ def run_finetune(args):
             "You can do it from another script, save it, and load it from here, using --tokenizer_name."
         )
 
+    # --- Load model ---
     if args.model_name_or_path:
         if args.use_qlora:
             bnb_config = BitsAndBytesConfig(
@@ -327,10 +389,6 @@ def run_finetune(args):
                 bnb_4bit_quant_type="nf4",
                 bnb_4bit_compute_dtype=torch.bfloat16,
             )
-            # bnb_config = BitsAndBytesConfig(
-            #     load_in_8bit=True  
-            # )
-
             model = AutoModelForCausalLM.from_pretrained(
                 args.model_name_or_path,
                 from_tf=bool(".ckpt" in args.model_name_or_path),
@@ -354,11 +412,11 @@ def run_finetune(args):
                 token=os.getenv("HF_TOKEN", None),
             )
     else:
-        logger.info("Training new model from scratch")
+        logger.info("Training new model from scratch.")
         model = AutoModelForCausalLM.from_config(config)
 
-    # no default pad token for llama!
-    # here we add all special tokens again, because the default ones are not in the special_tokens_map
+    # --- Special-token handling ---
+    # LlamaTokenizer does not include a pad token by default; add one.
     if isinstance(tokenizer, LlamaTokenizer) or isinstance(tokenizer, LlamaTokenizerFast):
         num_added_tokens = tokenizer.add_special_tokens({
             "bos_token": "<s>",
@@ -384,51 +442,62 @@ def run_finetune(args):
         num_added_tokens = tokenizer.add_special_tokens({'pad_token': '<pad>'})
         assert num_added_tokens == 1, "We detected no padding token but add_special_tokens did not add one."
 
-    # We resize the embeddings only when necessary to avoid index errors. If you are creating a model from scratch
-    # gather deepspeed to get "real" embedding size    
+    # --- Resize token embeddings if necessary ---
+    # Gather the actual embedding size across DeepSpeed ZeRO shards before comparing.
     embeddings = model.get_input_embeddings()
     with deepspeed.zero.GatheredParameters(embeddings.weight, modifier_rank=None):
         embedding_size = embeddings.weight.shape[0]
     # resize does its own gather
     
     if len(tokenizer) > embedding_size:
-        # pad to multiple for tensor cores.
+        # Pad to a multiple of 8 for optimal tensor-core utilisation.
         model.resize_token_embeddings(len(tokenizer), pad_to_multiple_of=8)
-    # update embedding size after resizing for sum loss
+    # Re-read embedding size after potential resize (needed for the sum-loss path).
     embeddings = model.get_input_embeddings()
     with deepspeed.zero.GatheredParameters(embeddings.weight, modifier_rank=None):
         embedding_size = embeddings.weight.shape[0]
 
-    # set the tokenizer chat template to the tulu format
-    # this makes evaluation/etc easier down the line.
-    tokenizer.chat_template = "{% for message in messages %}\n{% if message['role'] == 'user' %}\n{{ '<|user|>\n' + message['content'] }}\n{% elif message['role'] == 'assistant' %}\n{{ '<|assistant|>\n'  + message['content'] + eos_token }}\n{% endif %}\n{% if loop.last and add_generation_prompt %}\n{{ '<|assistant|>' }}\n{% endif %}\n{% endfor %}" # noqa: E501
+    # Set the tokenizer chat template (Tulu / Open-Instruct format).
+    # This ensures consistent prompt formatting during both training and evaluation.
+    tokenizer.chat_template = (  # noqa: E501
+        "{% for message in messages %}\n"
+        "{% if message['role'] == 'user' %}\n"
+        "{{ '<|user|>\n' + message['content'] }}\n"
+        "{% elif message['role'] == 'assistant' %}\n"
+        "{{ '<|assistant|>\n'  + message['content'] + eos_token }}\n"
+        "{% endif %}\n"
+        "{% if loop.last and add_generation_prompt %}\n"
+        "{{ '<|assistant|>' }}\n"
+        "{% endif %}\n"
+        "{% endfor %}"
+    )
     if args.add_bos:
-        # also add bos in the chat template
         tokenizer.chat_template = "{{ bos_token }}" + tokenizer.chat_template
 
 
+    # --- LoRA / QLoRA setup ---
     if args.use_lora:
         if args.gradient_checkpointing:
             model.gradient_checkpointing_enable()
-        
         if args.use_qlora:
-            model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=args.gradient_checkpointing)
-
-        logger.info("Initializing LORA model...")
+            model = prepare_model_for_kbit_training(
+                model, use_gradient_checkpointing=args.gradient_checkpointing
+            )
+        logger.info("Initializing LoRA model...")
         peft_config = LoraConfig(
-            task_type=TaskType.CAUSAL_LM, 
-            inference_mode=False, 
-            r=args.lora_rank, 
-            lora_alpha=args.lora_alpha, 
+            task_type=TaskType.CAUSAL_LM,
+            inference_mode=False,
+            r=args.lora_rank,
+            lora_alpha=args.lora_alpha,
             lora_dropout=args.lora_dropout,
-            target_modules=["q_proj", "o_proj", "v_proj", "k_proj", "gate_proj", "up_proj", "down_proj"]
+            target_modules=["q_proj", "o_proj", "v_proj", "k_proj", "gate_proj", "up_proj", "down_proj"],
         )
         model = get_peft_model(model, peft_config)
         model.print_trainable_parameters()
     elif args.gradient_checkpointing:
         model.gradient_checkpointing_enable()
 
-    # Preprocessing the datasets.
+    # --- Dataset encoding ---
     if "prompt" in raw_datasets["train"].column_names and "completion" in raw_datasets["train"].column_names:
         encode_function = partial(
             encode_with_prompt_completion_format,
@@ -438,7 +507,6 @@ def run_finetune(args):
             add_bos=args.add_bos,
         )
 
-    # TODO
     elif "messages" in raw_datasets["train"].column_names:
         encode_function = partial(
             encode_with_messages_format,
@@ -451,62 +519,64 @@ def run_finetune(args):
         raise ValueError("You need to have either 'prompt'&'completion' or 'messages' in your column names.")
     
     with accelerator.main_process_first():
-        
+        # Add a sequential index column so individual samples can be addressed
         raw_datasets = raw_datasets.map(
             lambda example, idx: {"idx": idx},
-            with_indices=True,  
+            with_indices=True,
             num_proc=args.preprocessing_num_workers,
             desc="Adding idx column",
         )
-        
         lm_datasets = raw_datasets.map(
             encode_function,
             batched=False,
             num_proc=args.preprocessing_num_workers,
             load_from_cache_file=not args.overwrite_cache,
-            remove_columns=[name for name in raw_datasets["train"].column_names if name not in ["idx", "input_ids", "labels", "attention_mask"]],
+            remove_columns=[
+                name
+                for name in raw_datasets["train"].column_names
+                if name not in ["idx", "input_ids", "labels", "attention_mask"]
+            ],
             desc="Tokenizing and reformatting instruction data",
         )
         lm_datasets.set_format(type="pt")
-        # lm_datasets = lm_datasets.filter(lambda example: (example['labels'] != -100).any())
-        
+
         if args.with_prompt_token:
-            print("*** current also use prompt token ***")
-            
+            print("*** Training with prompt tokens included in loss. ***")
+
         train_dataset = lm_datasets["train"]
-        orig_labels = train_dataset['labels']
+        orig_labels = train_dataset["labels"]
 
-        ### Token Cleaning ##
-        if args.token_select_pattern == 'token_cleaning': 
-            print("*** Using cleaned tokens ***")    
-            selected_labels = torch.load(args.label_path + f"token_labels_{args.train_data_tag}.pt")        
-            
-        ## random selection ##
-        elif args.token_select_pattern == 'random': 
-            print("*** Using random tokens ***") 
-            selected_labels = [[-100 for _ in range(len(label))] for label in orig_labels]
-
+        # --- Token selection strategy ---
+        if args.token_select_pattern == "token_cleaning":
+            print("*** Token selection: token_cleaning ***")
+            selected_labels = torch.load(
+                args.label_path + f"token_labels_{args.train_data_tag}.pt"
+            )
+        elif args.token_select_pattern == "random":
+            print("*** Token selection: random ***")
+            selected_labels = [[-100] * len(label) for label in orig_labels]
             random_tokens_indices = get_random_k_indices(orig_labels, args.data_prop)
-            select_sample_idx = [item[0] for item in random_tokens_indices]
-            select_sample_idx = set(select_sample_idx)
-            print(f"selected sample size:: {len(select_sample_idx)} -- original dataset size: {len(orig_labels)}")        
+            selected_sample_idxs = {item[0] for item in random_tokens_indices}
+            print(
+                f"Selected {len(selected_sample_idxs)} samples "
+                f"(out of {len(orig_labels)} total)."
+            )
             for i, j in random_tokens_indices:
                 selected_labels[i][j] = orig_labels[i][j].item()
-                
-        elif args.token_select_pattern == 'default': 
-            print("*** By fault, use all tokens ***")
+        elif args.token_select_pattern == "default":
+            print("*** Token selection: default (all tokens) ***")
             selected_labels = orig_labels
         else:
-            raise NotImplementedError
-
-
+            raise NotImplementedError(
+                f"Unsupported token_select_pattern: {args.token_select_pattern!r}"
+            )
 
         train_dataset = train_dataset.map(
-            lambda examples, idx: {'labels': selected_labels[idx]},
-            with_indices=True
-        ) 
-    
-    # DataLoaders creation:
+            lambda examples, idx: {"labels": selected_labels[idx]},
+            with_indices=True,
+        )
+
+    # --- DataLoaders ---
     train_dataloader = DataLoader(
         train_dataset, 
         shuffle=True, 
@@ -514,8 +584,9 @@ def run_finetune(args):
         batch_size=args.per_device_train_batch_size
     )
 
-    # Optimizer
-    # Split weights in two groups, one with weight decay and the other not.
+    # --- Optimiser ---
+    # Parameters with "bias" or "layer_norm.weight" in their name are excluded
+    # from weight decay following standard practice.
     no_decay = ["bias", "layer_norm.weight"]
     optimizer_grouped_parameters = [
         {
@@ -538,21 +609,22 @@ def run_finetune(args):
     else:
         optimizer = torch.optim.AdamW(optimizer_grouped_parameters, lr=args.learning_rate)
 
-    # Scheduler and math around the number of training steps.
+    # --- LR Scheduler ---
     overrode_max_train_steps = False
     num_update_steps_per_epoch = math.ceil(len(train_dataloader) / args.gradient_accumulation_steps)
     if args.max_train_steps is None:
         args.max_train_steps = args.num_train_epochs * num_update_steps_per_epoch
         overrode_max_train_steps = True
 
-    # Create the learning rate scheduler.
-    # Note: the current accelerator.step() calls the .step() of the real scheduler for the `num_processes` times. This is because they assume 
-    # the user initialize the scheduler with the entire training set. In the case of data parallel training, each process only
-    # sees a subset (1/num_processes) of the training set. So each time the process needs to update the lr multiple times so that the total 
-    # number of updates in the end matches the num_training_steps here.
-    # Here we need to set the num_training_steps to either using the entire training set (when epochs is specified) or we need to multiply the 
-    # num_training_steps by num_processes so that the total number of updates matches the num_training_steps.
-    num_training_steps_for_scheduler = args.max_train_steps if overrode_max_train_steps else args.max_train_steps * accelerator.num_processes
+    # ``accelerator.step()`` calls the real scheduler ``num_processes`` times per
+    # global update step (once per process).  To compensate, the scheduler is
+    # initialised with ``max_train_steps * num_processes`` when the user
+    # specifies a fixed step count rather than epoch-derived steps.
+    num_training_steps_for_scheduler = (
+        args.max_train_steps
+        if overrode_max_train_steps
+        else args.max_train_steps * accelerator.num_processes
+    )
     lr_scheduler = get_scheduler(
         name=args.lr_scheduler_type,
         optimizer=optimizer,
@@ -560,25 +632,23 @@ def run_finetune(args):
         num_warmup_steps=int(num_training_steps_for_scheduler * args.warmup_ratio),
     )
 
-    # Prepare everything with `accelerator`.
+    # --- Accelerate preparation ---
     model, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
         model, optimizer, train_dataloader, lr_scheduler
     )
 
-    # We need to recalculate our total training steps as the size of the training dataloader may have changed.
-    num_update_steps_per_epoch = math.ceil(len(train_dataloader) / args.gradient_accumulation_steps)
+    # Recalculate step / epoch counts after DataLoader size is known.
+    num_update_steps_per_epoch = math.ceil(
+        len(train_dataloader) / args.gradient_accumulation_steps
+    )
     if overrode_max_train_steps:
         args.max_train_steps = args.num_train_epochs * num_update_steps_per_epoch
-    # Afterwards we recalculate our number of training epochs
     args.num_train_epochs = math.ceil(args.max_train_steps / num_update_steps_per_epoch)
 
-    # Figure out how many steps we should save the Accelerator states
     checkpointing_steps = args.checkpointing_steps
     if checkpointing_steps is not None and checkpointing_steps.isdigit():
         checkpointing_steps = int(checkpointing_steps)
 
-    # We need to initialize the trackers we use, and also store our configuration.
-    # The trackers initializes automatically on the main process.
     if args.with_tracking:
         experiment_config = vars(args).copy()
         v = experiment_config["lr_scheduler_type"]
@@ -593,22 +663,26 @@ def run_finetune(args):
         )
 
 
-    # Train!
-    total_batch_size = args.per_device_train_batch_size * accelerator.num_processes * args.gradient_accumulation_steps
-
+    # --- Training loop ---
+    total_batch_size = (
+        args.per_device_train_batch_size
+        * accelerator.num_processes
+        * args.gradient_accumulation_steps
+    )
     logger.info("***** Running training *****")
-    logger.info(f"  Num examples = {len(train_dataset)}")
-    logger.info(f"  Num Epochs = {args.num_train_epochs}")
-    logger.info(f"  Instantaneous batch size per device = {args.per_device_train_batch_size}")
-    logger.info(f"  Total train batch size (w. parallel, distributed & accumulation) = {total_batch_size}")
-    logger.info(f"  Gradient Accumulation steps = {args.gradient_accumulation_steps}")
-    logger.info(f"  Total optimization steps = {args.max_train_steps}")
-    # Only show the progress bar once on each machine.
+    logger.info(f"  Num examples            = {len(train_dataset)}")
+    logger.info(f"  Num epochs              = {args.num_train_epochs}")
+    logger.info(f"  Batch size per device   = {args.per_device_train_batch_size}")
+    logger.info(f"  Total batch size        = {total_batch_size}")
+    logger.info(f"  Gradient accum steps    = {args.gradient_accumulation_steps}")
+    logger.info(f"  Total optimisation steps = {args.max_train_steps}")
+
+    # Progress bar is shown only on the local main process.
     progress_bar = tqdm(range(args.max_train_steps), disable=not accelerator.is_local_main_process)
     completed_steps = 0
     starting_epoch = 0
 
-    # Potentially load in the weights and states from a previous save
+    # --- Resume from checkpoint (optional) ---
     if args.resume_from_checkpoint:
         if args.resume_from_checkpoint is not None or args.resume_from_checkpoint != "":
             checkpoint_path = args.resume_from_checkpoint
@@ -625,7 +699,6 @@ def run_finetune(args):
 
         accelerator.print(f"Resumed from checkpoint: {checkpoint_path}")
         accelerator.load_state(path)
-        # Extract `epoch_{i}` or `step_{i}` 
         training_difference = os.path.splitext(path)[0]
 
         if "epoch" in training_difference:
@@ -633,7 +706,7 @@ def run_finetune(args):
             resume_step = None
             completed_steps = starting_epoch * num_update_steps_per_epoch
         else:
-            # need to multiply `gradient_accumulation_steps` to reflect real steps
+            # Multiply by gradient_accumulation_steps to get the real dataloader step count.
             resume_step = (
                 int(training_difference.replace("step_", ""))
                 * args.gradient_accumulation_steps
@@ -642,7 +715,6 @@ def run_finetune(args):
             completed_steps = resume_step // args.gradient_accumulation_steps
             resume_step -= starting_epoch * len(train_dataloader)
 
-    # update the progress_bar if load from checkpoint
     progress_bar.update(completed_steps)
     
     for epoch in range(starting_epoch, args.num_train_epochs):
@@ -747,10 +819,11 @@ def run_finetune(args):
     if args.with_tracking:
         accelerator.end_training()
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments for the fine-tuning script."""
     parser = argparse.ArgumentParser()
 
-    # 这里只列出你 run_pipeline / 命令行里用到的参数，其他保持原脚本中的默认值或自行补充
+    # Arguments used by run_pipeline / command line; others keep default values
     parser.add_argument("--model_name_or_path", type=str, required=True)
     parser.add_argument("--tokenizer_name", type=str, default=None)
     parser.add_argument("--train_file", type=str, required=True)
@@ -773,7 +846,7 @@ def parse_args():
     parser.add_argument("--output_dir", type=str, required=True)
     parser.add_argument("--logging_steps", type=int, default=50)
 
-    # 你在 run_pipeline 中额外传入的这些参数
+    # Additional arguments passed from run_pipeline
     parser.add_argument("--train_data_tag", type=str, default="default")
     parser.add_argument(
         "--token_select_pattern",
@@ -790,7 +863,7 @@ def parse_args():
     parser.add_argument("--lora_alpha", type=float, default=16)
     parser.add_argument("--lora_dropout", type=float, default=0.1)
 
-    # 其他在脚本里用到、但你没在命令行里传的，给个合理默认
+    # Arguments used internally by the script with reasonable defaults
     parser.add_argument("--dataset_name", type=str, default=None)
     parser.add_argument("--dataset_config_name", type=str, default=None)
     parser.add_argument("--config_name", type=str, default=None)
@@ -823,15 +896,15 @@ def parse_args():
     return args
 
 def main():
-    print(">>> ENTERED finetune.py main() <<<", file=sys.stderr, flush=True)
+    """Parse arguments and run the fine-tuning loop."""
     try:
         args = parse_args()
-        print(">>> ARGS PARSED OK <<<", file=sys.stderr, flush=True)
     except SystemExit as e:
-        # argparse 出错时会调用 sys.exit，这里把错误捕获并打印出来
-        print(f">>> argparse SystemExit: code={e.code}", file=sys.stderr, flush=True)
+        # argparse calls sys.exit on error; re-raise after logging
+        print(f"argparse exited with code={e.code}", file=sys.stderr, flush=True)
         raise
     run_finetune(args)
+
 
 if __name__ in ("__main__", "__mp_main__"):
     main()

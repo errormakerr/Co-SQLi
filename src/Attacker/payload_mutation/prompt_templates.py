@@ -54,12 +54,10 @@ You are a SQL injection security researcher specializing in payload mutation. Yo
 Each attack type has multiple forms. Your task is to explore DIFFERENT forms while keeping the attack type unchanged.
 
 ## Task
-Given the following {attack_type} payload with information feature "{info_feature}", mutate it by changing the **attack form** (implementation method).
+Given the following {attack_type} payload, mutate it by changing the **attack form** (implementation method).
 
 **What you should change:** The specific functions, operators, or techniques used to implement this attack type.
-**What you must NOT change:** 
-- The fundamental attack type ({attack_type})
-- The information feature category ({info_feature})
+**What you must NOT change:** The fundamental attack type ({attack_type}).
 
 ## Original Payload
 {payload}
@@ -74,25 +72,13 @@ The following describes various implementation forms for {attack_type}. You MUST
 ## Rules
 1. **Change the attack form**: Use a different function, operator, or implementation technique from those described in the Mutation Guidance above. The new payload must implement {attack_type} using a DIFFERENT method than the original.
 
-2. **Preserve the information feature category**: Keep the mutated payload in the SAME information feature as the original ({info_feature}).
-   - If original is `constant`: keep it as constant-style payload (do not introduce system/database placeholders that change category).
-   - If original is `system information`: keep system-information querying intent.
-   - If original is `specific database`: keep specific-database table/column querying intent.
+2. **Preserve placeholders (if any)**: If the original payload contains placeholders in the format $xxx$ (e.g., $sysInfo$, $int$, $column_t1_1$), you MUST keep them exactly as they appear. Do NOT remove, rename, or modify any placeholders. Note: Some payloads may not have placeholders - this is normal.
 
-3. **Preserve placeholders (if any)**: If the original payload contains placeholders in the format $xxx$ (e.g., $sysInfo$, $int$, $column_t1_1$), you MUST keep them exactly as they appear. Do NOT remove, rename, or modify any placeholders. Note: Some payloads may not have placeholders - this is normal.
+3. **Preserve the attack type**: The mutated payload must still be a valid {attack_type}. Do not change it to a different attack type.
 
-4. **Preserve the attack type**: The mutated payload must still be a valid {attack_type}. Do not change it to a different attack type.
+4. **Preserve SQL comment terminator**: If the original payload ends with a SQL comment (-- or #), keep it unchanged.
 
-5. **Preserve SQL comment terminator**: If the original payload ends with a SQL comment (-- or #), keep it unchanged.
-
-6. **MySQL dialect only**: All SQL syntax MUST be valid MySQL. Do NOT use T-SQL or other dialect syntax. Specifically forbidden:
-   - `UPDATE ... FROM` (T-SQL style) — use `UPDATE t1 JOIN t2 ON ...` instead
-   - `||` for string concatenation — use `CONCAT()` instead
-   - `TOP N` — use `LIMIT N` instead
-   - `OFFSET N ROWS FETCH NEXT M ROWS ONLY` — use `LIMIT M OFFSET N` instead
-   - `ISNULL(x, y)` — use `IFNULL(x, y)` or `COALESCE(x, y)` instead
-
-7. **Output format**: Output ONLY the mutated payload. No explanations, no alternatives, no additional text. Just the single payload string.
+5. **Output format**: Output ONLY the mutated payload. No explanations, no alternatives, no additional text. Just the single payload string.
 
 Mutated Payload:"""
 
@@ -116,12 +102,11 @@ You are a SQL injection security researcher specializing in query structure anal
 - For Piggy-backed attacks: what type of SQL statement is used (SELECT, DELETE, INSERT, UPDATE, etc.)
 
 ## Task
-Given the following {attack_type} payload with information feature "{info_feature}", mutate it by changing the **SQL query structure** while keeping the **attack type** and **attack form** unchanged.
+Given the following payload, mutate it by changing the **SQL query structure** while keeping the **attack type** and **attack form** unchanged.
 
 **What you should change:** The SQL query pattern - table relationships, column selections, conditions, aggregations.
 **What you must NOT change:** 
-- The attack type ({attack_type})
-- The information feature category ({info_feature})
+- The attack type (the category of SQL injection)
 - The attack form (the specific functions/operators used to implement the attack)
 
 ## Original Payload
@@ -151,18 +136,9 @@ The following describes various SQL structure patterns you can use. Choose a DIF
 
 3. **Preserve the attack type and form**: The specific attack technique (functions, operators) must remain exactly the same. Only the query structure should change.
 
-4. **Keep complexity reasonable**: Add at most ONE new structural layer compared to the original. For example, if the original is a single-table query, add one JOIN or one WHERE condition — do NOT chain multiple JOINs and subqueries together. Over-complex structures are hard to inject and unlikely to appear in real attacks.
+4. **Preserve SQL comment terminator**: If the original payload ends with a SQL comment (-- or #), keep it unchanged.
 
-5. **Preserve SQL comment terminator**: If the original payload ends with a SQL comment (-- or #), keep it unchanged.
-
-6. **MySQL dialect only**: All SQL syntax MUST be valid MySQL. Do NOT use T-SQL or other dialect syntax. Specifically forbidden:
-   - `UPDATE ... FROM` (T-SQL style) — use `UPDATE t1 JOIN t2 ON ...` instead
-   - `||` for string concatenation — use `CONCAT()` instead
-   - `TOP N` — use `LIMIT N` instead
-   - `OFFSET N ROWS FETCH NEXT M ROWS ONLY` — use `LIMIT M OFFSET N` instead
-   - `ISNULL(x, y)` — use `IFNULL(x, y)` or `COALESCE(x, y)` instead
-
-7. **Output format**: Output ONLY the mutated payload. No explanations, no alternatives, no additional text. Just the single payload string.
+5. **Output format**: Output ONLY the mutated payload. No explanations, no alternatives, no additional text. Just the single payload string.
 
 Mutated Payload:"""
 
@@ -275,26 +251,15 @@ the column count and types of the original query.
 
 ### 1. Column Count Detection (constant)
 **Why it's needed:** UNION requires both queries to have the SAME number of columns.
-Attackers FIRST probe to find column count using ORDER BY or GROUP BY with positional integers.
-These payloads are HIGHLY CAMOUFLAGED — they look exactly like normal SQL sorting/grouping clauses.
-The ONLY signal is that columns are referenced by INTEGER POSITION (1, 2, 3...) rather than name.
+Attackers first probe to find how many columns the original query returns.
 
-**ORDER BY positional probing:** Inject `ORDER BY N` where N is a literal integer, increasing N
-until the query errors out, revealing the column count. Direction modifiers (ASC/DESC) and 
-multi-column probing (ORDER BY N,M) are also common variants.
-
-**GROUP BY positional probing:** Inject `GROUP BY N` where N is a literal integer. Can be combined
-with HAVING clauses (tautological or aggregate conditions) or used bare without HAVING.
-
-**Why these are hard to detect:**
-`SELECT name FROM users WHERE id=1 ORDER BY 3` — is this malicious?
-YES: `ORDER BY 3` (column #3) is injected to probe column count.
-Without context, it looks identical to a legitimate `ORDER BY` clause.
-The key indicator: **integer positional column reference** (ORDER/GROUP BY N where N is a literal integer).
+**ORDER BY Method:** `' ORDER BY 1--` (increase number until error)
+**GROUP BY Method:** `' GROUP BY 1--`, increase number until error and with optional HAVING clause
 
 ### 2. UNION Variants
-- `UNION SELECT`: Standard union, removes duplicate rows (MySQL default)
+- `UNION SELECT`: Standard union, removes duplicate rows
 - `UNION ALL SELECT`: Keeps all rows including duplicates
+- `UNION DISTINCT SELECT`: Explicit distinct
 
 ### 3. SELECT Content (constant)
 **Why NULL is useful:** NULL is type-agnostic, works when column type is unknown.
@@ -302,7 +267,7 @@ The key indicator: **integer positional column reference** (ORDER/GROUP BY N whe
 **Reference examples:**
 - `' UNION SELECT NULL--`
 - `' UNION SELECT 'name'--`
-- `' UNION ALL SELECT NULL--`
+- `' UNION SELECT 36282--`
 
 ### 4. System Information Extraction
 **Reference examples:**

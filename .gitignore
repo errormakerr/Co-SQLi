@@ -1,10 +1,15 @@
-# Python cache
+# Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+eggs/
 
-# Virtual envs
+# Virtual environments
 .venv/
 venv/
 env/
@@ -12,7 +17,20 @@ env/
 # IDE
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
 
-# OS junk
+# OS
 .DS_Store
 Thumbs.db
+
+# Project-specific
+*.log
+runs/
+checkpoints/
+wandb/
+
+# Sensitive configs (uncomment if needed)
+# config/gpt_config.yaml
+# config/database_connection.yaml

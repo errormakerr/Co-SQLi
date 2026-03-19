@@ -414,35 +414,36 @@ class ExpectedTypesInferrer:
         ph_pattern = re.escape(placeholder['full_match'])
         
         # ──────────────────────────────────────────────────────────
-        # 公共模式（跨攻击类型）：先检查与具体攻击类型无关的明确语境
+        # Cross-attack-type common patterns: check unambiguous contexts
+        # before branching into attack-specific logic.
         # ──────────────────────────────────────────────────────────
 
-        # XML 函数（extractvalue / updatexml）内容参数 → integer
-        # （以下检查优先于攻击类型，因为 XML 注入模式非常明确）
+        # XML functions (extractvalue / updatexml) content argument → integer
+        # (Checked first because XML injection patterns are very distinctive.)
         if re.search(r'(extractvalue|updatexml)\s*\(', payload, re.IGNORECASE):
-            # 检查占位符是否在 concat() 内部（即作为 XML path 内容）
+            # Placeholder is inside concat() → acts as XML path content
             if re.search(rf'concat\s*\([^)]*{ph_pattern}', payload, re.IGNORECASE):
                 return 'integer'
 
-        # GTID 函数（GTID_SUBSET / GTID_SUBTRACT）→ integer
+        # GTID functions (GTID_SUBSET / GTID_SUBTRACT) first argument → integer
         if re.search(rf'GTID_(SUBSET|SUBTRACT)\s*\(\s*\(?{ph_pattern}', payload, re.IGNORECASE):
             return 'integer'
 
-        # 字符提取函数（SUBSTR / LEFT / RIGHT / MID）第一参数 → string
+        # Character-extraction functions (SUBSTR / LEFT / RIGHT / MID) first argument → string
         char_funcs = r'(SUBSTR|SUBSTRING|LEFT|RIGHT|MID)'
         if re.search(rf'{char_funcs}\s*\(\s*\(?{ph_pattern}', payload, re.IGNORECASE):
             return 'string'
 
-        # ASCII(SUBSTR(...)) 模式 → string
+        # ASCII(SUBSTR(...)) pattern → string
         if re.search(rf'ASCII\s*\(\s*(SUBSTR|SUBSTRING|LEFT|RIGHT|MID)?\s*\(?{ph_pattern}',
                      payload, re.IGNORECASE):
             return 'string'
 
-        # LENGTH() 参数 → string
+        # LENGTH() argument → string
         if re.search(rf'LENGTH\s*\(\s*{ph_pattern}', payload, re.IGNORECASE):
             return 'string'
 
-        # LIKE / REGEXP 操作符左侧 → string
+        # Left-hand side of LIKE / REGEXP → string
         if re.search(rf'{ph_pattern}\s*\)?\s*LIKE', payload, re.IGNORECASE):
             return 'string'
         if re.search(rf'{ph_pattern}\s*\)?\s*REGEXP', payload, re.IGNORECASE):
@@ -452,46 +453,46 @@ class ExpectedTypesInferrer:
         # Error-based attack patterns
         # ──────────────────────────────────────────────────────────
         if 'error' in attack_type_lower:
-            # CAST/CONVERT patterns - need string to trigger error
+            # CAST/CONVERT: passing a string into a numeric cast triggers a conversion error
             if re.search(rf'CAST\s*\(\s*\(?{ph_pattern}', payload, re.IGNORECASE):
                 return 'string'
             if re.search(rf'CONVERT\s*\(\s*\(?{ph_pattern}', payload, re.IGNORECASE):
                 return 'string'
             
-            # Math function patterns - need string to trigger error
+            # Math functions: passing a non-numeric argument triggers an error
             math_funcs = r'(SQRT|LOG|LOG2|LOG10|LN|MOD|EXP|POW|POWER)'
             if re.search(rf'{math_funcs}\s*\(\s*\(?{ph_pattern}', payload, re.IGNORECASE):
                 return 'string'
             
-            # Comparison with number - need string for implicit conversion error
+            # Comparison with a number: implicit conversion from string triggers an error
             if re.search(rf'{ph_pattern}\s*\)?\s*[><=!]+\s*\$int\$', payload):
                 return 'string'
             if re.search(rf'{ph_pattern}\s*\)?\s*[><=!]+\s*\d+', payload):
                 return 'string'
             
-            # GTID functions（已在公共区处理，此处兜底）
+            # GTID functions (fallback; primary check is in the common section above)
             if re.search(r'GTID_(SUBSET|SUBTRACT)', payload, re.IGNORECASE):
                 return 'integer'
 
-            # 日期/时间函数（错误攻击中传递整数触发类型错误）
+            # Date/time functions: passing an integer to a date function triggers a type error
             date_funcs = r'(TO_DAYS|FROM_DAYS|YEAR|MONTH|DAY|HOUR|MINUTE|SECOND|WEEKDAY|DAYOFWEEK)'
             if re.search(rf'{date_funcs}\s*\(\s*\(?{ph_pattern}', payload, re.IGNORECASE):
                 return 'integer'
-            # DATE/TIME 函数传字符串会触发格式错误
+            # DATE() / TIME() with a string argument triggers a format error
             if re.search(rf'(DATE|TIME)\s*\(\s*\(?{ph_pattern}', payload, re.IGNORECASE):
                 return 'string'
 
-            # XML functions（已在公共区处理，此处兜底）
+            # XML functions (fallback; primary check is in the common section above)
             if re.search(r'(extractvalue|updatexml)', payload, re.IGNORECASE):
                 return 'integer'
             
-            return 'string'  # Default for error-based
+            return 'string'  # Default for error-based attacks
         
         # ──────────────────────────────────────────────────────────
         # Tautologies attack patterns
         # ──────────────────────────────────────────────────────────
         if 'tautolog' in attack_type_lower:
-            # 数值比较 → 对 $sysInfo$ 用 "integer"，对 DB 列用 "number"
+            # Numeric comparisons: use "integer" for $sysInfo$, "number" for DB columns
             is_sysinfo = 'sysInfo' in placeholder.get('content', placeholder['full_match'])
             if re.search(rf'{ph_pattern}\s*\)?\s*[><=]+\s*\d+', payload):
                 return 'integer' if is_sysinfo else 'number'
@@ -503,10 +504,10 @@ class ExpectedTypesInferrer:
             return 'all'
         
         # ──────────────────────────────────────────────────────────
-        # Boolean/Time inference attack patterns
+        # Boolean / Time inference attack patterns
         # ──────────────────────────────────────────────────────────
         if 'inference' in attack_type_lower or 'boolean' in attack_type_lower or 'time' in attack_type_lower:
-            # 数值比较上下文（IF/WHERE 内）→ integer（适用于 $sysInfo$）
+            # Numeric comparison inside IF/WHERE → integer (applicable to $sysInfo$)
             is_sysinfo = 'sysInfo' in placeholder.get('content', placeholder['full_match'])
             if is_sysinfo:
                 if re.search(rf'{ph_pattern}\s*\)?\s*[><=!]+\s*(\d+|\$int\$)', payload):
@@ -516,11 +517,11 @@ class ExpectedTypesInferrer:
             
             return 'string'  # Default for inference attacks
         
-        # Union query / Piggy-backed - usually flexible
+        # Union query / Piggy-backed: usually flexible, any type is acceptable
         if 'union' in attack_type_lower or 'piggy' in attack_type_lower:
             return 'all'
         
-        # Default
+        # Default fallback
         return 'all'
     
     def get_stats(self) -> Dict:

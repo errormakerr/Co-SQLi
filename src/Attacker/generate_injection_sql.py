@@ -1,228 +1,315 @@
-from utils.yaml_operation import load_yaml_to_dict
-from utils.LLM import LLM
-from utils.j2_opeartion import load_prompt_template
+"""
+SQL injection sample generation pipeline.
+
+This module provides:
+- ``SymbolChecker``                 — bracket/quote balance validation
+- ``GetRandomAttribute``            — random value generators for placeholder substitution
+- ``SpecificDatabaseTemplateFiller``— fills ``$table_N$`` / ``$column_tN_M$`` / ``$sample_tN_M$``
+                                       placeholders using a real MySQL database schema
+- ``SystemInformationTemplateFiller``— fills ``$sysInfo$`` placeholders with MySQL system
+                                        variables / expressions
+- ``pipeline``                      — end-to-end function that converts a raw SQL example +
+                                       payload template into a labelled injection SQL sample
+- ``batch_generate_injection_sqls`` — convenience wrapper around ``pipeline``
+
+Module-level singletons
+-----------------------
+``gpt_config``, ``gpt``, and ``checker`` are instantiated at import time from the
+project's ``config/gpt_config.yaml`` and ``config/database_connection.yaml`` files.
+They are shared across all calls to ``pipeline`` within a single process.
+"""
+
+from __future__ import annotations
+
 import re
 import random
-from typing import Dict, List, Any
-from datetime import time
-from datetime import date, timedelta
 import string
-import pymysql
+from datetime import date, time, timedelta
 from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+import pymysql
+
+from utils.yaml_operation import load_yaml_to_dict
+from utils.LLM import LLM
+from utils.j2_operation import load_prompt_template
+
+
+# ---------------------------------------------------------------------------
+# Symbol balance checker
+# ---------------------------------------------------------------------------
 
 class SymbolChecker:
+    """
+    Validate bracket and quote balance in a SQL string.
+
+    Single quotes that are intentionally unbalanced (i.e., the SQL-injection
+    quote-escaping trick) are **not** flagged here — callers should pass only
+    the fragment before any ``--`` comment terminator.
+    """
+
     def __init__(self):
-        self.bracket_pairs = {
-            '(': ')',
-            '[': ']',
-            '{': '}'
-        }
-        self.quote_symbols = ["'", '"', '`']
-    
-    def check_balanced(self, text):
-        """检查所有符号是否平衡"""
-        
+        self.bracket_pairs = {"(": ")", "[": "]", "{": "}"}
+        self.quote_symbols = ["'", '"', "`"]
+
+    def check_balanced(self, text: str):
+        """
+        Check whether all brackets and quotes in *text* are balanced.
+
+        Args:
+            text: The SQL fragment to check.
+
+        Returns:
+            A ``(bool, message)`` tuple where ``bool`` is ``True`` when the
+            text is balanced and ``message`` describes any imbalance found.
+        """
         if not isinstance(text, str):
-            return False, "当前SQL语句为None"
-        
+            return False, "Input is not a string"
+
         stack = []
         quote_stack = []
         i = 0
-        
+
         while i < len(text):
             char = text[i]
-            
-            # 检查转义字符
-            if i > 0 and text[i-1] == '\\':
+
+            # Skip escaped characters
+            if i > 0 and text[i - 1] == "\\":
                 i += 1
                 continue
-            
-            # 如果当前在引号内，只关心引号的闭合
+
+            # Inside a quoted string — only watch for its closing quote
             if quote_stack:
                 if char == quote_stack[-1]:
                     quote_stack.pop()
                 i += 1
                 continue
-            
-            # 处理引号
+
+            # Quotes
             if char in self.quote_symbols:
                 quote_stack.append(char)
-            
-            # 处理括号
+            # Opening brackets
             elif char in self.bracket_pairs:
                 stack.append(char)
+            # Closing brackets
             elif char in self.bracket_pairs.values():
                 if not stack:
-                    return False, f"位置 {i}: 多余的闭合符号 '{char}'"
-                
+                    return False, f"Position {i}: unexpected closing symbol '{char}'"
                 last_open = stack.pop()
                 if self.bracket_pairs[last_open] != char:
-                    return False, f"位置 {i}: 符号不匹配 '{last_open}' 和 '{char}'"
-            
+                    return False, f"Position {i}: mismatched symbols '{last_open}' and '{char}'"
+
             i += 1
-        
-        # 检查剩余的符号
+
         errors = []
         if stack:
-            errors.append(f"未闭合的括号: {stack}")
+            errors.append(f"Unclosed brackets: {stack}")
         if quote_stack:
-            errors.append(f"未闭合的引号: {quote_stack}")
-        
+            errors.append(f"Unclosed quotes: {quote_stack}")
+
         if errors:
             return False, "; ".join(errors)
-        
-        return True, "所有符号都已正确闭合"
+        return True, "All symbols are correctly balanced"
+
+
+# ---------------------------------------------------------------------------
+# Random value generators for fixed-type placeholders
+# ---------------------------------------------------------------------------
 
 class GetRandomAttribute:
+    """Static helpers that generate random scalar values for SQL placeholders."""
+
     @staticmethod
     def random_time() -> str:
-        """生成随机时间（HH:MM:SS）"""
+        """Return a random time string in ``HH:MM:SS`` format."""
         hour = random.randint(0, 23)
         minute = random.randint(0, 59)
         second = random.randint(0, 59)
         return f"{hour:02d}:{minute:02d}:{second:02d}"
 
     @staticmethod
-    def random_date(start_date: date | None = None,
-                    end_date: date | None = None) -> str:
-        """生成 start_date 和 end_date 之间的随机日期，格式 YYYY-MM-DD"""
+    def random_date(
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None,
+    ) -> str:
+        """
+        Return a random date string in ``YYYY-MM-DD`` format.
+
+        Args:
+            start_date: Earliest possible date (default: 2000-01-01).
+            end_date:   Latest possible date  (default: 2025-12-31).
+
+        Raises:
+            ValueError: If *start_date* is later than *end_date*.
+        """
         if start_date is None:
             start_date = date(2000, 1, 1)
         if end_date is None:
             end_date = date(2025, 12, 31)
-
         if start_date > end_date:
-            raise ValueError("start_date 不能晚于 end_date")
-
+            raise ValueError("start_date must not be later than end_date")
         delta = end_date - start_date
-        random_days = random.randint(0, delta.days)
-        random_date = start_date + timedelta(days=random_days)
-        return random_date.strftime('%Y-%m-%d')
+        return (start_date + timedelta(days=random.randint(0, delta.days))).strftime("%Y-%m-%d")
 
     @staticmethod
     def random_hex_number() -> str:
-        """生成随机十六进制数（字符串形式，如 0x1a2b3c）"""
+        """Return a random hex literal string (e.g. ``0x1a2b3c``)."""
         return hex(random.randint(0, 0xFFFFFFFF))
 
     @staticmethod
-    def random_int_number(min_value: int = 0, max_value: int = 100) -> int:
-        """生成随机整数"""
+    def random_int_number(min_value: int = 0, max_value: int = 100) -> str:
+        """Return a random integer as a string."""
         return str(random.randint(min_value, max_value))
 
     @staticmethod
-    def random_float_number(min_value: float = 0.0,
-                            max_value: float = 10.0,
-                            ndigits: int = 2) -> float:
-        """生成随机浮点数，保留 ndigits 位小数"""
-        value = random.uniform(min_value, max_value)
-        return str(round(value, ndigits))
+    def random_float_number(
+        min_value: float = 0.0,
+        max_value: float = 10.0,
+        ndigits: int = 2,
+    ) -> str:
+        """Return a random float as a string rounded to *ndigits* decimal places."""
+        return str(round(random.uniform(min_value, max_value), ndigits))
 
     @staticmethod
     def random_character() -> str:
-        """生成随机字符（英文字母）"""
+        """Return a random ASCII letter."""
         return random.choice(string.ascii_letters)
-  
+
+
+# ---------------------------------------------------------------------------
+# Specific-database template filler
+# ---------------------------------------------------------------------------
+
 class SpecificDatabaseTemplateFiller:
-    
-    TYPE_MAPPING = {
-        'number': ['int', 'integer', 'bigint', 'smallint', 'tinyint', 
-                   'real', 'float', 'double', 'numeric', 'decimal'],
-        # 'integer' 与 'number' 映射到相同的数值类型
-        # （推断器或 payloads.json 中 $sysInfo$ 有时标记为 'integer'）
-        'integer': ['int', 'integer', 'bigint', 'smallint', 'tinyint',
-                    'real', 'float', 'double', 'numeric', 'decimal'],
-        'float': ['real', 'float', 'double', 'numeric', 'decimal'],
-        'string': ['varchar', 'char', 'text', 'nvarchar', 'nchar', 
-                   'clob', 'blob', 'string'],
-        'date': ['date', 'datetime', 'timestamp', 'time'],
-        # 'time' 单独处理，映射到时间相关列
-        'time': ['time', 'datetime', 'timestamp'],
-        # 'hex' 可以对应任意类型（hex 值替换字面量，不约束列类型）
-        'hex': None,
-        # 'character' 对应字符串类型列
-        'character': ['varchar', 'char', 'text', 'nvarchar', 'nchar'],
-        'boolean': ['bool', 'boolean', 'bit'],
-        'all': None  # None 表示不限制
+    """
+    Fill ``$table_N$``, ``$column_tN_M$``, and ``$sample_tN_M$`` placeholders
+    by querying a real MySQL schema and sampling actual table/column/value data.
+
+    The ``TYPE_MAPPING`` dict maps the abstract type names used in
+    ``expected_types`` to the concrete MySQL column data-type prefixes that
+    satisfy each type constraint.
+    """
+
+    TYPE_MAPPING: Dict[str, Optional[List[str]]] = {
+        "number": ["int", "integer", "bigint", "smallint", "tinyint",
+                   "real", "float", "double", "numeric", "decimal"],
+        # "integer" shares the same column types as "number"
+        # (the inferrer or payloads.json may annotate $sysInfo$ as "integer")
+        "integer": ["int", "integer", "bigint", "smallint", "tinyint",
+                    "real", "float", "double", "numeric", "decimal"],
+        "float": ["real", "float", "double", "numeric", "decimal"],
+        "string": ["varchar", "char", "text", "nvarchar", "nchar",
+                   "clob", "blob", "string"],
+        "date": ["date", "datetime", "timestamp", "time"],
+        "time": ["time", "datetime", "timestamp"],
+        # "hex" can map to any column type — it replaces a literal value
+        "hex": None,
+        "character": ["varchar", "char", "text", "nvarchar", "nchar"],
+        "boolean": ["bool", "boolean", "bit"],
+        "all": None,  # None means no restriction
     }
-    
-    def __init__(self, db_schema: Dict, mysql_config: Dict[str, Any] = None):
+
+    def __init__(self, db_schema: Dict, mysql_config: Dict[str, Any]):
         """
-        初始化填充器
-        
         Args:
-            db_schema: 数据库schema字典
-            mysql_config: MySQL配置字典，包含 host, port, user, password, database, charset
+            db_schema:    Database schema dict (as stored in ``schema.json``).
+            mysql_config: MySQL connection parameters (host, port, user, password,
+                          database, charset).
+
+        Raises:
+            ValueError: If *mysql_config* is ``None``.
         """
-        self.db_schema = db_schema
-        self.db_name = db_schema.get('database_name', 'unknown')
-        
-        # MySQL配置
         if mysql_config is None:
-            raise ValueError("必须提供 mysql_config 参数")
+            raise ValueError("mysql_config must be provided")
+
+        self.db_schema = db_schema
+        self.db_name = db_schema.get("database_name", "unknown")
         self.mysql_config = mysql_config
-        
-        # 构建表信息
-        self.tables_info = {}
-        self.table_names = []
-        
-        for table in db_schema.get('tables', []):   
-            table_name = table['table_name']
+
+        # Pre-build table info index
+        self.tables_info: Dict[str, Dict] = {}
+        self.table_names: List[str] = []
+
+        for table in db_schema.get("tables", []):
+            table_name = table["table_name"]
             self.table_names.append(table_name)
-            
             columns = []
             column_types = {}
-            
-            for col in table.get('columns', []):
-                col_name = col['column_name']
-                col_type = col['data_type']
+            for col in table.get("columns", []):
+                col_name = col["column_name"]
                 columns.append(col_name)
-                column_types[col_name] = col_type
-            
-            self.tables_info[table_name] = {
-                'columns': columns,
-                'types': column_types
-            }
-    
+                column_types[col_name] = col["data_type"]
+            self.tables_info[table_name] = {"columns": columns, "types": column_types}
+
+    # ------------------------------------------------------------------
+    # MySQL connection helper
+    # ------------------------------------------------------------------
+
     def _get_mysql_connection(self):
-        """创建MySQL连接"""
+        """Open and return a PyMySQL connection, or ``None`` on failure."""
         try:
-            connection = pymysql.connect(
-                host=self.mysql_config['host'],
-                port=self.mysql_config['port'],
-                user=self.mysql_config['user'],
-                password=self.mysql_config['password'],
-                database=self.mysql_config['database'],
-                charset=self.mysql_config.get('charset', 'utf8mb4'),
-                cursorclass=pymysql.cursors.DictCursor
+            return pymysql.connect(
+                host=self.mysql_config["host"],
+                port=self.mysql_config["port"],
+                user=self.mysql_config["user"],
+                password=self.mysql_config["password"],
+                database=self.mysql_config["database"],
+                charset=self.mysql_config.get("charset", "utf8mb4"),
+                cursorclass=pymysql.cursors.DictCursor,
             )
-            return connection
         except Exception as e:
-            print(f"MySQL 连接失败: {e}")
+            print(f"MySQL connection failed: {e}")
             return None
-    
-    def fill_template(self, template_input, debug=False) -> str:
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
+    def fill_template(self, template_input, debug: bool = False) -> str:
+        """
+        Fill all structured placeholders in *template_input* with real values.
+
+        Accepts either a raw payload string or a full payload template dict.
+
+        Fixed-type placeholders (``$int$``, ``$float$``, etc.) are replaced
+        first; the remaining ``$table_N$`` / ``$column_tN_M$`` / ``$sample_tN_M$``
+        placeholders are then filled using schema and sample data from MySQL.
+
+        Args:
+            template_input: A payload template dict or a plain payload string.
+            debug:          Print verbose replacement trace when ``True``.
+
+        Returns:
+            The fully substituted SQL payload string.
+
+        Raises:
+            ValueError: If *template_input* is not a str or dict.
+        """
         if isinstance(template_input, str):
             template = template_input
-            expected_types = []
-            information_features = "specific database"  # 字符串输入默认为 specific database
+            expected_types: List[str] = []
+            information_features = "specific database"
             if debug:
-                print("📝 输入类型: 字符串（无类型约束）")
+                print("Input type: string (no type constraints)")
         elif isinstance(template_input, dict):
-            template = template_input.get('payload', '')
-            # 必须复制一份，避免直接修改原始 dict 中的 list（.pop() 会破坏原始数据，
-            # 导致同一 payload 模板被重复使用时 expected_types 越来越短）
-            expected_types = list(template_input.get('expected_types', []))
-            information_features = template_input.get('information_features', 'specific database')
+            template = template_input.get("payload", "")
+            # Copy the list to avoid modifying the original dict in-place:
+            # .pop() calls on the original would shorten expected_types on
+            # every reuse of the same template (a subtle data-corruption bug).
+            expected_types = list(template_input.get("expected_types", []))
+            information_features = template_input.get("information_features", "specific database")
             if debug:
-                print(f"📝 输入类型: 字典")
-                print(f"📝 expected_types: {expected_types}")
-                print(f"📝 information_features: {information_features}")
+                print(f"Input type: dict | expected_types: {expected_types} | info_features: {information_features}")
         else:
-            raise ValueError("template_input 必须是字符串或字典")
-        
-        # 按位置移除固定类型占位符对应的 expected_types 项
-        # 注意：必须按位置而非按值过滤，否则当 $sysInfo$ 与 $int$ 同为 "integer" 类型时
-        # 会错误地把 $sysInfo$ 的类型约束也删除
+            raise ValueError("template_input must be a str or dict")
+
+        # -------------------------------------------------------------------
+        # Remove expected_types entries that correspond to fixed-type
+        # placeholders (e.g. $int$ → "integer"), identified by position.
+        # We must match by position — not by value — because $sysInfo$ and
+        # $int$ may share the same type string ("integer"), and a value-based
+        # filter would remove the wrong entry.
+        # -------------------------------------------------------------------
         FIXED_PLACEHOLDER_TYPE_MAP = {
             "$int$": "integer",
             "$float$": "float",
@@ -241,735 +328,652 @@ class SpecificDatabaseTemplateFiller:
         }
 
         if expected_types:
-            # 构建原始模板的占位符顺序（替换前），按位置找到固定类型占位符的下标
-            import re as _re
-            all_ph_matches = list(_re.finditer(r'\$\w+\$', template))
+            all_ph_matches = list(re.finditer(r"\$\w+\$", template))
             indices_to_remove = set()
             for m in all_ph_matches:
                 ph = m.group(0)
                 if ph in FIXED_PLACEHOLDER_TYPE_MAP:
-                    # 找到该占位符在 expected_types 中的对应位置
                     ph_order = sum(1 for mm in all_ph_matches if mm.start() < m.start())
                     if ph_order < len(expected_types):
                         indices_to_remove.add(ph_order)
-            # 移除固定类型占位符对应的 expected_types 项（从后往前，保持下标稳定）
             for idx in sorted(indices_to_remove, reverse=True):
                 expected_types.pop(idx)
 
-        # 替换固定类型占位符（允许 replace_all）
+        # Replace fixed-type placeholders
         for ph, replacer in FIXED_PLACEHOLDER_REPLACEMENTS.items():
             while ph in template:
                 template = template.replace(ph, str(replacer()), 1)
-        
-        # Step 1: 解析模板，提取所有占位符
+
+        # Parse remaining structured placeholders
         placeholders = self._parse_marked_template(template)
-        
+
         if debug:
-            print(f"📝 占位符数量: {len(placeholders)}")
+            print(f"Placeholder count: {len(placeholders)}")
             for i, p in enumerate(placeholders):
                 print(f"  {i}: {p['full_match']} (type={p['type']})")
-        
-        # Step 2: 验证并调整 expected_types 长度
+
+        # Align expected_types with placeholder count
         if expected_types:
             if len(expected_types) != len(placeholders):
-                print(f"⚠️  警告: expected_types 长度 ({len(expected_types)}) "
-                      f"与占位符数量 ({len(placeholders)}) 不匹配")
-                print([placeholder['type'] for placeholder in placeholders])
-                print(expected_types)
-                print(template)
-                print("\n")
-                # 如果长度不匹配，用 'all' 填充或截断
+                print(
+                    f"Warning: expected_types length ({len(expected_types)}) "
+                    f"does not match placeholder count ({len(placeholders)})"
+                )
                 if len(expected_types) < len(placeholders):
-                    expected_types.extend(['all'] * (len(placeholders) - len(expected_types)))
+                    expected_types.extend(["all"] * (len(placeholders) - len(expected_types)))
                 else:
-                    expected_types = expected_types[:len(placeholders)]
-            
-            # 为占位符分配类型约束
+                    expected_types = expected_types[: len(placeholders)]
             for i, placeholder in enumerate(placeholders):
-                placeholder['expected_type'] = expected_types[i]
+                placeholder["expected_type"] = expected_types[i]
                 if debug:
                     print(f"  {placeholder['full_match']} → expected_type: {expected_types[i]}")
         else:
-            # 如果没有提供 expected_types，默认为 'all'
             for placeholder in placeholders:
-                placeholder['expected_type'] = 'all'
+                placeholder["expected_type"] = "all"
             if debug:
-                print("⚠️  未提供 expected_types，所有占位符使用 'all'")
-        
-        # Step 3: 统计需要多少个表
+                print("No expected_types provided — all placeholders use 'all'")
+
         max_table_id = self._get_max_table_id(placeholders)
-        
-        # Step 4: 分配表并获取数据（带类型约束）
         table_assignments = self._assign_tables_with_types(max_table_id, placeholders, debug)
-        
-        # Step 5: 为每个占位符生成替换值
+
         replacement_values = []
-        
-        for i, placeholder in enumerate(placeholders):
+        for placeholder in placeholders:
             value = self._get_marked_replacement(placeholder, table_assignments, information_features, debug)
             replacement_values.append(value)
             if debug:
                 print(f"  {placeholder['full_match']} → {value}")
-        
-        # Step 6: 从后向前替换（避免位置偏移）
+
+        # Replace from right-to-left to preserve character positions
         result = template
         for placeholder, value in reversed(list(zip(placeholders, replacement_values))):
             result = (
-                result[:placeholder['start']] + 
-                value + 
-                result[placeholder['end']:]
+                result[: placeholder["start"]] + value + result[placeholder["end"] :]
             )
-        
+
         return result
-    
+
+    # ------------------------------------------------------------------
+    # Template parsing
+    # ------------------------------------------------------------------
+
     def _parse_marked_template(self, template: str) -> List[Dict]:
         """
-        解析带标记的模板
-        
-        支持的格式:
-        - $table_N$
-        - $column_tN_M$
-        - $sample_tN_M$
+        Extract all structured placeholders from *template* in order.
+
+        Supported formats:
+        - ``$table_N$``
+        - ``$column_tN_M$``
+        - ``$sample_tN_M$``
+
+        Unknown formats are included with ``type='unknown'``.
         """
         placeholders = []
-        
-        # 匹配所有占位符
-        pattern = r'\$(\w+)\$'
-        
-        for match in re.finditer(pattern, template):
+        for match in re.finditer(r"\$(\w+)\$", template):
             full_match = match.group(0)
             content = match.group(1)
-            
             placeholder = {
-                'full_match': full_match,
-                'start': match.start(),
-                'end': match.end()
+                "full_match": full_match,
+                "start": match.start(),
+                "end": match.end(),
             }
-            
-            # 解析 $table_N$
-            table_match = re.match(r'table_(\d+)', content)
-            if table_match:
-                placeholder['type'] = 'table'
-                placeholder['table_id'] = table_match.group(1)
-                placeholders.append(placeholder)
-                continue
-            
-            # 解析 $column_tN_M$
-            column_match = re.match(r'column_t(\d+)_(\d+)', content)
-            if column_match:
-                placeholder['type'] = 'column'
-                placeholder['table_id'] = column_match.group(1)
-                placeholder['column_id'] = column_match.group(2)
-                placeholders.append(placeholder)
-                continue
-            
-            # 解析 $sample_tN_M$
-            sample_match = re.match(r'sample_t(\d+)_(\d+)', content)
-            if sample_match:
-                placeholder['type'] = 'sample'
-                placeholder['table_id'] = sample_match.group(1)
-                placeholder['column_id'] = sample_match.group(2)
-                placeholders.append(placeholder)
-                continue
-            
-            # 如果都不匹配，标记为未知类型
-            placeholder['type'] = 'unknown'
-            placeholder['content'] = content
+            if re.match(r"table_(\d+)", content):
+                placeholder["type"] = "table"
+                placeholder["table_id"] = re.match(r"table_(\d+)", content).group(1)
+            elif re.match(r"column_t(\d+)_(\d+)", content):
+                m = re.match(r"column_t(\d+)_(\d+)", content)
+                placeholder["type"] = "column"
+                placeholder["table_id"] = m.group(1)
+                placeholder["column_id"] = m.group(2)
+            elif re.match(r"sample_t(\d+)_(\d+)", content):
+                m = re.match(r"sample_t(\d+)_(\d+)", content)
+                placeholder["type"] = "sample"
+                placeholder["table_id"] = m.group(1)
+                placeholder["column_id"] = m.group(2)
+            else:
+                placeholder["type"] = "unknown"
+                placeholder["content"] = content
             placeholders.append(placeholder)
-        
         return placeholders
-    
+
     def _get_max_table_id(self, placeholders: List[Dict]) -> int:
-        """获取最大的表ID"""
-        max_id = 0
-        
-        for p in placeholders:
-            if 'table_id' in p:
-                table_id = int(p['table_id'])
-                max_id = max(max_id, table_id)
-        
-        return max_id
-    
-    def _can_table_satisfy_constraints(self, table_name: str, 
-                                       type_constraints: Dict[str, str]) -> bool:
+        """Return the highest numeric table ID referenced by *placeholders*."""
+        return max(
+            (int(p["table_id"]) for p in placeholders if "table_id" in p),
+            default=0,
+        )
+
+    # ------------------------------------------------------------------
+    # Table assignment
+    # ------------------------------------------------------------------
+
+    def _can_table_satisfy_constraints(
+        self, table_name: str, type_constraints: Dict[str, str]
+    ) -> bool:
         """
-        检查表是否能满足所有类型约束
-        
-        Args:
-            table_name: 表名
-            type_constraints: {column_id: expected_type}
-        
-        Returns:
-            True 如果表能满足所有约束
+        Return ``True`` if *table_name* has at least one column that satisfies
+        every constraint in *type_constraints*.
         """
         if not type_constraints:
             return True
-        
         table_info = self.tables_info[table_name]
-        all_columns = table_info['columns']
-        all_types = table_info['types']
-        
         for column_id, expected_type in type_constraints.items():
-            # 检查是否有符合类型的列
-            filtered = self._filter_columns_by_type(all_columns, all_types, expected_type)
-            if not filtered:
+            if not self._filter_columns_by_type(
+                table_info["columns"], table_info["types"], expected_type
+            ):
                 return False
-        
         return True
-    
-    def _assign_tables_with_types(self, table_count: int, placeholders: List[Dict], debug=False) -> Dict[str, Dict]:
+
+    def _assign_tables_with_types(
+        self, table_count: int, placeholders: List[Dict], debug: bool = False
+    ) -> Dict[str, Dict]:
         """
-        为每个表ID分配实际的表（带类型约束）
+        Assign an actual database table to each numeric table ID (1 … *table_count*).
+
+        Attempts to find tables that satisfy the type constraints collected from
+        the placeholder list; falls back to a random table if no compliant
+        candidate is found within 50 attempts.
         """
-        # 收集每个表ID需要的类型约束
-        table_type_constraints = {}  # {table_id: {column_id: expected_type}}
-        
-        for placeholder in placeholders:
-            ptype = placeholder['type']
-            
-            # 只处理 column 和 sample（它们需要类型约束）
-            if ptype in ['column', 'sample']:
-                table_id = placeholder['table_id']
-                column_id = placeholder['column_id']
-                expected_type = placeholder.get('expected_type', 'all')
-                
-                if table_id not in table_type_constraints:
-                    table_type_constraints[table_id] = {}
-                
-                # 记录该列ID的类型约束
-                if column_id in table_type_constraints[table_id]:
-                    existing = table_type_constraints[table_id][column_id]
-                    if existing == 'all':
-                        table_type_constraints[table_id][column_id] = expected_type
-                    elif expected_type != 'all' and expected_type != existing:
-                        if debug:
-                            print(f"⚠️  警告: column_id {column_id} 有冲突的类型约束: "
-                                  f"{existing} vs {expected_type}，使用 {existing}")
-                else:
+        # Collect type constraints per table ID
+        table_type_constraints: Dict[str, Dict[str, str]] = {}
+        for ph in placeholders:
+            if ph["type"] in ("column", "sample"):
+                table_id = ph["table_id"]
+                column_id = ph["column_id"]
+                expected_type = ph.get("expected_type", "all")
+                table_type_constraints.setdefault(table_id, {})
+                existing = table_type_constraints[table_id].get(column_id)
+                if existing is None:
                     table_type_constraints[table_id][column_id] = expected_type
-        
+                elif existing == "all":
+                    table_type_constraints[table_id][column_id] = expected_type
+                elif expected_type != "all" and expected_type != existing:
+                    if debug:
+                        print(
+                            f"Warning: conflicting type constraints for column_id {column_id}: "
+                            f"{existing} vs {expected_type} — keeping {existing}"
+                        )
+
         if debug:
-            print(f"📊 类型约束汇总: {table_type_constraints}")
-        
-        # 为每个表ID分配表
-        assignments = {}
-        used_tables = set()
-        
+            print(f"Type constraints summary: {table_type_constraints}")
+
+        assignments: Dict[str, Dict] = {}
+        used_tables: set = set()
+
         for i in range(1, table_count + 1):
             table_id = str(i)
-            
-            # 获取该表的类型约束
             type_constraints = table_type_constraints.get(table_id, {})
-            
-            # 🔥 改进：优先选择能满足类型约束的表
-            max_attempts = 50  # 增加尝试次数
             selected_table = None
-            
-            # 先尝试找到满足约束的表
-            for attempt in range(max_attempts):
+
+            for _ in range(50):
                 candidate = random.choice(self.table_names)
-                
-                # 检查是否已使用（如果表足够多）
                 if len(self.table_names) >= table_count and candidate in used_tables:
                     continue
-                
-                # 🔥 检查表是否能满足类型约束
                 if self._can_table_satisfy_constraints(candidate, type_constraints):
                     selected_table = candidate
                     used_tables.add(candidate)
                     break
-            
-            # 如果找不到满足约束的表，随机选择一个（兜底）
+
             if selected_table is None:
                 if debug:
-                    print(f"⚠️  警告: 找不到满足约束的表（table_id={table_id}），随机选择")
+                    print(f"Warning: no table satisfies constraints for table_id={table_id}; choosing randomly")
                 selected_table = random.choice(self.table_names)
-            
-            # 获取表信息
+
             table_info = self.tables_info[selected_table]
-            all_columns = table_info['columns']
-            all_types = table_info['types']
-            
+            all_columns = table_info["columns"]
+            all_types = table_info["types"]
+
             if debug:
-                print(f"📋 表 {table_id} 分配: {selected_table}")
-                print(f"   所有列: {all_columns}")
-            
-            # 为每个 column_id 筛选符合类型的列
-            filtered_columns_by_id = {}
+                print(f"Table {table_id} → {selected_table} | columns: {all_columns}")
+
+            filtered_columns_by_id: Dict[str, List[str]] = {}
             for column_id, expected_type in type_constraints.items():
-                filtered = self._filter_columns_by_type(
+                filtered_columns_by_id[column_id] = self._filter_columns_by_type(
                     all_columns, all_types, expected_type
                 )
-                filtered_columns_by_id[column_id] = filtered
-                
                 if debug:
-                    print(f"   column_id {column_id} (type={expected_type}): {filtered}")
-            
-            # 获取样本数据（从MySQL）
+                    print(
+                        f"  column_id {column_id} (type={expected_type}): "
+                        f"{filtered_columns_by_id[column_id]}"
+                    )
+
             samples = self._get_table_samples(selected_table, all_columns)
-            
             assignments[table_id] = {
-                'table': selected_table,
-                'columns': all_columns,
-                'types': all_types,
-                'samples': samples,
-                'column_map': {},
-                'type_constraints': type_constraints,
-                'filtered_columns': filtered_columns_by_id
+                "table": selected_table,
+                "columns": all_columns,
+                "types": all_types,
+                "samples": samples,
+                "column_map": {},
+                "type_constraints": type_constraints,
+                "filtered_columns": filtered_columns_by_id,
             }
-        
+
         return assignments
-    
-    def _filter_columns_by_type(self, columns: List[str], 
-                                types: Dict[str, str], 
-                                expected_type: str) -> List[str]:
+
+    # ------------------------------------------------------------------
+    # Column filtering
+    # ------------------------------------------------------------------
+
+    def _filter_columns_by_type(
+        self, columns: List[str], types: Dict[str, str], expected_type: str
+    ) -> List[str]:
         """
-        根据期望类型过滤列
+        Return the subset of *columns* whose data type matches *expected_type*.
+
+        Returns all columns unchanged when ``expected_type`` is ``"all"`` or
+        ``"table"``.  Returns an empty list (not a fallback) when no match
+        is found — the caller is responsible for fallback logic.
         """
-        if expected_type == 'all' or expected_type == 'table':
-            return columns  # 不限制类型
-        
-        # 获取允许的数据库类型
-        allowed_db_types = self.TYPE_MAPPING.get(expected_type, [])
-        if allowed_db_types is None:  # 'all' 的情况
+        if expected_type in ("all", "table"):
             return columns
-        
-        # 过滤列
+
+        allowed_db_types = self.TYPE_MAPPING.get(expected_type, [])
+        if allowed_db_types is None:
+            return columns
+
         filtered = []
         for col in columns:
-            col_type = types.get(col, '').lower()
-            
-            # 检查列类型是否匹配
-            type_matched = False
-            for allowed_type in allowed_db_types:
-                if col_type == allowed_type or col_type.startswith(allowed_type):
-                    type_matched = True
-                    break
-            
-            if type_matched:
+            col_type = types.get(col, "").lower()
+            if any(col_type == t or col_type.startswith(t) for t in allowed_db_types):
                 filtered.append(col)
-        
-        return filtered  # 🔥 不再兜底，返回空列表由上层处理
-    
+        return filtered
+
+    # ------------------------------------------------------------------
+    # Sample data retrieval
+    # ------------------------------------------------------------------
+
     def _get_table_samples(self, table: str, columns: List[str]) -> Dict[str, str]:
-        """从MySQL数据库中获取表的样本数据（随机选择）"""
+        """
+        Query MySQL for up to 100 rows from *table* and return one random
+        non-NULL value per column.  Falls back to ``"NULL"`` when no data
+        is available or the query fails.
+        """
         connection = None
         try:
             connection = self._get_mysql_connection()
             if connection is None:
-                return {col: 'NULL' for col in columns}
-            
+                return {col: "NULL" for col in columns}
+
             with connection.cursor() as cursor:
-                # 处理列名（可能包含特殊字符）
-                quoted_columns = [f'`{col}`' for col in columns]
-                columns_str = ', '.join(quoted_columns)
-                
-                # 读取前100行
-                
-                sql = f"SELECT {columns_str} FROM {self.db_name}.`{table}` LIMIT 100"
+                quoted_columns = [f"`{col}`" for col in columns]
+                sql = (
+                    f"SELECT {', '.join(quoted_columns)} "
+                    f"FROM {self.db_name}.`{table}` LIMIT 100"
+                )
                 cursor.execute(sql)
                 rows = cursor.fetchall()
-                
+
                 if not rows:
-                    return {col: 'NULL' for col in columns}
-                
-                # 为每一列收集所有非空值，然后随机选择
+                    return {col: "NULL" for col in columns}
+
                 samples = {}
                 for col in columns:
-                    # 收集该列的所有非空值
-                    non_null_values = []
-                    for row in rows:
-                        value = row.get(col)
-                        if value is not None and value != '':
-                            non_null_values.append(str(value))
-                    
-                    # 如果有非空值，随机选择一个；否则使用 'NULL'
-                    if non_null_values:
-                        samples[col] = random.choice(non_null_values)
-                    else:
-                        samples[col] = 'NULL'
-                
+                    non_null_values = [
+                        str(row[col])
+                        for row in rows
+                        if row.get(col) is not None and row.get(col) != ""
+                    ]
+                    samples[col] = random.choice(non_null_values) if non_null_values else "NULL"
                 return samples
-                
+
         except Exception as e:
-            print(f"  ⚠️  警告: 读取表 {table} 失败 ({e})")
-            return {col: 'NULL' for col in columns}
+            print(f"Warning: failed to read table {table} ({e})")
+            return {col: "NULL" for col in columns}
         finally:
             if connection:
                 connection.close()
- 
-    def _get_marked_replacement(self, placeholder: Dict, 
-                               table_assignments: Dict, information_features: str, debug=False) -> str:
-        """根据标记获取替换值（支持类型约束）"""
-        ptype = placeholder['type']
-        
-        # 处理 $table_N$
-        if ptype == 'table':
-            table_id = placeholder['table_id']
+
+    # ------------------------------------------------------------------
+    # Replacement value generation
+    # ------------------------------------------------------------------
+
+    def _get_marked_replacement(
+        self,
+        placeholder: Dict,
+        table_assignments: Dict,
+        information_features: str,
+        debug: bool = False,
+    ) -> str:
+        """
+        Resolve a structured placeholder to its replacement string.
+
+        Table names are returned with a ``db_name.`` prefix when
+        ``information_features`` is not ``"specific database"``.
+        """
+        ptype = placeholder["type"]
+
+        # $table_N$
+        if ptype == "table":
+            table_id = placeholder["table_id"]
             if table_id in table_assignments:
-                table_name = table_assignments[table_id]['table']
-                # 根据 information_features 决定是否添加数据库名前缀
+                table_name = table_assignments[table_id]["table"]
                 if information_features == "specific database":
                     return table_name
-                else:
-                    return f"{self.db_name}.{table_name}"
-            return 'unknown_table'
-        
-        # 处理 $column_tN_M$
-        if ptype == 'column':
-            table_id = placeholder['table_id']
-            column_id = placeholder['column_id']
-            
+                return f"{self.db_name}.{table_name}"
+            return "unknown_table"
+
+        # $column_tN_M$
+        if ptype == "column":
+            table_id = placeholder["table_id"]
+            column_id = placeholder["column_id"]
             if table_id not in table_assignments:
-                return 'unknown_column'
-            
+                return "unknown_column"
             table_data = table_assignments[table_id]
-            
-            # 检查是否已经为这个列ID分配了列名
-            if column_id in table_data['column_map']:
-                column_name = table_data['column_map'][column_id]
+
+            if column_id in table_data["column_map"]:
+                column_name = table_data["column_map"][column_id]
             else:
-                # 使用类型过滤后的列
-                if column_id in table_data['filtered_columns']:
-                    available_columns = table_data['filtered_columns'][column_id]
+                available = (
+                    table_data["filtered_columns"].get(column_id)
+                    or table_data["columns"]
+                )
+                if not available:
+                    available = table_data["columns"]
                     if debug:
-                        print(f"    🔍 使用过滤后的列: {available_columns}")
-                else:
-                    # 如果没有类型约束，使用所有列
-                    available_columns = table_data['columns']
-                    if debug:
-                        print(f"    🔍 使用所有列: {available_columns}")
-                
-                if not available_columns:
-                    # 🔥 如果过滤后没有列，使用所有列（兜底）
-                    available_columns = table_data['columns']
-                    if debug:
-                        print(f"    ⚠️  过滤后无列，使用所有列: {available_columns}")
-                
-                column_name = random.choice(available_columns)
-                table_data['column_map'][column_id] = column_name
-                
+                        print(f"    Warning: filtered columns empty, using all columns")
+                column_name = random.choice(available)
+                table_data["column_map"][column_id] = column_name
                 if debug:
-                    print(f"    ✅ 选中列: {column_name} (type={table_data['types'].get(column_name)})")
-            
-            # 处理包含特殊字符的列名
-            if ' ' in column_name or '-' in column_name or '(' in column_name:
-                return f'`{column_name}`'
-            
+                    print(
+                        f"    Assigned column: {column_name} "
+                        f"(type={table_data['types'].get(column_name)})"
+                    )
+
+            # Escape column names containing special characters
+            if any(c in column_name for c in (" ", "-", "(")):
+                return f"`{column_name}`"
             return column_name
-        
-        # 处理 $sample_tN_M$
-        if ptype == 'sample':
-            table_id = placeholder['table_id']
-            column_id = placeholder['column_id']
-            
+
+        # $sample_tN_M$
+        if ptype == "sample":
+            table_id = placeholder["table_id"]
+            column_id = placeholder["column_id"]
             if table_id not in table_assignments:
-                return 'NULL'
-            
+                return "NULL"
             table_data = table_assignments[table_id]
-            
-            # 获取对应的列名（必须先有列名）
-            if column_id not in table_data['column_map']:
-                # 使用类型过滤后的列
-                if column_id in table_data['filtered_columns']:
-                    available_columns = table_data['filtered_columns'][column_id]
-                else:
-                    available_columns = table_data['columns']
-                
-                if not available_columns:
-                    available_columns = table_data['columns']
-                
-                column_name = random.choice(available_columns)
-                table_data['column_map'][column_id] = column_name
+
+            if column_id not in table_data["column_map"]:
+                available = (
+                    table_data["filtered_columns"].get(column_id)
+                    or table_data["columns"]
+                )
+                if not available:
+                    available = table_data["columns"]
+                column_name = random.choice(available)
+                table_data["column_map"][column_id] = column_name
             else:
-                column_name = table_data['column_map'][column_id]
-            
-            # 获取该列的样本值
-            sample_value = table_data['samples'].get(column_name, 'NULL')
-            
-            if sample_value == 'NULL':
-                return 'NULL'
-            
-            # 格式化样本值
-            col_type = table_data['types'].get(column_name, 'varchar')
-            return self._format_sample(sample_value, col_type)
-        
-        # 未知类型
-        return placeholder.get('content', 'unknown')
-    
-    def _format_sample(self, sample: Any, data_type: str = 'varchar') -> str:
-        """格式化样本数据"""
-        if sample is None or sample == 'NULL':
-            return 'NULL'
-        
+                column_name = table_data["column_map"][column_id]
+
+            sample_value = table_data["samples"].get(column_name, "NULL")
+            if sample_value == "NULL":
+                return "NULL"
+            return self._format_sample(sample_value, table_data["types"].get(column_name, "varchar"))
+
+        # Unknown placeholder — return content verbatim
+        return placeholder.get("content", "unknown")
+
+    def _format_sample(self, sample: Any, data_type: str = "varchar") -> str:
+        """
+        Format a sample value for inclusion in a SQL string.
+
+        Numeric types are returned unquoted; string and date types are
+        single-quoted with internal single quotes escaped.
+        """
+        if sample is None or sample == "NULL":
+            return "NULL"
+
         data_type = data_type.lower()
-        
-        # 数值类型：不加引号
-        if data_type in ['int', 'integer', 'double', 'float', 'real', 'numeric', 'decimal', 
-                         'bigint', 'smallint', 'tinyint']:
+
+        numeric_types = [
+            "int", "integer", "double", "float", "real", "numeric", "decimal",
+            "bigint", "smallint", "tinyint",
+        ]
+        if data_type in numeric_types:
             return str(sample)
-        
-        # 日期类型：加引号
-        if data_type in ['date', 'datetime', 'timestamp', 'time']:
+
+        if data_type in ("date", "datetime", "timestamp", "time"):
             return f"'{sample}'"
-        
-        # 字符串类型：加引号，转义单引号
+
         if isinstance(sample, str):
-            # 如果是纯数字字符串，根据类型决定是否加引号
-            if sample.replace('.', '').replace('-', '').isdigit():
-                if data_type in ['varchar', 'char', 'text', 'nvarchar', 'nchar', 
-                                 'clob', 'blob', 'string']:
-                    escaped = sample.replace("'", "''")
-                    return f"'{escaped}'"
-                else:
-                    return sample
-            else:
-                escaped = sample.replace("'", "''")
-                return f"'{escaped}'"
-        
+            if sample.replace(".", "").replace("-", "").isdigit():
+                if data_type in ("varchar", "char", "text", "nvarchar", "nchar",
+                                 "clob", "blob", "string"):
+                    return f"'{sample.replace(chr(39), chr(39)*2)}'"
+                return sample
+            return f"'{sample.replace(chr(39), chr(39)*2)}'"
+
         return str(sample)
-    
+
     def test_connection(self) -> bool:
+        """
+        Test whether the MySQL connection can be established.
+
+        Returns:
+            ``True`` on success, ``False`` on failure.
+        """
         connection = self._get_mysql_connection()
         if connection:
             connection.close()
-            print(f"✓ MySQL 连接成功: {self.mysql_config['host']}:{self.mysql_config['port']}/{self.mysql_config['database']}")
+            print(
+                f"✓ MySQL connection successful: "
+                f"{self.mysql_config['host']}:{self.mysql_config['port']}"
+                f"/{self.mysql_config['database']}"
+            )
             return True
-        else:
-            print(f"✗ MySQL 连接失败")
-            return False
+        print("✗ MySQL connection failed")
+        return False
+
+
+# ---------------------------------------------------------------------------
+# System-information template filler
+# ---------------------------------------------------------------------------
 
 class SystemInformationTemplateFiller:
-    
-    def __init__(self, 
-                 system_information_list: List[Dict[str, Any]], 
-                 mysql_config: Dict[str, Any]):
-        """
-        初始化填充器
-        
-        Args:
-            system_information_list: 系统信息列表，每个元素包含variable, type, description
-            mysql_config: MySQL配置字典，包含 host, port, user, password, database
-        """
+    """
+    Fill ``$sysInfo$`` placeholders with MySQL system variables or expressions.
+
+    Each item in *system_information_list* is expected to have ``variable``
+    (the MySQL expression, e.g. ``VERSION()``) and ``type`` (``"integer"`` or
+    ``"string"``).
+    """
+
+    def __init__(
+        self,
+        system_information_list: List[Dict[str, Any]],
+        mysql_config: Dict[str, Any],
+    ):
         self.system_information_list = system_information_list
         self.mysql_config = mysql_config
-        
-        # 按类型分类系统信息，便于快速查找
-        self.sysinfo_by_type = {
-            'integer': [],
-            'string': [],
-            'all': []
+
+        self.sysinfo_by_type: Dict[str, List[Dict]] = {
+            "integer": [],
+            "string": [],
+            "all": [],
         }
         self._categorize_system_information()
-    
-    def _categorize_system_information(self):
-        """将系统信息按类型分类"""
+
+    def _categorize_system_information(self) -> None:
+        """Index system information items by their type."""
         for info in self.system_information_list:
-            info_type = info.get('type', 'string')
-            if info_type == 'integer':
-                self.sysinfo_by_type['integer'].append(info)
-            elif info_type == 'string':
-                self.sysinfo_by_type['string'].append(info)
-            # all类型包含所有信息
-            self.sysinfo_by_type['all'].append(info)
-    
+            info_type = info.get("type", "string")
+            if info_type == "integer":
+                self.sysinfo_by_type["integer"].append(info)
+            elif info_type == "string":
+                self.sysinfo_by_type["string"].append(info)
+            self.sysinfo_by_type["all"].append(info)
+
     def _query_mysql(self, sql: str) -> str:
         """
-        执行 MySQL 查询
-        
-        Args:
-            sql: SQL查询语句
-            
-        Returns:
-            查询结果的字符串表示
+        Execute *sql* against MySQL and return the first column of the first row
+        as a string.  Returns an empty string on failure.
         """
         connection = None
         try:
-            # 建立连接
             connection = pymysql.connect(
-                host=self.mysql_config['host'],
-                port=self.mysql_config['port'],
-                user=self.mysql_config['user'],
-                password=self.mysql_config['password'],
-                database=self.mysql_config['database'],
-                charset=self.mysql_config.get('charset', 'utf8mb4'),
-                cursorclass=pymysql.cursors.DictCursor
+                host=self.mysql_config["host"],
+                port=self.mysql_config["port"],
+                user=self.mysql_config["user"],
+                password=self.mysql_config["password"],
+                database=self.mysql_config["database"],
+                charset=self.mysql_config.get("charset", "utf8mb4"),
+                cursorclass=pymysql.cursors.DictCursor,
             )
-            
             with connection.cursor() as cursor:
                 cursor.execute(sql)
                 result = cursor.fetchone()
-                
-                # 处理查询结果
                 if result is None:
-                    return ''
-                
-                # 如果是字典类型（DictCursor），获取第一个值
+                    return ""
                 if isinstance(result, dict):
-                    first_value = next(iter(result.values())) if result else None
-                    return str(first_value) if first_value is not None else ''
-                # 如果是元组类型
+                    first_value = next(iter(result.values()), None)
+                    return str(first_value) if first_value is not None else ""
                 elif isinstance(result, tuple):
-                    return str(result[0]) if result[0] is not None else ''
-                else:
-                    return str(result)
-                
+                    return str(result[0]) if result[0] is not None else ""
+                return str(result)
         except Exception as e:
-            print(f"MySQL 查询失败 [{sql}]: {e}")
-            return ''
+            print(f"MySQL query failed [{sql}]: {e}")
+            return ""
         finally:
             if connection:
                 connection.close()
-    
+
     def _select_sample_for_system_information(self, system_information: str) -> str:
         """
-        从数据库中获取系统信息的样本值
-        
-        Args:
-            system_information: 系统信息变量或SQL语句
-            
-        Returns:
-            查询结果的字符串表示
+        Retrieve a sample value for *system_information* by executing it as a
+        ``SELECT`` query.
         """
-        # 如果不包含SELECT，添加SELECT前缀
         if "SELECT" not in system_information.upper():
             sql = f"SELECT {system_information}"
         else:
             sql = system_information
-        
         return self._query_mysql(sql)
-    
+
     def _get_random_system_information(self, expected_type: str) -> str:
         """
-        根据期望类型随机选择一个系统信息变量
-        
-        Args:
-            expected_type: 期望的类型 ('integer', 'string', 'all')
-            
-        Returns:
-            系统信息变量字符串
+        Randomly select a system-information variable that matches *expected_type*.
+
+        Falls back to ``"VERSION()"`` (string) or ``"1"`` (integer) when the
+        candidate list is empty.
         """
-        # 如果期望类型是all，可以从所有类型中选择
-        if expected_type == 'all':
-            candidates = self.sysinfo_by_type['all']
-        else:
-            candidates = self.sysinfo_by_type.get(expected_type, [])
-        
+        candidates = self.sysinfo_by_type.get(expected_type, [])
         if not candidates:
-            # 如果没有匹配的类型，返回一个默认值
-            return "VERSION()" if expected_type == 'string' else "1"
-        
-        # 随机选择一个
-        selected = random.choice(candidates)
-        return selected['variable']
-    
+            return "VERSION()" if expected_type == "string" else "1"
+        return random.choice(candidates)["variable"]
+
     def fill_template(self, template: Dict[str, Any]) -> str:
-        payload = template['payload']
-        expected_types = template.get('expected_types', [])
-        
-        # 记录已使用的系统信息
-        used_sysinfo = []
-        
-        # 1. 替换 $sysInfo$ 占位符
-        # 修复：使用全局位置（在所有占位符中的顺序）索引 expected_types，
-        # 而不是在 $sysInfo$ 内部的相对顺序，否则当 $int$/$character$ 等
-        # 固定类型占位符出现在 $sysInfo$ 前面时会错误地取到前者的类型
-        import re as _re
-        all_ph_positions = [(m.start(), m.group(0))
-                            for m in _re.finditer(r'\$\w+\$', payload)]
-        # 按位置顺序，找出每个 $sysInfo$ 对应的全局下标
-        sysinfo_global_indices = [
-            idx for idx, (_, ph) in enumerate(all_ph_positions)
-            if ph == '$sysInfo$'
+        """
+        Fill all ``$sysInfo$`` (and other fixed-type) placeholders in *template*.
+
+        Args:
+            template: Payload template dict with at least a ``"payload"`` key
+                      and an optional ``"expected_types"`` list.
+
+        Returns:
+            The fully substituted payload string.
+        """
+        payload: str = template["payload"]
+        expected_types: List[str] = template.get("expected_types", [])
+
+        used_sysinfo: List[str] = []
+
+        # Determine global position of each $sysInfo$ placeholder so we can
+        # look up its expected_type by index rather than by relative order.
+        # (Relative order would give wrong results when $int$/$character$ etc.
+        # appear before $sysInfo$ in the same payload.)
+        all_ph_positions = [
+            (m.start(), m.group(0))
+            for m in re.finditer(r"\$\w+\$", payload)
         ]
-        
+        sysinfo_global_indices = [
+            idx
+            for idx, (_, ph) in enumerate(all_ph_positions)
+            if ph == "$sysInfo$"
+        ]
+
         for global_idx in sysinfo_global_indices:
-            # 用全局下标在 expected_types 里取类型
-            if global_idx < len(expected_types):
-                expected_type = expected_types[global_idx]
-            else:
-                expected_type = 'all'
-            
-            # 随机选择系统信息
+            expected_type = expected_types[global_idx] if global_idx < len(expected_types) else "all"
             sysinfo = self._get_random_system_information(expected_type)
             used_sysinfo.append(sysinfo)
-            
-            # 替换第一个出现的$sysInfo$
-            payload = payload.replace('$sysInfo$', sysinfo, 1)
-        
-        # 2. 替换 $sample$ 占位符
-        # 如果有$sample$，使用最后一个系统信息的样本值
-        if '$sample$' in payload and used_sysinfo:
+            payload = payload.replace("$sysInfo$", sysinfo, 1)
+
+        # $sample$ — use a value drawn from the last selected sysInfo expression
+        if "$sample$" in payload and used_sysinfo:
             sample_value = self._select_sample_for_system_information(used_sysinfo[-1])
-            # 如果sample_value是字符串类型（非纯数字），需要加引号
-            if sample_value and not sample_value.replace('.', '').replace('-', '').isdigit():
+            if sample_value and not sample_value.replace(".", "").replace("-", "").isdigit():
                 sample_value = f"'{sample_value}'"
-            payload = payload.replace('$sample$', sample_value if sample_value else '0')
-        
-        # 3. 替换其他占位符
-        # 替换 $int$
-        while '$int$' in payload:
-            payload = payload.replace('$int$', GetRandomAttribute.random_int_number(), 1)
-        
-        # 替换 $float$
-        while '$float$' in payload:
-            payload = payload.replace('$float$', GetRandomAttribute.random_float_number(), 1)
-        
-        # 替换 $hex$
-        while '$hex$' in payload:
-            payload = payload.replace('$hex$', GetRandomAttribute.random_hex_number(), 1)
-        
-        # 替换 $time$
-        while '$time$' in payload:
-            payload = payload.replace('$time$', f"'{GetRandomAttribute.random_time()}'", 1)
-        
-        # 替换 $date$
-        while '$date$' in payload:
-            payload = payload.replace('$date$', f"'{GetRandomAttribute.random_date()}'", 1)
-        
-        # 替换 $character$ (注意：原来是 #character$，现在统一为 $character$)
-        while '$character$' in payload:
-            payload = payload.replace('$character$', f"'{GetRandomAttribute.random_character()}'", 1)
-        
-        # 兼容旧格式 #character$
-        while '#character$' in payload:
-            payload = payload.replace('#character$', f"'{GetRandomAttribute.random_character()}'", 1)
-        
+            payload = payload.replace("$sample$", sample_value if sample_value else "0")
+
+        # Fixed-type scalar placeholders
+        while "$int$" in payload:
+            payload = payload.replace("$int$", GetRandomAttribute.random_int_number(), 1)
+        while "$float$" in payload:
+            payload = payload.replace("$float$", GetRandomAttribute.random_float_number(), 1)
+        while "$hex$" in payload:
+            payload = payload.replace("$hex$", GetRandomAttribute.random_hex_number(), 1)
+        while "$time$" in payload:
+            payload = payload.replace("$time$", f"'{GetRandomAttribute.random_time()}'", 1)
+        while "$date$" in payload:
+            payload = payload.replace("$date$", f"'{GetRandomAttribute.random_date()}'", 1)
+        while "$character$" in payload:
+            payload = payload.replace("$character$", f"'{GetRandomAttribute.random_character()}'", 1)
+        # Legacy format compatibility
+        while "#character$" in payload:
+            payload = payload.replace("#character$", f"'{GetRandomAttribute.random_character()}'", 1)
+
         return payload
-    
+
     def test_connection(self) -> bool:
         """
-        测试数据库连接
-        
+        Test whether the MySQL connection can be established.
+
         Returns:
-            连接是否成功
+            ``True`` on success, ``False`` on failure.
         """
         try:
             connection = pymysql.connect(
-                host=self.mysql_config['host'],
-                port=self.mysql_config['port'],
-                user=self.mysql_config['user'],
-                password=self.mysql_config['password'],
-                database=self.mysql_config['database'],
-                charset=self.mysql_config.get('charset', 'utf8mb4')
+                host=self.mysql_config["host"],
+                port=self.mysql_config["port"],
+                user=self.mysql_config["user"],
+                password=self.mysql_config["password"],
+                database=self.mysql_config["database"],
+                charset=self.mysql_config.get("charset", "utf8mb4"),
             )
             connection.close()
-            print(f"✓ MySQL 连接成功: {self.mysql_config['host']}:{self.mysql_config['port']}/{self.mysql_config['database']}")
+            print(
+                f"✓ MySQL connection successful: "
+                f"{self.mysql_config['host']}:{self.mysql_config['port']}"
+                f"/{self.mysql_config['database']}"
+            )
             return True
         except Exception as e:
-            print(f"✗ MySQL 连接失败: {e}")
+            print(f"✗ MySQL connection failed: {e}")
             return False
 
-_MYSQL_CONFIG_CACHE = None
 
-def get_mysql_config(config_path: str | Path | None = None, *, force_reload: bool = False) -> Dict[str, Any]:
+# ---------------------------------------------------------------------------
+# Config loading helpers (module-level cache)
+# ---------------------------------------------------------------------------
+
+_MYSQL_CONFIG_CACHE: Optional[Dict[str, Any]] = None
+
+
+def get_mysql_config(
+    config_path=None, *, force_reload: bool = False
+) -> Dict[str, Any]:
+    """
+    Load (and cache) the MySQL connection configuration from YAML.
+
+    Args:
+        config_path:  Path to ``database_connection.yaml``.  Defaults to
+                      ``<project_root>/config/database_connection.yaml``.
+        force_reload: Bypass the in-memory cache and reload from disk.
+
+    Returns:
+        MySQL configuration dict.
+    """
     global _MYSQL_CONFIG_CACHE
-
     if _MYSQL_CONFIG_CACHE is not None and not force_reload:
         return _MYSQL_CONFIG_CACHE
 
     if config_path is None:
-
         project_root = Path(__file__).resolve().parents[2]
         config_path = project_root / "config" / "database_connection.yaml"
     else:
@@ -978,223 +982,313 @@ def get_mysql_config(config_path: str | Path | None = None, *, force_reload: boo
     _MYSQL_CONFIG_CACHE = load_yaml_to_dict(str(config_path))
     return _MYSQL_CONFIG_CACHE
 
-def get_gpt_config(config_path: str | Path | None = None, *, force_reload: bool = False) -> Dict[str, Any]:
+
+def get_gpt_config(config_path=None) -> Dict[str, Any]:
+    """
+    Load the GPT/LLM configuration from YAML.
+
+    Args:
+        config_path: Path to ``gpt_config.yaml``.  Defaults to
+                     ``<project_root>/config/gpt_config.yaml``.
+
+    Returns:
+        LLM configuration dict.
+    """
     if config_path is None:
-        # 文件位置：.../SQLI/src/Attacker/generate_injection_sql.py
-        # parents[2] -> .../SQLI
         project_root = Path(__file__).resolve().parents[2]
         config_path = project_root / "config" / "gpt_config.yaml"
     else:
         config_path = Path(config_path)
-
     return load_yaml_to_dict(str(config_path))
 
+
+# Module-level singletons — initialised once at import time
 gpt_config = get_gpt_config()
-gpt = LLM(api_key=gpt_config['api_key'], base_url=gpt_config.get('base_url', None))
+gpt = LLM(api_key=gpt_config["api_key"], base_url=gpt_config.get("base_url"))
 checker = SymbolChecker()
 
-def pipeline(sql_example, payload_template, db_schemas, sys_schemas, system_vars, comment_list, comment_flag):
-    
-    def identify_difficulty(annotator, comment, information_features):
-        if annotator and comment and information_features == "constant":
-            return "simple"
-        if annotator and not comment and information_features == "constant":
-            return "simple"
-        if not annotator and not comment and information_features == "constant":
-            return "simple"
-        
-        if annotator and comment and information_features == "system information":
-            return "medium"
-        if annotator and not comment and information_features == "system information":
-            return "medium"
-        if not annotator and not comment and information_features == "system information":
-            return "medium"
-        if annotator and not comment and information_features == "specific database":
-            return "medium"
-        
-        if annotator and comment and information_features == "specific database":
-            return "hard"
-        if not annotator and not comment and information_features == "specific database":
-            return "hard"
-    
-    def generate_comment(payload_type, payload_template, payload, comment_list):
-        comment_type_list = ["Rational explanation", "Irrelevant text dilution", "Authoritative statement"]
-        selected_type = random.choice(comment_type_list)
-        if selected_type == "Irrelevant text dilution":
-            selected_comment_list = [comment for comment in comment_list if comment['type'] == "Irrelevant text dilution"]
-            return random.choice(selected_comment_list)['comment']
-        if selected_type == "Authoritative statement":
-            selected_comment_list = [comment for comment in comment_list if comment['type'] == "Authoritative statement"]
-            return random.choice(selected_comment_list)['comment']
-        if selected_type == "Rational explanation":
-            project_root = Path(__file__).resolve().parent.parent.parent
-            templates_dir = project_root / "prompt_templates"
-            prompt = load_prompt_template(templates_dir, "generate_comment.j2").render(payload_type = payload_type, payload_template = payload_template, payload = payload)
-            return gpt.generate(prompt = prompt, model=gpt_config.get('model', 'gpt-3.5-turbo'), temperature=gpt_config.get('temperature', 0.5), max_tokens=gpt_config.get('max_tokens', 1024))
 
-    def insert_payload(sql, payload):
-        def remove_first_char(text):
-            """删除第一个字符"""
+# ---------------------------------------------------------------------------
+# Injection-SQL generation pipeline
+# ---------------------------------------------------------------------------
+
+def pipeline(
+    sql_example: Dict[str, Any],
+    payload_template: Dict[str, Any],
+    db_schemas: List[Dict],
+    sys_schemas: List[Dict],
+    system_vars: List[Dict],
+    comment_list: List[Dict],
+    comment_flag: bool,
+) -> Optional[Dict[str, Any]]:
+    """
+    Convert a raw SQL example + payload template into a labelled injection sample.
+
+    Steps:
+    1. Fill the payload template's placeholders (system info or DB-specific).
+    2. Optionally append a deceptive natural-language comment.
+    3. Insert the filled payload at the ``$$`` injection point in the SQL query.
+    4. Validate bracket balance; fix with a closing ``)`` if needed.
+    5. Return a structured dict with the injection SQL, metadata, and label.
+
+    Args:
+        sql_example:      A raw SQL query dict from ``sql_data_with_injection_point.json``.
+        payload_template: A payload template dict from ``payloads.json`` (possibly mutated).
+        db_schemas:       List of all database schemas.
+        sys_schemas:      List of MySQL system-table schemas.
+        system_vars:      List of MySQL system variable definitions.
+        comment_list:     Repository of pre-written deceptive comments.
+        comment_flag:     Whether to append a deceptive comment to the payload.
+
+    Returns:
+        An injection sample dict, or ``None`` if generation failed.
+    """
+
+    # ------------------------------------------------------------------
+    # Nested helpers
+    # ------------------------------------------------------------------
+
+    def identify_difficulty(annotator: bool, comment: bool, information_features: str) -> str:
+        """Assign a difficulty label based on query and payload metadata."""
+        if information_features == "constant":
+            return "simple"
+        if information_features == "system information":
+            return "medium"
+        if information_features == "specific database":
+            if annotator and comment:
+                return "hard"
+            if annotator and not comment:
+                return "medium"
+            return "hard"
+        return "medium"
+
+    def generate_comment(
+        payload_type: str,
+        payload_template_str: str,
+        payload: str,
+        comment_list: List[Dict],
+    ) -> str:
+        """
+        Generate a deceptive natural-language comment to append to the payload.
+
+        Randomly selects one of three strategies:
+        - **Irrelevant text dilution**: random benign-looking text
+        - **Authoritative statement**: authority-sounding assertion
+        - **Rational explanation**: LLM-generated contextual explanation
+        """
+        comment_type = random.choice(
+            ["Rational explanation", "Irrelevant text dilution", "Authoritative statement"]
+        )
+        if comment_type == "Irrelevant text dilution":
+            candidates = [c for c in comment_list if c["type"] == "Irrelevant text dilution"]
+            return random.choice(candidates)["comment"]
+        if comment_type == "Authoritative statement":
+            candidates = [c for c in comment_list if c["type"] == "Authoritative statement"]
+            return random.choice(candidates)["comment"]
+        # Rational explanation — use LLM
+        project_root = Path(__file__).resolve().parents[2]
+        templates_dir = project_root / "prompt_templates"
+        prompt = load_prompt_template(templates_dir, "generate_comment.j2").render(
+            payload_type=payload_type,
+            payload_template=payload_template_str,
+            payload=payload,
+        )
+        return gpt.generate(
+            prompt=prompt,
+            model=gpt_config.get("model", "gpt-3.5-turbo"),
+            temperature=gpt_config.get("temperature", 0.5),
+            max_tokens=gpt_config.get("max_tokens", 1024),
+        )
+
+    def insert_payload(sql: str, payload: str) -> Optional[str]:
+        """
+        Insert *payload* into *sql* at the ``$$`` injection point.
+
+        Handles two contexts:
+        - **String context** (``$$`` is followed by ``'``): keep the leading
+          quote of the payload.
+        - **Non-string context**: strip the leading quote from the payload.
+
+        Also removes trailing ``--`` comment terminators that would be
+        redundant (i.e., followed only by whitespace or nothing), and attempts
+        to fix bracket imbalances by inserting a closing ``)`` before ``--``.
+        """
+
+        def remove_first_char(text: str) -> str:
             return text[1:] if text else text
-        
-        def insert_char_at_position(text, position, char):
-            """在指定位置插入字符"""
+
+        def insert_char_at_position(text: str, position: int, char: str) -> str:
             return text[:position] + char + text[position:]
-        
-        def remove_unnecessary_comments(sql_text):
-            """移除不必要的注释符
-            只在以下情况删除注释符：
-            1. 注释符是最后两个字符
-            2. 注释符后面只有空白字符（空格、制表符、换行等）
+
+        def remove_unnecessary_comments(sql_text: str) -> str:
             """
-            comment_matches = list(re.finditer(r'--', sql_text))
-            
-            if not comment_matches:
-                return sql_text
-            
-            # 从后往前处理，避免位置偏移问题
-            for match in reversed(comment_matches):
+            Remove ``--`` terminators that appear at the very end of the string
+            or are followed only by whitespace — they are structurally redundant.
+            """
+            for match in reversed(list(re.finditer(r"--", sql_text))):
                 comment_pos = match.start()
-                comment_end = match.end()  # comment_end = comment_pos + 2
-                
-                # 情况1：注释符已经是最后两位
+                comment_end = match.end()
                 if comment_end >= len(sql_text):
                     sql_text = sql_text[:comment_pos]
-                    continue
-                
-                # 情况2：注释符后面的内容
-                remaining_text = sql_text[comment_end:]
-                
-                # 只有当后面全是空白字符时才删除注释符
-                if remaining_text.strip() == '':  # 后面只有空白字符，没有实际内容
+                elif sql_text[comment_end:].strip() == "":
                     sql_text = sql_text[:comment_pos]
-                # 如果后面有实际内容，保留注释符不做任何处理
-            
             return sql_text
-        
+
         if not isinstance(sql, str) or not isinstance(payload, str):
             return None
-        
+
         try:
-            # 查找注入点
-            matches = list(re.finditer(r'\$\$', sql))
+            matches = list(re.finditer(r"\$\$", sql))
             if not matches:
                 return None
-            
-            positions = [match.start() for match in matches]
-            
-            # 检查注入点后的字符类型
+            positions = [m.start() for m in matches]
+
             try:
-                potential_quote = sql[positions[0] + 2]
-                is_string_context = (potential_quote == "'")
+                is_string_context = sql[positions[0] + 2] == "'"
             except IndexError:
                 is_string_context = False
-            
-            # 根据上下文决定是否需要移除payload的第一个字符
+
             if is_string_context:
                 injection_sql = sql.replace("$$", payload)
             else:
-                new_payload = remove_first_char(payload)
-                injection_sql = sql.replace("$$", new_payload)
-            
-            # 新增：去掉不必要的注释符
+                injection_sql = sql.replace("$$", remove_first_char(payload))
+
             injection_sql = remove_unnecessary_comments(injection_sql)
-            
-            # 检查符号平衡（只检查注释符之前的部分）
-            checker = SymbolChecker()
-            effective_sql = injection_sql.split('--')[0] if '--' in injection_sql else injection_sql
-            result, message = checker.check_balanced(effective_sql)
-            
-            # 如果不平衡，尝试添加闭合括号
-            if not result:
-                comment_matches = list(re.finditer(r'--', injection_sql))
-                if comment_matches:
-                    bracket_pos = comment_matches[0].start()
-                else:
-                    bracket_pos = len(injection_sql)
-                
-                injection_sql = insert_char_at_position(injection_sql, bracket_pos, ')')
-                
-                # 再次去掉可能产生的不必要注释符
+
+            # Check bracket balance in the fragment before any comment terminator
+            _checker = SymbolChecker()
+            effective_sql = injection_sql.split("--")[0] if "--" in injection_sql else injection_sql
+            balanced, _ = _checker.check_balanced(effective_sql)
+
+            if not balanced:
+                comment_matches = list(re.finditer(r"--", injection_sql))
+                bracket_pos = comment_matches[0].start() if comment_matches else len(injection_sql)
+                injection_sql = insert_char_at_position(injection_sql, bracket_pos, ")")
                 injection_sql = remove_unnecessary_comments(injection_sql)
-            
+
             return injection_sql
-            
+
         except Exception as e:
-            print(f"插入payload时出错: {e}")
+            print(f"Error inserting payload: {e}")
             return None
 
+    # ------------------------------------------------------------------
+    # Main pipeline logic
+    # ------------------------------------------------------------------
+
     mysql_config = get_mysql_config().copy()
-    mysql_config['database'] = sql_example['db']
+    mysql_config["database"] = sql_example["db"]
 
     injection_sql_example = None
-    
-    if payload_template['expected_types'] is None:
-        raw_payload = payload_template['payload']
+
+    # Fill payload placeholders
+    if payload_template["expected_types"] is None:
+        raw_payload = payload_template["payload"]
     else:
-        if payload_template['information_features'] == "system information":
-            if "table" in payload_template['expected_types']:
+        info_features = payload_template["information_features"]
+        if info_features == "system information":
+            if "table" in payload_template["expected_types"]:
                 sys_schema = random.choice(sys_schemas)
-                filler_for_specific_databse = SpecificDatabaseTemplateFiller(sys_schema, mysql_config)
-                raw_payload = filler_for_specific_databse.fill_template(payload_template)
+                filler = SpecificDatabaseTemplateFiller(sys_schema, mysql_config)
+                raw_payload = filler.fill_template(payload_template)
             else:
-                filler_for_system_information = SystemInformationTemplateFiller(system_vars, mysql_config)
-                raw_payload = filler_for_system_information.fill_template(payload_template)
-        elif payload_template['information_features'] == "specific database":
-            schema = next((s for s in db_schemas if s['database_name'] == sql_example['db']), {})
-            filler_for_specific_databse = SpecificDatabaseTemplateFiller(schema, mysql_config)
-            raw_payload = filler_for_specific_databse.fill_template(payload_template)
+                filler = SystemInformationTemplateFiller(system_vars, mysql_config)
+                raw_payload = filler.fill_template(payload_template)
+        elif info_features == "specific database":
+            schema = next(
+                (s for s in db_schemas if s["database_name"] == sql_example["db"]), {}
+            )
+            filler = SpecificDatabaseTemplateFiller(schema, mysql_config)
+            raw_payload = filler.fill_template(payload_template)
         else:
-            # constant 类型或其他类型：expected_types 非 None 但无占位符，直接使用原始 payload
-            raw_payload = payload_template['payload']
-    
-    if not sql_example['annotator']:
+            # constant — expected_types is non-None but there are no placeholders
+            raw_payload = payload_template["payload"]
+
+    # Non-annotator queries never have deceptive comments
+    if not sql_example["annotator"]:
         comment_flag = False
-    
+
+    # Optionally append a deceptive comment
     if comment_flag:
-        payload = str(raw_payload) + str(generate_comment(payload_template['type'], payload_template['payload'], raw_payload, comment_list))
+        payload = str(raw_payload) + str(
+            generate_comment(
+                payload_template["type"],
+                payload_template["payload"],
+                raw_payload,
+                comment_list,
+            )
+        )
     else:
         payload = str(raw_payload)
-        
-    if sql_example['sql'] is None or payload is None:
-        return injection_sql_example
-    
-    injection_sql = insert_payload(sql_example['sql'], payload)
-    effective_sql = injection_sql.split('--')[0]
-    result, message = checker.check_balanced(effective_sql)
 
-    if not result:
-        print(f"'{effective_sql}'\n  -> {result}: {message}\n")
+    if sql_example["sql"] is None or payload is None:
+        return injection_sql_example
+
+    injection_sql = insert_payload(sql_example["sql"], payload)
+    effective_sql = injection_sql.split("--")[0]
+    balanced, message = checker.check_balanced(effective_sql)
+
+    if not balanced:
+        print(f"'{effective_sql}'\n  -> {balanced}: {message}\n")
     else:
         injection_sql_example = {
             "sql": injection_sql,
             "original_sql": sql_example,
-            "payload_template":payload_template,
-            "payload":payload,
-            "label":False,
-            "comment":comment_flag,
-            "difficulty": identify_difficulty(sql_example['annotator'], comment_flag, payload_template['information_features'])
+            "payload_template": payload_template,
+            "payload": payload,
+            "label": False,
+            "comment": comment_flag,
+            "difficulty": identify_difficulty(
+                sql_example["annotator"],
+                comment_flag,
+                payload_template["information_features"],
+            ),
         }
+
     return injection_sql_example
 
-def batch_generate_injection_sqls(expected_exmaple_num, raw_sqls, payloads, db_schemas, sys_schemas, system_vars, comment_list, comment_rate):
+
+def batch_generate_injection_sqls(
+    expected_example_num: int,
+    raw_sqls: List[Dict],
+    payloads: List[Dict],
+    db_schemas: List[Dict],
+    sys_schemas: List[Dict],
+    system_vars: List[Dict],
+    comment_list: List[Dict],
+    comment_rate: float,
+) -> List[Dict]:
+    """
+    Generate *expected_example_num* injection SQL samples by randomly sampling
+    from *raw_sqls* and *payloads*.
+
+    Args:
+        expected_example_num: Target number of generated samples.
+        raw_sqls:             List of raw SQL example dicts.
+        payloads:             List of payload template dicts.
+        db_schemas:           Database schemas list.
+        sys_schemas:          System-table schemas list.
+        system_vars:          System variable definitions.
+        comment_list:         Deceptive comment repository.
+        comment_rate:         Probability (0–1) of appending a comment per sample.
+
+    Returns:
+        List of successfully generated injection SQL sample dicts.
+    """
     count = 0
     injection_sql_examples = []
-    while count < expected_exmaple_num:
-        comment_flag = False
-        if random.random() < comment_rate:
-            comment_flag = True
-        injection_sql_example = pipeline(random.choice(raw_sqls), random.choice(payloads), db_schemas, sys_schemas, system_vars, comment_list, comment_flag)
-        if injection_sql_example!=None:
-            injection_sql_examples.append(injection_sql_example)
+    while count < expected_example_num:
+        comment_flag = random.random() < comment_rate
+        sample = pipeline(
+            random.choice(raw_sqls),
+            random.choice(payloads),
+            db_schemas,
+            sys_schemas,
+            system_vars,
+            comment_list,
+            comment_flag,
+        )
+        if sample is not None:
+            injection_sql_examples.append(sample)
         count += 1
     return injection_sql_examples
-
-
-# 生成测试集注入样本
-# test_injection_sqls = batch_generate_injection_sqls(30, test_raw_sqls, test_payloads, db_schemas, sys_schemas, system_vars, comment_list = comment_list, comment_rate=0.3)
-
-
-
-
-

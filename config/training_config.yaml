@@ -7,8 +7,8 @@ token_select_pattern: "default"
 data_prop: 1.0
 random_seed: 42
 
-batch_size_per_gpu: 2
-gradient_accumulation_steps: 4
+batch_size_per_gpu: 1
+gradient_accumulation_steps: 8
 max_seq_length: 4096
 num_train_epochs: 2
 learning_rate: 5e-5 
@@ -36,5 +36,4 @@ merge:
   save_tokenizer: true
   use_fast_tokenizer: true
   qlora: false
-  device: "auto"  # 可选: "auto", "cuda", "cuda:0", "cpu" 等。auto 会自动选择可用的 GPU
-  # cuda_visible_devices: "3"  # 可选：指定 merge 使用的 GPU（如果与训练不同）
+  device: "auto"

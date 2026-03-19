@@ -1,88 +1,145 @@
+"""
+Verifier Module
+
+The Verifier updates the Multi-Armed Bandit (MAB) reward and weight for each
+attack cluster based on the Defender's evaluation results.
+
+Reward:  ``reward[k] = 1 - accuracy[k]``  (higher reward = harder cluster)
+Weight update uses the standard EXP3 formula:
+    ``weight[k] *= exp(gamma / n * reward[k] / prob[k])``
+
+where *n* is the total number of clusters and *prob[k]* is the probability
+assigned to cluster *k* in the previous Attacker round.
+"""
+
 from __future__ import annotations
 
-import os
-from typing import Dict,Optional
-
-from utils.json_operation import read_jsonl_file, read_json_file
-from typing import Any, Dict, List, Optional
-from utils.cluster import *
 import math
+from pathlib import Path
+from typing import Dict, List
+
+from utils.cluster import cluster_injection_sqls
+from utils.json_operation import read_json_file, read_jsonl_file
 from .eval import cluster_results, compute_cluster_acc
 
 
 class Verifier:
-    def __init__(self,cluster_list: List[str],):
+    """
+    Maintains and updates per-cluster MAB weights.
+
+    Attributes:
+        cluster_list:    Ordered list of all known cluster keys.
+        cluster_rewards: Latest per-cluster reward (1 - accuracy).
+        cluster_weight:  Current MAB weight for each cluster.
+    """
+
+    def __init__(self, cluster_list: List[str]) -> None:
         """
-        :param results_file: defender 的预测结果 jsonl 文件路径
-        :param save_dir: 可选，保存 cluster 统计与 reward 的目录
+        Initialise the Verifier with uniform weights.
+
+        Args:
+            cluster_list: List of all cluster key strings (including the
+                          ``"normal||normal||normal||normal"`` key for benign
+                          samples).
         """
-  
-        self.cluster_list = cluster_list
-        self.cluster_rewards: Dict[str, float] = {
-            key : 0 for key in cluster_list
-        }
-        self.cluster_weight: Dict[str, float] = {
-            key : 1 for key in cluster_list
-        }
-        
+        self.cluster_list = list(cluster_list)
+        self.cluster_rewards: Dict[str, float] = {k: 0.0 for k in cluster_list}
+        self.cluster_weight: Dict[str, float] = {k: 1.0 for k in cluster_list}
+
+    # ------------------------------------------------------------------
+    # Accessors
+    # ------------------------------------------------------------------
+
     def get_weights(self) -> Dict[str, float]:
+        """Return the current cluster weight dictionary."""
         return self.cluster_weight
-    
-    def set_weights(self, weights: Dict[str, float]):
+
+    def set_weights(self, weights: Dict[str, float]) -> None:
+        """
+        Directly overwrite cluster weights (used for breakpoint recovery).
+
+        Args:
+            weights: Dict mapping cluster keys to new weight values.
+        """
         self.cluster_weight = weights
 
-    def update_reward(self, results):
+    # ------------------------------------------------------------------
+    # Update cycle
+    # ------------------------------------------------------------------
 
+    def update_reward(self, results: List[Dict]) -> None:
+        """
+        Compute per-cluster rewards from inference results and store them.
+
+        For each cluster *k*:  ``reward[k] = 1 - accuracy[k]``
+
+        Args:
+            results: List of inference result dicts as returned by the
+                     Defender's ``run_inference()`` method.
+        """
         clusters = cluster_results(results)
         cluster_stats = compute_cluster_acc(clusters)
-        new_cluster_rewards = {
-            key: 1.0 - stat.acc for key, stat in cluster_stats.items()
-        }
-        for key, reward in new_cluster_rewards.items():
-            self.cluster_rewards[key] = reward
+        for key, stat in cluster_stats.items():
+            self.cluster_rewards[key] = 1.0 - stat.acc
 
-    
-    def update_weight(self, gamma, cluster_probability_distribution):
+    def update_weight(
+        self,
+        gamma: float,
+        cluster_probability_distribution: Dict[str, float],
+    ) -> None:
+        """
+        Apply the EXP3 weight-update rule for all clusters.
+
+        Formula:
+            ``weight[k] *= exp(gamma / n * reward[k] / prob[k])``
+
+        Args:
+            gamma: EXP3 learning-rate parameter.
+            cluster_probability_distribution: Probability distribution used
+                by the Attacker in the most recent round (needed to normalise
+                the reward signal).
+        """
+        n = len(self.cluster_list)
         for key, weight in self.cluster_weight.items():
-            self.cluster_weight[key] = weight * math.exp(gamma/len(self.cluster_list) * self.cluster_rewards[key]/cluster_probability_distribution[key])
+            prob = cluster_probability_distribution.get(key, 1.0 / max(n, 1))
+            reward = self.cluster_rewards.get(key, 0.0)
+            if prob > 0:
+                self.cluster_weight[key] = weight * math.exp(
+                    (gamma / n) * (reward / prob)
+                )
 
 
+# ---------------------------------------------------------------------------
+# CLI entry point (for quick inspection / debugging)
+# ---------------------------------------------------------------------------
 
-# ========= 一个简单的 main 示例 =========
+def main() -> None:
+    """Run a single reward + weight update cycle on sample data."""
+    project_root = Path(__file__).resolve().parents[2]
+    results_file = project_root / "data" / "temp_data" / "round_0" / "inference" / "results.jsonl"
+    test_sqls_file = project_root / "data" / "benchmark" / "test_sqls.json"
 
-def main():
-    results_file = r"/home/panhao/model/temp_data/round_0/inference/results.jsonl"
-    results = read_jsonl_file(results_file)
-    cluster_list = cluster_injection_sqls(read_json_file(r"/home/panhao/project/SQLI/data/benchmark/test_sqls.json")).keys()
-    
-    init_prob = 1.0 / len(cluster_list)
-    clusters_probability_distribution = {key: init_prob for key in cluster_list}
-    print(len(cluster_list))
+    results = read_jsonl_file(str(results_file))
+    cluster_list = list(
+        cluster_injection_sqls(read_json_file(str(test_sqls_file))).keys()
+    )
+
+    n = len(cluster_list)
+    init_prob = 1.0 / n
+    clusters_prob = {k: init_prob for k in cluster_list}
+
     verifier = Verifier(cluster_list=cluster_list)
-    # for key, reward in verifier.cluster_rewards.items():
-    #     print(key, reward)
-    # print("\n")
-    # for key, weight in verifier.cluster_weight.items():
-    #     print(key, weight)
-    # print("\n")
-        
     verifier.update_reward(results=results)
+
+    print("=== Per-cluster rewards ===")
     for key, reward in verifier.cluster_rewards.items():
-        print(key, reward)
-    print("\n")
-    verifier.update_weight(gamma=0.5, cluster_probability_distribution=clusters_probability_distribution)
+        print(f"  {key}: {reward:.4f}")
+
+    verifier.update_weight(gamma=0.5, cluster_probability_distribution=clusters_prob)
+
+    print("\n=== Updated cluster weights ===")
     for key, weight in verifier.cluster_weight.items():
-        print(key, weight)
-    print("\n")
-    print(verifier.cluster_weight)
-    # 之后可以把 clusters_reward_distribution 直接传给 Attacker:
-    # attacker.generate_training_sqls(
-    #     gamma=0.2,
-    #     clusters_reward_distribution=clusters_reward_distribution,
-    #     strategy="by_probability",
-    #     k=10,
-    #     expected_example_num=200,
-    # )
+        print(f"  {key}: {weight:.4f}")
 
 
 if __name__ == "__main__":

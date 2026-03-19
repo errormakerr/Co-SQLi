@@ -1,7 +1,9 @@
 """
-载荷类型识别器
+SQL injection payload type identifier.
 
-识别 SQL 注入载荷的攻击类型和信息特征。
+Identifies the attack type (``AttackType``) and information feature category
+(``InfoFeature``) of a payload template using a combination of explicit
+metadata fields and regex-based heuristics.
 """
 
 import re
@@ -10,7 +12,7 @@ from typing import Dict, Tuple
 
 
 class AttackType(Enum):
-    """攻击类型枚举"""
+    """Enumeration of SQL injection attack categories."""
     ERROR_BASE = "Error base attack"
     UNION_QUERY = "Union-query attack"
     TAUTOLOGIES = "Tautologies attack"
@@ -21,18 +23,18 @@ class AttackType(Enum):
 
 
 class InfoFeature(Enum):
-    """信息特征枚举"""
+    """Enumeration of information-feature categories."""
     CONSTANT = "constant"
     SYSTEM_INFO = "system information"
     SPECIFIC_DB = "specific database"
     UNKNOWN = "unknown"
 
 
-# ============================================================
-# 攻击类型识别模式
-# ============================================================
+# ---------------------------------------------------------------------------
+# Regex patterns for attack-type detection
+# ---------------------------------------------------------------------------
 
-TYPE_PATTERNS = {
+TYPE_PATTERNS: Dict[AttackType, list] = {
     AttackType.ERROR_BASE: [
         r"CAST\s*\(",
         r"CONVERT\s*\(",
@@ -47,9 +49,9 @@ TYPE_PATTERNS = {
         r"TIME\s*\(['\"]",
         r"DATE\s*\(['\"]",
         r"TO_DAYS\s*\(",
-        r"SUBSTR\s*\([^,]+,\s*['\"]",  # SUBSTR with invalid params
+        r"SUBSTR\s*\([^,]+,\s*['\"]",  # SUBSTR with invalid (non-integer) params
         r"\/\s*\(SELECT\s+0\)",
-        r"9223372036854775807",  # 溢出值
+        r"9223372036854775807",          # INT overflow value
         r"-9223372036854775808",
         r"1\.7976931348623157e\+308",
     ],
@@ -88,116 +90,136 @@ TYPE_PATTERNS = {
 
 def identify_attack_type(payload: str) -> AttackType:
     """
-    识别载荷的攻击类型
-    
+    Identify the attack type of *payload* using prioritised heuristic rules.
+
+    Detection priority (highest first):
+    1. Piggy-backed  (secondary statement after ``;``)
+    2. Time-based    (``SLEEP`` / ``BENCHMARK``)
+    3. Union-query   (``UNION``, ``ORDER BY N``, ``GROUP BY N``)
+    4. Error-based   (error-triggering functions)
+    5. Boolean-based (character-extraction functions with ``AND``)
+    6. Tautologies   (``' OR …`` / ``' AND …``)
+
+    Returns ``AttackType.UNKNOWN`` when no pattern matches.
+
     Args:
-        payload: SQL注入载荷字符串
-    
+        payload: SQL injection payload string (may contain placeholders).
+
     Returns:
-        AttackType 枚举值
+        Matching ``AttackType`` enum value.
     """
     payload_upper = payload.upper()
-    
-    # 优先级顺序检测
-    # 1. Piggy-backed（有分号开头的额外语句）
+
+    # 1. Piggy-backed — secondary statement introduced by semicolon
     if re.search(r";\s*(SELECT|DELETE|INSERT|UPDATE|DROP|TRUNCATE|CREATE)\b", payload_upper):
         return AttackType.PIGGY_BACKED
-    
-    # 2. Time Inference（有延时函数）
+
+    # 2. Time-based — delay functions
     if re.search(r"(SLEEP|BENCHMARK)\s*\(", payload_upper):
         return AttackType.TIME_INFERENCE
-    
-    # 3. Union Query
+
+    # 3. Union-query — UNION keyword or positional ORDER/GROUP BY probes
     if re.search(r"\b(UNION|ORDER\s+BY\s+\d|GROUP\s+BY\s+\d)", payload_upper):
         return AttackType.UNION_QUERY
-    
-    # 4. Error Base（有错误触发函数）
+
+    # 4. Error-based — error-triggering numeric/XML/GTID functions
     error_funcs = [
         r"CAST\s*\(", r"CONVERT\s*\(", r"SQRT\s*\(", r"LOG\d*\s*\(",
-        r"MOD\s*\(", r"extractvalue\s*\(", r"updatexml\s*\(",
+        r"MOD\s*\(",  r"extractvalue\s*\(", r"updatexml\s*\(",
         r"GTID_SUBSET\s*\(", r"GTID_SUBTRACT\s*\(",
     ]
     for pattern in error_funcs:
         if re.search(pattern, payload, re.IGNORECASE):
             return AttackType.ERROR_BASE
-    
-    # 5. Boolean Inference
-    bool_patterns = [r"SUBSTR", r"SUBSTRING", r"ASCII", r"ORD", r"LENGTH"]
+
+    # 5. Boolean inference — character-extraction functions paired with AND
+    bool_indicators = ["SUBSTR", "SUBSTRING", "ASCII", "ORD", "LENGTH"]
     if "AND" in payload_upper:
-        for p in bool_patterns:
-            if p in payload_upper:
-                return AttackType.BOOLEAN_INFERENCE
-    
-    # 6. Tautologies（OR 恒真条件）
+        if any(ind in payload_upper for ind in bool_indicators):
+            return AttackType.BOOLEAN_INFERENCE
+
+    # 6. Tautologies — OR / AND always-true conditions
     if re.search(r"'\s+OR\s+", payload, re.IGNORECASE):
         return AttackType.TAUTOLOGIES
-    
-    # 7. 简单 AND 条件也归为 Tautologies
     if re.search(r"'\s+AND\s+", payload, re.IGNORECASE):
         return AttackType.TAUTOLOGIES
-    
+
     return AttackType.UNKNOWN
 
 
 def identify_info_feature(payload: str) -> InfoFeature:
     """
-    识别载荷的信息特征
-    
+    Identify the information feature of *payload* from its placeholder types.
+
+    - ``$table_N$`` / ``$column_tN_M$``  → ``SPECIFIC_DB``
+    - ``$sysInfo$``                        → ``SYSTEM_INFO``
+    - (none)                               → ``CONSTANT``
+
     Args:
-        payload: SQL注入载荷字符串
-    
+        payload: SQL injection payload string (may contain placeholders).
+
     Returns:
-        InfoFeature 枚举值
+        Matching ``InfoFeature`` enum value.
     """
-    # 检查占位符类型
     has_table = bool(re.search(r"\$table_\d+\$", payload))
     has_column = bool(re.search(r"\$column_t\d+_\d+\$", payload))
     has_sysinfo = bool(re.search(r"\$sysInfo\$", payload))
-    
-    # 判断逻辑
+
     if has_table or has_column:
         return InfoFeature.SPECIFIC_DB
-    elif has_sysinfo:
+    if has_sysinfo:
         return InfoFeature.SYSTEM_INFO
-    else:
-        return InfoFeature.CONSTANT
+    return InfoFeature.CONSTANT
 
 
 def identify(payload_template: Dict) -> Tuple[AttackType, InfoFeature]:
     """
-    识别载荷模板的攻击类型和信息特征
-    
+    Identify the attack type and information feature of a payload template.
+
+    Explicit ``"type"`` and ``"information_features"`` fields in
+    *payload_template* take precedence over heuristic detection.
+
     Args:
-        payload_template: 载荷模板字典，包含 'payload', 'type', 'information_features' 字段
-    
+        payload_template: Dict with at least a ``"payload"`` key and
+                          optionally ``"type"`` and ``"information_features"``.
+
     Returns:
-        (AttackType, InfoFeature) 元组
+        ``(AttackType, InfoFeature)`` tuple.
     """
-    # 优先使用模板中的类型信息
-    if "type" in payload_template and payload_template["type"]:
+    # Attack type — prefer explicit field
+    if payload_template.get("type"):
         type_str = payload_template["type"]
-        attack_type = AttackType(type_str) if type_str in [e.value for e in AttackType] else AttackType.UNKNOWN
+        attack_type = (
+            AttackType(type_str)
+            if type_str in {e.value for e in AttackType}
+            else AttackType.UNKNOWN
+        )
     else:
         attack_type = identify_attack_type(payload_template.get("payload", ""))
-    
-    if "information_features" in payload_template and payload_template["information_features"]:
+
+    # Information feature — prefer explicit field
+    if payload_template.get("information_features"):
         feature_str = payload_template["information_features"]
-        info_feature = InfoFeature(feature_str) if feature_str in [e.value for e in InfoFeature] else InfoFeature.UNKNOWN
+        info_feature = (
+            InfoFeature(feature_str)
+            if feature_str in {e.value for e in InfoFeature}
+            else InfoFeature.UNKNOWN
+        )
     else:
         info_feature = identify_info_feature(payload_template.get("payload", ""))
-    
+
     return attack_type, info_feature
 
 
-# ============================================================
-# 便捷函数
-# ============================================================
+# ---------------------------------------------------------------------------
+# Convenience display helpers
+# ---------------------------------------------------------------------------
 
 def get_attack_type_name(attack_type: AttackType) -> str:
-    """获取攻击类型的显示名称"""
+    """Return the human-readable name of *attack_type*."""
     return attack_type.value
 
 
 def get_info_feature_name(info_feature: InfoFeature) -> str:
-    """获取信息特征的显示名称"""
+    """Return the human-readable name of *info_feature*."""
     return info_feature.value
