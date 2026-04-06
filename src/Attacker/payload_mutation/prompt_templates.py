@@ -143,10 +143,6 @@ The following describes various SQL structure patterns you can use. Choose a DIF
 Mutated Payload:"""
 
 
-# Backward compatibility aliases
-TYPE_FOCUSED_TEMPLATE = ATTACK_FORM_MUTATION_TEMPLATE
-INFO_FOCUSED_TEMPLATE = SQL_STRUCTURE_MUTATION_TEMPLATE
-
 
 # ============================================================
 # Type-Focused Mutation Dimensions (by attack type)

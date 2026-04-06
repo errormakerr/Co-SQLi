@@ -6,11 +6,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-from Attacker.Attacker import Attacker
+from Attacker.attacker import Attacker
 from Defender.defender import Defender
 from Verifier.verifier import Verifier
 from utils.cluster import cluster_injection_sqls
 from utils.json_operation import read_json_file, read_jsonl_file, write_jsonl_file, write_json_file
+from utils.logging_config import setup_logging
 
 
 # ==================== Configuration Constants ====================
@@ -34,7 +35,7 @@ class ProjectPaths:
             project_root=project_root,
             raw_datas_dir=project_root / "data" / "raw_datas_for_generation",
             benchmark_dir=project_root / "data" / "benchmark",
-            temp_datas_dir=Path("/home/panhao/model/temp_data/Qwen2.5-Coder-1.5B-Instruct_with_modify_v1.3"),
+            temp_datas_dir=Path("/home/panhao/model/temp_data/Qwen2.5-Coder-1.5B-Instruct_with_modify_test"),
             config_dir=project_root / "config",
             base_model_path=Path("/home/panhao/model/base_model/Qwen2.5-Coder-1.5B-Instruct"),
         )
@@ -294,8 +295,9 @@ def run_training_loop(start_round: int = 0, breakpoint_round: int = -1) -> None:
 
 def main() -> None:
     """Main entry point."""
+    setup_logging()
     run_training_loop(start_round=0)
-    # run_training_loop(start_round=0, breakpoint_round=3)  # Resume from breakpoint
+    # run_training_loop(start_round=0, breakpoint_round=2)  # Resume from breakpoint
 
 
 if __name__ == "__main__":

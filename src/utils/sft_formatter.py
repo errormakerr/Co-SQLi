@@ -6,7 +6,7 @@ Provides utilities to:
 - Format SQL examples into SFT training records (OpenAI messages format).
 """
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 # ---------------------------------------------------------------------------
 # Type normalisation
@@ -86,7 +86,7 @@ def schema_to_create_statements(schema: Dict) -> str:
 
 def create_sft_format(
     sql_entry: Dict[str, Any],
-    schemas: Dict[str, Dict],
+    schemas: Union[Dict[str, Dict], List[Dict]],
     format_type: str = "openai",
 ) -> Dict[str, Any]:
     """
@@ -98,16 +98,14 @@ def create_sft_format(
     
     # If the schema cannot be found, fallback to no schema text
     schema_text = ""
-    if db_name and db_name in schemas:
-        # Check if schemas dict is indexed by db_name or if we need to search a list
-        if isinstance(schemas, dict):
-             if db_name in schemas:
-                 schema_text = schema_to_create_statements(schemas[db_name])
+    if db_name:
+        if isinstance(schemas, dict) and db_name in schemas:
+            schema_text = schema_to_create_statements(schemas[db_name])
         elif isinstance(schemas, list):
-             for schema_dict in schemas:
-                 if schema_dict.get("database_name") == db_name:
-                     schema_text = schema_to_create_statements(schema_dict)
-                     break
+            for schema_dict in schemas:
+                if schema_dict.get("database_name") == db_name:
+                    schema_text = schema_to_create_statements(schema_dict)
+                    break
                      
     if not schema_text:
         # Fallback to empty string or a dummy statement to prevent crash

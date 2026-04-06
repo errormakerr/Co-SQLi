@@ -10,33 +10,8 @@ Provides functions to:
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
+from utils.cluster import NORMAL_CLUSTER_KEY, str_to_bool
 from utils.json_operation import read_jsonl_file
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-def _str2bool(s: str) -> bool:
-    """
-    Convert a case-insensitive ``"true"`` / ``"false"`` string to a bool.
-
-    Args:
-        s: The string to convert.
-
-    Returns:
-        ``True`` if *s* is ``"true"``, ``False`` if *s* is ``"false"``.
-
-    Raises:
-        ValueError: If the string is not exactly ``"true"`` or ``"false"``
-                    (case-insensitive).
-    """
-    v = s.strip().lower()
-    if v == "true":
-        return True
-    if v == "false":
-        return False
-    raise ValueError(f"Invalid boolean string: {s!r}")
 
 
 # ---------------------------------------------------------------------------
@@ -76,13 +51,13 @@ def _get_single_key_of_result(data_item: Dict[str, Any]) -> str:
         attack_type = data_item["type"]
         annotator = data_item["annotator"]
         if isinstance(annotator, str):
-            annotator = _str2bool(annotator)
+            annotator = str_to_bool(annotator)
         info_features = data_item["information_features"]
         comment = data_item.get("comment")
         if isinstance(comment, str):
-            comment = _str2bool(comment)
+            comment = str_to_bool(comment)
         return f"{attack_type}||{annotator}||{info_features}||{comment}"
-    return "normal||normal||normal||normal"
+    return NORMAL_CLUSTER_KEY
 
 
 def cluster_results(datas: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:

@@ -1,15 +1,15 @@
 """
 SQLI Utilities Package
 
-Common helpers for file I/O, LLM interaction, schema lookup,
+Common helpers for file I/O, LLM interaction,
 template loading, and payload clustering.
 """
 
 from .json_operation import read_json_file, write_json_file, read_jsonl_file, write_jsonl_file
 from .yaml_operation import load_yaml_to_dict
 from .j2_operation import load_prompt_template
-from .schema import get_schema
 from .cluster import (
+    NORMAL_CLUSTER_KEY,
     ClusterKey,
     cluster_injection_sqls,
     cluster_payload_templates,
@@ -28,9 +28,8 @@ __all__ = [
     "load_yaml_to_dict",
     # Templates
     "load_prompt_template",
-    # Schema
-    "get_schema",
     # Clustering
+    "NORMAL_CLUSTER_KEY",
     "ClusterKey",
     "cluster_injection_sqls",
     "cluster_payload_templates",

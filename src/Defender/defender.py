@@ -72,7 +72,20 @@ class Defender:
             failure.
         """
         cfg = self.training_cfg
-        num_gpus = cfg["num_gpus"]
+        # Auto-detect num_gpus from CUDA_VISIBLE_DEVICES (config comment says
+        # "removed from YAML, auto-detected"), fall back to config if present.
+        if "num_gpus" in cfg:
+            num_gpus = cfg["num_gpus"]
+        else:
+            cuda_visible = os.environ.get("CUDA_VISIBLE_DEVICES", "")
+            if cuda_visible:
+                num_gpus = len([d for d in cuda_visible.split(",") if d.strip()])
+            else:
+                try:
+                    import torch
+                    num_gpus = torch.cuda.device_count() or 1
+                except Exception:
+                    num_gpus = 1
         lora_output_dir = os.path.join(output_root, "adapter")
         os.makedirs(lora_output_dir, exist_ok=True)
 

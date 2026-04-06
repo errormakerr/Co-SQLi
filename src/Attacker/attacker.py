@@ -20,7 +20,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
-from utils.cluster import ClusterKey, cluster_payload_templates
+from utils.cluster import NORMAL_CLUSTER_KEY, ClusterKey, cluster_payload_templates
 from utils.json_operation import read_json_file
 from utils.LLM import LLM
 from utils.yaml_operation import load_yaml_to_dict
@@ -28,6 +28,22 @@ from utils.sft_formatter import batch_process_to_sft
 
 from .generate_injection_sql import pipeline
 from .payload_mutation import MutationMemory, PayloadMutator
+
+# ---------------------------------------------------------------------------
+# Named constants (extracted from inline magic numbers)
+# ---------------------------------------------------------------------------
+
+NORMAL_CLUSTER_WEIGHT_MULTIPLIER = 10.0
+"""Normal cluster probability is scaled by this factor when computing the injection ratio."""
+
+DEFAULT_MODIFY_PROBABILITY = 0.5
+"""Default probability of mutating a payload template."""
+
+MUTATION_PROB_LOWER_SCALE = 0.5
+"""Lower-bound factor applied to the base mutation probability."""
+
+MUTATION_PROB_UPPER_BOUND = 0.8
+"""Absolute upper bound for the effective mutation probability."""
 
 
 class Attacker:
@@ -39,10 +55,10 @@ class Attacker:
             normal) to generate per round.
         cluster_list:            Complete list of cluster key strings
             (as returned by ``cluster_injection_sqls``), including the normal
-            cluster ``"normal||normal||normal||normal"``.
+            cluster ``NORMAL_CLUSTER_KEY``.
         normal_sqls_path:        Path to ``normal_sqls.json``.
         raw_datas_dir:           Directory containing ``payloads.json``,
-            ``sql_data_with_injection_point_.json``, ``schema.json``, etc.
+            ``sql_data_with_injection_point.json``, ``schema.json``, etc.
         enable_payload_mutation: Whether to activate LLM-based payload
             mutation.  Requires a valid LLM config at ``config/gpt_config.yaml``.
         mutation_model:          Override the LLM model name used for mutation.
@@ -81,13 +97,13 @@ class Attacker:
         # Injection ratio: derived from the normal cluster's probability
         # (normal cluster weight is 10× its probability in the training set)
         self.rate_of_injection_sqls = (
-            1.0 - 10.0 * self.clusters_probability_distribution["normal||normal||normal||normal"]
+            1.0 - NORMAL_CLUSTER_WEIGHT_MULTIPLIER * self.clusters_probability_distribution[NORMAL_CLUSTER_KEY]
         )
 
         # Load raw data files
         self.normal_sqls: List[Dict[str, Any]] = read_json_file(normal_sqls_path)
 
-        raw_sqls = read_json_file(f"{raw_datas_dir}/sql_data_with_injection_point_.json")
+        raw_sqls = read_json_file(f"{raw_datas_dir}/sql_data_with_injection_point.json")
         self.train_raw_sqls: List[Dict[str, Any]] = [
             sql for sql in raw_sqls if sql.get("set") == "train"
         ]
@@ -216,7 +232,7 @@ class Attacker:
         non_normal = {
             key: prob
             for key, prob in self.clusters_probability_distribution.items()
-            if key != "normal||normal||normal||normal"
+            if key != NORMAL_CLUSTER_KEY
         }
 
         if k <= 0:
@@ -323,7 +339,7 @@ class Attacker:
     def _modify_raw_payload_template(
         self,
         payload_template: Dict[str, Any],
-        modify_probability: float = 0.5,
+        modify_probability: float = DEFAULT_MODIFY_PROBABILITY,
     ) -> Dict[str, Any]:
         """
         Attempt to mutate *payload_template* using the LLM.
@@ -404,7 +420,7 @@ class Attacker:
         strategy: str,
         k: int,
         expected_example_num: Optional[int] = None,
-        modify_payload_prob: float = 0.5,
+        modify_payload_prob: float = DEFAULT_MODIFY_PROBABILITY,
     ) -> Tuple[List[Any], Dict[str, float]]:
         """
         Generate a mixed set of injection + normal SQL examples for one round.
@@ -447,7 +463,7 @@ class Attacker:
         self._update_clusters_probability_distribution(gamma, clusters_weight_distribution)
 
         self.rate_of_injection_sqls = (
-            1.0 - 10.0 * self.clusters_probability_distribution["normal||normal||normal||normal"]
+            1.0 - NORMAL_CLUSTER_WEIGHT_MULTIPLIER * self.clusters_probability_distribution[NORMAL_CLUSTER_KEY]
         )
         expected_injection_num = int(expected_example_num * self.rate_of_injection_sqls)
         expected_normal_num = expected_example_num - expected_injection_num
@@ -485,8 +501,8 @@ class Attacker:
                 effective_prob = float(
                     np.clip(
                         modify_payload_prob * scale,
-                        modify_payload_prob * 0.5,  # lower bound: 50 % of base
-                        0.8,                         # upper bound: 80 %
+                        modify_payload_prob * MUTATION_PROB_LOWER_SCALE,
+                        MUTATION_PROB_UPPER_BOUND,
                     )
                 )
 

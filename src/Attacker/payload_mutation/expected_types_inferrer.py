@@ -288,13 +288,7 @@ class ExpectedTypesInferrer:
         )
         
         try:
-            # Check if using HKUST API
-            use_hkust = "hkust" in self.llm.base_url.lower() if hasattr(self.llm, 'base_url') else False
-            
-            if use_hkust:
-                response = self.llm.generate_by_hkust(prompt, self.model, temperature=0.3, max_tokens=500)
-            else:
-                response = self.llm.generate(prompt, self.model, temperature=0.3, max_tokens=500)
+            response = self.llm.chat(prompt, self.model, temperature=0.3, max_tokens=500)
             
             if not response:
                 return None

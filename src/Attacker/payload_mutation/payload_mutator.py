@@ -15,11 +15,24 @@ import random
 import sys
 from typing import Dict, List, Optional, Tuple
 
+# ---------------------------------------------------------------------------
+# Named constants
+# ---------------------------------------------------------------------------
+
+MUTATION_LLM_TEMPERATURE = 0.7
+"""LLM sampling temperature for mutation generation."""
+
+MUTATION_MAX_TOKENS = 2000
+"""Maximum tokens allowed in a mutation LLM response."""
+
+INFO_FOCUSED_PROMPT_PROBABILITY = 0.3
+"""Probability of choosing info-focused (vs type-focused) for specific_db payloads."""
+
 from .type_identifier import identify, AttackType, InfoFeature
 from .prompt_templates import (
     SECURITY_DECLARATION,
-    TYPE_FOCUSED_TEMPLATE,
-    INFO_FOCUSED_TEMPLATE,
+    ATTACK_FORM_MUTATION_TEMPLATE,
+    SQL_STRUCTURE_MUTATION_TEMPLATE,
     get_type_dimensions,
     get_info_dimensions,
 )
@@ -110,16 +123,7 @@ class PayloadMutator:
 
         # Step 4 — LLM call
         try:
-            use_hkust = (
-                "hkust" in self.llm.base_url.lower()
-                if getattr(self.llm, "base_url", None)
-                else False
-            )
-            response = (
-                self.llm.generate_by_hkust(prompt, self.model, temperature=0.7, max_tokens=2000)
-                if use_hkust
-                else self.llm.generate(prompt, self.model, temperature=0.7, max_tokens=2000)
-            )
+            response = self.llm.chat(prompt, self.model, temperature=MUTATION_LLM_TEMPERATURE, max_tokens=MUTATION_MAX_TOKENS)
             mutated = response.strip() if response else ""
         except Exception as e:
             self._stats["failed"] += 1
@@ -236,7 +240,7 @@ class PayloadMutator:
         if info_feature == InfoFeature.CONSTANT:
             return "type_focused"
         if info_feature == InfoFeature.SPECIFIC_DB:
-            return "info_focused" if random.random() < 0.3 else "type_focused"
+            return "info_focused" if random.random() < INFO_FOCUSED_PROMPT_PROBABILITY else "type_focused"
         # SYSTEM_INFO
         return "type_focused"
 
@@ -259,10 +263,10 @@ class PayloadMutator:
             attack_type_str, info_feature_str, prompt_type
         )
         if prompt_type == "type_focused":
-            tmpl = TYPE_FOCUSED_TEMPLATE
+            tmpl = ATTACK_FORM_MUTATION_TEMPLATE
             dimensions = get_type_dimensions(attack_type)
         else:
-            tmpl = INFO_FOCUSED_TEMPLATE
+            tmpl = SQL_STRUCTURE_MUTATION_TEMPLATE
             dimensions = get_info_dimensions()
 
         return tmpl.format(

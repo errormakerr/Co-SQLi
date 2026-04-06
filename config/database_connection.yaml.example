@@ -1,0 +1,5 @@
+'host': '127.0.0.1'
+'port': 13306
+'user': 'root'
+'password': 'YOUR_PASSWORD_HERE'
+'charset': 'utf8mb4'

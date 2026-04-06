@@ -19,6 +19,7 @@ Usage:
 import argparse
 import copy
 import os
+from typing import Dict, Optional
 
 import bitsandbytes as bnb
 import torch
@@ -176,7 +177,7 @@ def run_merge_lora(args: argparse.Namespace) -> None:
     if args.device == "auto":
         if torch.cuda.is_available():
             device = "cuda:0"
-            device_map: object = {"": 0}
+            device_map: Optional[Dict[str, int]] = {"": 0}
         else:
             device = "cpu"
             device_map = None

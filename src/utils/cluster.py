@@ -12,6 +12,9 @@ from dataclasses import dataclass
 from typing import Any, Dict, List
 
 
+# Canonical cluster key for benign / normal SQL samples.
+NORMAL_CLUSTER_KEY = "normal||normal||normal||normal"
+
 # ---------------------------------------------------------------------------
 # Boolean helper
 # ---------------------------------------------------------------------------
@@ -78,7 +81,7 @@ def get_single_key_of_injection_sql(data_item: Dict[str, Any]) -> str:
         info_features = data_item["payload_template"]["information_features"]
         comment = data_item.get("comment")
         return f"{payload_type}||{annotator}||{info_features}||{comment}"
-    return "normal||normal||normal||normal"
+    return NORMAL_CLUSTER_KEY
 
 
 def cluster_injection_sqls(datas: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:

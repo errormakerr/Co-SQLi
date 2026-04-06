@@ -34,8 +34,9 @@ class LLM:
     def __init__(self, api_key: str, base_url: str):
         self.api_key = api_key
         self.base_url = base_url
+        self._is_hkust = (base_url == HKUST_BASE_URL)
 
-        if base_url == HKUST_BASE_URL:
+        if self._is_hkust:
             # Raw HTTP mode — SDK clients are not created
             self.sync_client: Optional[OpenAI] = None
             self.async_client: Optional[AsyncOpenAI] = None
@@ -119,6 +120,21 @@ class LLM:
             raise Exception(f"HKUST API request failed: {e}") from e
         except (KeyError, IndexError) as e:
             raise Exception(f"Unexpected HKUST API response format: {e}") from e
+
+    def chat(
+        self,
+        prompt: str,
+        model: str,
+        temperature: float = 0.5,
+        max_tokens: int = 6000,
+    ) -> str:
+        """
+        Unified synchronous generation — automatically routes to the correct
+        backend (OpenAI SDK or HKUST gateway) based on ``base_url``.
+        """
+        if self._is_hkust:
+            return self.generate_by_hkust(prompt, model, temperature, max_tokens)
+        return self.generate(prompt, model, temperature, max_tokens)
 
     def batch_generate(
         self,

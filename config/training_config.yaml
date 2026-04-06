@@ -1,15 +1,15 @@
 # config.yaml
 
-cuda_visible_devices: "6,7"
-num_gpus: 2
+# GPU config: removed from YAML.
+# Set CUDA_VISIBLE_DEVICES in command line, num_gpus auto-detected.
 
 token_select_pattern: "default"
 data_prop: 1.0
 random_seed: 42
 
-batch_size_per_gpu: 1
-gradient_accumulation_steps: 8
-max_seq_length: 4096
+batch_size_per_gpu: 2
+gradient_accumulation_steps: 4
+max_seq_length: 2048
 num_train_epochs: 2
 learning_rate: 5e-5 
 lr_scheduler_type: "linear"

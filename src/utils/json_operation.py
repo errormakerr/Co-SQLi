@@ -5,6 +5,7 @@ JSON / JSONL file I/O utilities.
 from __future__ import annotations
 
 import json
+import os
 from typing import Any, Dict, List, Optional, Union
 
 
@@ -39,6 +40,7 @@ def write_json_file(file_path: str, data: Union[Dict[str, Any], List[Any]]) -> N
         data:      JSON-serialisable object (dict or list).
     """
     try:
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
         print(f"Data successfully written to {file_path}")
@@ -46,7 +48,7 @@ def write_json_file(file_path: str, data: Union[Dict[str, Any], List[Any]]) -> N
         print(f"Error writing file: {e}")
 
 
-def read_jsonl_file(file_path: str) -> List[Dict[str, Any]]:
+def read_jsonl_file(file_path: str) -> Optional[List[Dict[str, Any]]]:
     """Load a JSONL (newline-delimited JSON) file and return all records.
 
     Malformed lines are skipped with a warning message.
@@ -55,7 +57,7 @@ def read_jsonl_file(file_path: str) -> List[Dict[str, Any]]:
         file_path: Path to the JSONL file.
 
     Returns:
-        List of parsed record dicts; empty list on error.
+        List of parsed record dicts, or ``None`` on error.
     """
     data: List[Dict[str, Any]] = []
     try:
@@ -72,16 +74,16 @@ def read_jsonl_file(file_path: str) -> List[Dict[str, Any]]:
         return data
     except FileNotFoundError:
         print(f"Error: file not found — {file_path}")
-        return []
+        return None
     except Exception as e:
         print(f"Error reading file: {e}")
-        return []
+        return None
 
 
 def write_jsonl_file(
     file_path: str,
     data: Union[Dict[str, Any], List[Dict[str, Any]]],
-) -> bool:
+) -> None:
     """Write *data* to a JSONL file (one JSON object per line).
 
     *data* can be a single dict or a list of dicts.
@@ -89,11 +91,9 @@ def write_jsonl_file(
     Args:
         file_path: Destination path.
         data:      A dict or a list of dicts to serialise.
-
-    Returns:
-        ``True`` on success, ``False`` on failure.
     """
     try:
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
         with open(file_path, "w", encoding="utf-8") as f:
             if isinstance(data, dict):
                 f.write(json.dumps(data, ensure_ascii=False) + "\n")
@@ -109,7 +109,5 @@ def write_jsonl_file(
             else:
                 raise ValueError("data must be a dict or a list of dicts")
         print(f"Successfully wrote {count} records to {file_path}")
-        return True
     except Exception as e:
         print(f"Error writing file: {e}")
-        return False

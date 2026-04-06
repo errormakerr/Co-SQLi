@@ -1,8 +1,8 @@
 """
 Mutation Memory Module
 
-Key Design: Maintain separate memory for each of 18 categories
-(6 attack types × 3 info features)
+Key Design: Maintain separate memory for each of 16 categories
+(6 attack types × 3 info features - 2 pruned)
 
 Features:
 1. Deduplication: Prevent generating duplicate payloads
@@ -13,6 +13,12 @@ import hashlib
 import json
 from pathlib import Path
 from typing import Dict, List, Set
+
+MAX_EXAMPLES_PER_CATEGORY = 5
+"""Maximum number of successful mutation examples retained per category."""
+
+NUM_FEWSHOT_EXAMPLES = 2
+"""Number of recent examples shown in the anti-imitation few-shot prompt."""
 from dataclasses import dataclass, field
 
 
@@ -35,7 +41,7 @@ class CategoryMemory:
     # Fingerprints for deduplication
     fingerprints: Set[str] = field(default_factory=set)
     
-    def add_success(self, original: str, mutated: str, prompt_type: str, max_examples: int = 5):
+    def add_success(self, original: str, mutated: str, prompt_type: str, max_examples: int = MAX_EXAMPLES_PER_CATEGORY):
         """Record a successful mutation."""
         examples = self.type_focused_examples if prompt_type == "type_focused" else self.info_focused_examples
         
@@ -78,7 +84,7 @@ class CategoryMemory:
             "**Important**: Use these as a reference for understanding valid output format, but choose a DIFFERENT mutation approach from what you see below.",
             ""
         ]
-        for i, ex in enumerate(examples[-2:], 1):  # Only show last 2
+        for i, ex in enumerate(examples[-NUM_FEWSHOT_EXAMPLES:], 1):
             lines.append(f"Example {i}:")
             lines.append(f"  Original: {ex['original']}")
             lines.append(f"  Mutated:  {ex['mutated']}")

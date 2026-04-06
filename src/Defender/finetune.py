@@ -30,9 +30,7 @@ from datasets import load_dataset
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 import deepspeed
-import torch.nn.functional as F
 import numpy as np
-import re
 
 import transformers
 from transformers import (
@@ -266,13 +264,8 @@ def save_with_accelerate(accelerator, model, tokenizer, output_dir, args):
             safe_serialization=False
         )
 
-def run_finetune(args):
-    """
-    Run the full LoRA/QLoRA fine-tuning loop.
-
-    Args:
-        args: Parsed command-line arguments from :func:`parse_args`.
-    """
+def _setup_accelerator(args):
+    """Initialise Accelerator, configure logging, and set the random seed."""
     accelerator_log_kwargs = {}
 
     if args.with_tracking:
@@ -308,23 +301,29 @@ def run_finetune(args):
         os.makedirs(args.output_dir, exist_ok=True)
 
     accelerator.wait_for_everyone()
+    return accelerator
 
+
+def _load_raw_datasets(args):
+    """Load raw datasets from HuggingFace or a local JSON file."""
     if args.dataset_name is not None:
-        raw_datasets = load_dataset(
+        return load_dataset(
             args.dataset_name,
             args.dataset_config_name,
         )
-    else:
-        data_files = {}
-        dataset_args = {}
-        if args.train_file is not None:
-            data_files["train"] = args.train_file
-        raw_datasets = load_dataset(
-            "json",
-            data_files=data_files,
-            **dataset_args,
-        )
-    
+    data_files = {}
+    dataset_args = {}
+    if args.train_file is not None:
+        data_files["train"] = args.train_file
+    return load_dataset(
+        "json",
+        data_files=data_files,
+        **dataset_args,
+    )
+
+
+def _load_model_and_tokenizer(args, accelerator):
+    """Load model config, tokenizer, model, handle special tokens, and apply LoRA."""
     # --- Load model configuration ---
     if args.config_name:
         config = AutoConfig.from_pretrained(
@@ -497,6 +496,11 @@ def run_finetune(args):
     elif args.gradient_checkpointing:
         model.gradient_checkpointing_enable()
 
+    return model, tokenizer, embedding_size
+
+
+def _encode_and_prepare_dataset(args, raw_datasets, model, tokenizer, accelerator):
+    """Encode raw datasets into tokenised training tensors and apply token selection."""
     # --- Dataset encoding ---
     if "prompt" in raw_datasets["train"].column_names and "completion" in raw_datasets["train"].column_names:
         encode_function = partial(
@@ -518,68 +522,74 @@ def run_finetune(args):
     else:
         raise ValueError("You need to have either 'prompt'&'completion' or 'messages' in your column names.")
     
-    with accelerator.main_process_first():
-        # Add a sequential index column so individual samples can be addressed
-        raw_datasets = raw_datasets.map(
-            lambda example, idx: {"idx": idx},
-            with_indices=True,
-            num_proc=args.preprocessing_num_workers,
-            desc="Adding idx column",
+    # NOTE: main_process_first() removed to avoid FSDP barrier deadlock.
+    # With small datasets (e.g. 300 samples) each rank can tokenise independently.
+    raw_datasets = raw_datasets.map(
+        lambda example, idx: {"idx": idx},
+        with_indices=True,
+        num_proc=args.preprocessing_num_workers,
+        desc="Adding idx column",
+    )
+    lm_datasets = raw_datasets.map(
+        encode_function,
+        batched=False,
+        num_proc=args.preprocessing_num_workers,
+        load_from_cache_file=not args.overwrite_cache,
+        remove_columns=[
+            name
+            for name in raw_datasets["train"].column_names
+            if name not in ["idx", "input_ids", "labels", "attention_mask"]
+        ],
+        desc="Tokenizing and reformatting instruction data",
+    )
+    lm_datasets.set_format(type="pt")
+    accelerator.wait_for_everyone()
+
+    if args.with_prompt_token:
+        print("*** Training with prompt tokens included in loss. ***")
+
+    train_dataset = lm_datasets["train"]
+    orig_labels = train_dataset["labels"]
+
+    # --- Token selection strategy ---
+    if args.token_select_pattern == "token_cleaning":
+        print("*** Token selection: token_cleaning ***")
+        selected_labels = torch.load(
+            args.label_path + f"token_labels_{args.train_data_tag}.pt"
         )
-        lm_datasets = raw_datasets.map(
-            encode_function,
-            batched=False,
-            num_proc=args.preprocessing_num_workers,
-            load_from_cache_file=not args.overwrite_cache,
-            remove_columns=[
-                name
-                for name in raw_datasets["train"].column_names
-                if name not in ["idx", "input_ids", "labels", "attention_mask"]
-            ],
-            desc="Tokenizing and reformatting instruction data",
+    elif args.token_select_pattern == "random":
+        print("*** Token selection: random ***")
+        selected_labels = [[-100] * len(label) for label in orig_labels]
+        random_tokens_indices = get_random_k_indices(orig_labels, args.data_prop)
+        selected_sample_idxs = {item[0] for item in random_tokens_indices}
+        print(
+            f"Selected {len(selected_sample_idxs)} samples "
+            f"(out of {len(orig_labels)} total)."
         )
-        lm_datasets.set_format(type="pt")
-
-        if args.with_prompt_token:
-            print("*** Training with prompt tokens included in loss. ***")
-
-        train_dataset = lm_datasets["train"]
-        orig_labels = train_dataset["labels"]
-
-        # --- Token selection strategy ---
-        if args.token_select_pattern == "token_cleaning":
-            print("*** Token selection: token_cleaning ***")
-            selected_labels = torch.load(
-                args.label_path + f"token_labels_{args.train_data_tag}.pt"
-            )
-        elif args.token_select_pattern == "random":
-            print("*** Token selection: random ***")
-            selected_labels = [[-100] * len(label) for label in orig_labels]
-            random_tokens_indices = get_random_k_indices(orig_labels, args.data_prop)
-            selected_sample_idxs = {item[0] for item in random_tokens_indices}
-            print(
-                f"Selected {len(selected_sample_idxs)} samples "
-                f"(out of {len(orig_labels)} total)."
-            )
-            for i, j in random_tokens_indices:
-                selected_labels[i][j] = orig_labels[i][j].item()
-        elif args.token_select_pattern == "default":
-            print("*** Token selection: default (all tokens) ***")
-            selected_labels = orig_labels
-        else:
-            raise NotImplementedError(
-                f"Unsupported token_select_pattern: {args.token_select_pattern!r}"
-            )
-
-        train_dataset = train_dataset.map(
-            lambda examples, idx: {"labels": selected_labels[idx]},
-            with_indices=True,
+        for i, j in random_tokens_indices:
+            selected_labels[i][j] = orig_labels[i][j].item()
+    elif args.token_select_pattern == "default":
+        print("*** Token selection: default (all tokens) ***")
+        selected_labels = orig_labels
+    else:
+        raise NotImplementedError(
+            f"Unsupported token_select_pattern: {args.token_select_pattern!r}"
         )
 
+    train_dataset = train_dataset.map(
+        lambda examples, idx: {"labels": selected_labels[idx]},
+        with_indices=True,
+    )
+
+    return train_dataset
+
+
+def _build_optimizer_and_scheduler(args, model, tokenizer, train_dataset, accelerator):
+    """Create DataLoader, optimiser, LR scheduler, and prepare with accelerator."""
     # --- DataLoaders ---
     train_dataloader = DataLoader(
-        train_dataset, 
-        shuffle=True, 
+        train_dataset,
+        shuffle=True,
         collate_fn=DataCollatorForSeq2Seq(tokenizer=tokenizer, model=model, padding="longest"),
         batch_size=args.per_device_train_batch_size
     )
@@ -656,13 +666,24 @@ def run_finetune(args):
             experiment_config["lr_scheduler_type"] = v.value
         else:
             experiment_config["lr_scheduler_type"] = str(v)
+        # TensorBoard add_hparams only accepts int/float/str/bool/Tensor.
+        # Convert any list or other unsupported types to strings.
+        for k, val in experiment_config.items():
+            if not isinstance(val, (int, float, str, bool, type(None))):
+                experiment_config[k] = str(val)
         accelerator.init_trackers(
             "open_instruct_sft",
             experiment_config,
             init_kwargs={"wandb": {"entity": args.wandb_entity}}
         )
 
+    return model, optimizer, train_dataloader, lr_scheduler, checkpointing_steps
 
+
+def _training_loop(args, model, tokenizer, train_dataset, train_dataloader,
+                   optimizer, lr_scheduler, accelerator, checkpointing_steps,
+                   embedding_size):
+    """Execute the main training loop with checkpointing and optional tracking."""
     # --- Training loop ---
     total_batch_size = (
         args.per_device_train_batch_size
@@ -684,7 +705,7 @@ def run_finetune(args):
 
     # --- Resume from checkpoint (optional) ---
     if args.resume_from_checkpoint:
-        if args.resume_from_checkpoint is not None or args.resume_from_checkpoint != "":
+        if args.resume_from_checkpoint is not None and args.resume_from_checkpoint != "":
             checkpoint_path = args.resume_from_checkpoint
             path = os.path.basename(args.resume_from_checkpoint)
         else:
@@ -735,8 +756,6 @@ def run_finetune(args):
         
         for step, batch in enumerate(active_dataloader):
             with accelerator.accumulate(model):
-                indices = batch["idx"]
-                # indices = [0 for _ in range(batch["labels"].size(0))]
                 outputs = model(input_ids=batch['input_ids'], labels=batch['labels'], attention_mask=batch['attention_mask'], use_cache=False)
 
                 if args.reduce_loss == 'mean':
@@ -818,6 +837,36 @@ def run_finetune(args):
 
     if args.with_tracking:
         accelerator.end_training()
+
+
+def run_finetune(args):
+    """
+    Run the full LoRA/QLoRA fine-tuning loop.
+
+    Orchestrates the following stages:
+    1. Accelerator and logging setup
+    2. Raw dataset loading
+    3. Model, tokenizer, and LoRA initialisation
+    4. Dataset encoding and token selection
+    5. Optimiser, scheduler, and accelerator preparation
+    6. Training loop with checkpointing
+
+    Args:
+        args: Parsed command-line arguments from :func:`parse_args`.
+    """
+    accelerator = _setup_accelerator(args)
+    raw_datasets = _load_raw_datasets(args)
+    model, tokenizer, embedding_size = _load_model_and_tokenizer(args, accelerator)
+    train_dataset = _encode_and_prepare_dataset(args, raw_datasets, model, tokenizer, accelerator)
+    model, optimizer, train_dataloader, lr_scheduler, checkpointing_steps = (
+        _build_optimizer_and_scheduler(args, model, tokenizer, train_dataset, accelerator)
+    )
+    _training_loop(
+        args, model, tokenizer, train_dataset, train_dataloader,
+        optimizer, lr_scheduler, accelerator, checkpointing_steps,
+        embedding_size,
+    )
+
 
 def parse_args() -> argparse.Namespace:
     """Parse command-line arguments for the fine-tuning script."""

@@ -290,22 +290,6 @@ class PayloadValidator:
         
         return ValidationResult(is_valid=True)
     
-    # Keep old name as alias for backward compatibility
-    def _check_quote_balance(self, original: Dict, mutated: str) -> ValidationResult:
-        """Alias for _check_parenthesis_balance (backward compatibility)."""
-        return self._check_parenthesis_balance(original, mutated)
-    
-    def _clean_output(self, output: str) -> str:
-        """
-        Backward-compatible alias: clean LLM output and return a single line.
-        
-        Prefer using the public clean() method in new code.
-        Note: When using this method before calling validate(), the single-line
-        check inside validate() becomes a no-op. Prefer passing raw LLM output
-        directly to validate() to fully exercise all checks.
-        """
-        return self.clean(output)
-    
     def _check_attack_type(self, original: Dict, mutated: str) -> ValidationResult:
         """
         Check if attack type is consistent.
