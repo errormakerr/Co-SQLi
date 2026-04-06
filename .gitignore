@@ -31,6 +31,15 @@ runs/
 checkpoints/
 wandb/
 
-# Sensitive configs (uncomment if needed)
-# config/gpt_config.yaml
-# config/database_connection.yaml
+# Sensitive configs
+config/gpt_config.yaml
+config/database_connection.yaml
+
+# Temp/runtime data
+data/temp_data/
+
+# Git artifacts
+FETCH_HEAD
+
+# Tool-specific
+.claude/
