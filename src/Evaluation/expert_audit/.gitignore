@@ -1,0 +1,12 @@
+# local config — contains the admin key
+.env
+
+# runtime data
+expert_audit.db
+expert_audit.db-journal
+expert_audit.db-wal
+expert_audit.db-shm
+
+# python cache
+__pycache__/
+*.pyc

@@ -1,0 +1,42 @@
+{
+  "dimension": "D2_Duplication_Rate",
+  "near_dup_jaccard_threshold": 0.9,
+  "results": [
+    {
+      "dataset": "SQLiV3",
+      "n": 10000,
+      "exact_unique": 8720,
+      "exact_dup_rate": 0.128,
+      "near_unique": 8485,
+      "near_dup_rate": 0.15149999999999997,
+      "pairs_checked": 5000001
+    },
+    {
+      "dataset": "rbsqli",
+      "n": 10000,
+      "exact_unique": 9521,
+      "exact_dup_rate": 0.047900000000000054,
+      "near_unique": 9493,
+      "near_dup_rate": 0.05069999999999997,
+      "pairs_checked": 5000001
+    },
+    {
+      "dataset": "Superviz25",
+      "n": 10000,
+      "exact_unique": 738,
+      "exact_dup_rate": 0.9262,
+      "near_unique": 738,
+      "near_dup_rate": 0.9262,
+      "pairs_checked": 5000001
+    },
+    {
+      "dataset": "Ours",
+      "n": 2613,
+      "exact_unique": 2565,
+      "exact_dup_rate": 0.018369690011481032,
+      "near_unique": 2536,
+      "near_dup_rate": 0.029468044393417547,
+      "pairs_checked": 5000001
+    }
+  ]
+}

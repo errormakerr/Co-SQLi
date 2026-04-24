@@ -63,6 +63,15 @@ class Attacker:
             mutation.  Requires a valid LLM config at ``config/gpt_config.yaml``.
         mutation_model:          Override the LLM model name used for mutation.
             Defaults to the value in ``gpt_config.yaml``.
+        schema_mode:             Detection-task formulation, matching the two
+            definitions in the paper (\S problem_formulation):
+
+            * ``"aware"`` — schema-aware detection ($T_2$): the SFT prompt
+              includes the database schema alongside the query.  This is the
+              default and is the formulation used throughout the main results.
+            * ``"free"`` — context-free detection ($T_1$): the SFT prompt
+              receives only the query, with the schema stripped.  Used for
+              the $T_1$ vs $T_2$ cross-task ablation.
     """
 
     # ------------------------------------------------------------------
@@ -77,6 +86,7 @@ class Attacker:
         raw_datas_dir: Optional[str] = None,
         enable_payload_mutation: bool = True,
         mutation_model: Optional[str] = None,
+        schema_mode: str = "aware",
     ) -> None:
         if not cluster_list:
             raise ValueError("cluster_list must not be empty")
@@ -84,9 +94,14 @@ class Attacker:
             raise ValueError("normal_sqls_path must be provided")
         if raw_datas_dir is None:
             raise ValueError("raw_datas_dir must be provided")
+        if schema_mode not in ("aware", "free"):
+            raise ValueError(
+                f"schema_mode must be 'aware' or 'free', got {schema_mode!r}"
+            )
 
         self.cluster_list = cluster_list
         self.number_of_training_sqls = number_of_training_sqls
+        self.schema_mode = schema_mode
 
         # Initialise uniform cluster probability distribution
         init_prob = 1.0 / len(cluster_list)
@@ -421,6 +436,7 @@ class Attacker:
         k: int,
         expected_example_num: Optional[int] = None,
         modify_payload_prob: float = DEFAULT_MODIFY_PROBABILITY,
+        selection_result: Optional[Any] = None,
     ) -> Tuple[List[Any], Dict[str, float]]:
         """
         Generate a mixed set of injection + normal SQL examples for one round.
@@ -445,6 +461,12 @@ class Attacker:
             expected_example_num:         Override the configured
                                           ``number_of_training_sqls``.
             modify_payload_prob:          Base payload mutation probability.
+            selection_result:             If provided, bypass internal EXP3
+                                          probability calculation and cluster
+                                          selection, using the external
+                                          strategy's ``SelectionResult`` instead.
+                                          When ``None`` (default), the original
+                                          EXP3 logic is used unchanged.
 
         Returns:
             ``(training_sqls, clusters_probability_distribution)`` where
@@ -460,7 +482,22 @@ class Attacker:
                 f"expected_example_num must be > 0, got {expected_example_num}"
             )
 
-        self._update_clusters_probability_distribution(gamma, clusters_weight_distribution)
+        if selection_result is not None:
+            # --- External strategy branch (used by ablation_main.py) ---
+            self.clusters_probability_distribution = selection_result.cluster_probabilities
+            target_clusters = selection_result.selected_clusters
+            active_weights = {
+                cl: float(selection_result.cluster_weights.get(cl, 1.0))
+                for cl in target_clusters
+            }
+        else:
+            # --- Original EXP3 branch (used by main.py — behaviour unchanged) ---
+            self._update_clusters_probability_distribution(gamma, clusters_weight_distribution)
+            target_clusters = self._select_clusters(strategy=strategy, k=k)
+            active_weights = {
+                cl: float(clusters_weight_distribution.get(cl, 1.0))
+                for cl in target_clusters
+            }
 
         self.rate_of_injection_sqls = (
             1.0 - NORMAL_CLUSTER_WEIGHT_MULTIPLIER * self.clusters_probability_distribution[NORMAL_CLUSTER_KEY]
@@ -468,17 +505,12 @@ class Attacker:
         expected_injection_num = int(expected_example_num * self.rate_of_injection_sqls)
         expected_normal_num = expected_example_num - expected_injection_num
 
-        target_clusters = self._select_clusters(strategy=strategy, k=k)
         print(f"Selected clusters: {target_clusters}")
 
         # Pre-compute per-cluster effective mutation probabilities, scaled by
-        # MAB weight relative to the mean weight.  Clusters where the model
+        # weight relative to the mean weight.  Clusters where the model
         # struggles (high weight) receive a proportionally higher mutation
         # probability to generate more diverse, challenging training examples.
-        active_weights = {
-            cl: float(clusters_weight_distribution.get(cl, 1.0))
-            for cl in target_clusters
-        }
         mean_weight = sum(active_weights.values()) / max(len(active_weights), 1)
 
         injection_sql_examples: List[Any] = []
@@ -579,7 +611,12 @@ class Attacker:
         training_sqls = injection_sql_examples + normal_sql_examples
         random.shuffle(training_sqls)
         
-        # Format to SFT format
-        formatted_training_sqls = batch_process_to_sft(training_sqls, self.db_schemas, format_type="openai")
-        
+        # Format to SFT format (schema text driven by self.schema_mode)
+        formatted_training_sqls = batch_process_to_sft(
+            training_sqls,
+            self.db_schemas,
+            format_type="openai",
+            schema_mode=self.schema_mode,
+        )
+
         return formatted_training_sqls, self.clusters_probability_distribution

@@ -1,0 +1,39 @@
+{
+  "dimension": "D4_schema_present_rate",
+  "results": [
+    {
+      "dataset": "SQLiV3",
+      "n": 10000,
+      "schema_columns_detected": [],
+      "schema_present_count": 82,
+      "schema_present_rate": 0.0082
+    },
+    {
+      "dataset": "rbsqli",
+      "n": 10000,
+      "schema_columns_detected": [],
+      "schema_present_count": 165,
+      "schema_present_rate": 0.0165
+    },
+    {
+      "dataset": "Superviz25",
+      "n": 10000,
+      "schema_columns_detected": [],
+      "schema_present_count": 421,
+      "schema_present_rate": 0.0421
+    },
+    {
+      "dataset": "Ours",
+      "n": 2613,
+      "schema_columns_detected": [],
+      "schema_present_count": 105,
+      "schema_present_rate": 0.040183696900114814
+    },
+    {
+      "dataset": "Ours (resolvable via schema.json)",
+      "n_databases_in_repo": 11,
+      "resolvable_schema_rate": 1.0,
+      "note": "CSV intentionally schema-stripped for T1 stress-test; every sample maps to one of the repo's DBs, so T2-ready rate is 100%."
+    }
+  ]
+}

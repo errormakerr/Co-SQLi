@@ -168,49 +168,7 @@
     "set": "train"
   },
   {
-    "payload": "' ORDER BY 2--",
-    "type": "Union-query attack",
-    "information_features": "constant",
-    "set": "train",
-    "expected_types": null
-  },
-  {
-    "payload": "' ORDER BY 3--",
-    "type": "Union-query attack",
-    "information_features": "constant",
-    "set": "train",
-    "expected_types": null
-  },
-  {
-    "payload": "' GROUP BY 1--",
-    "type": "Union-query attack",
-    "information_features": "constant",
-    "set": "train",
-    "expected_types": null
-  },
-  {
-    "payload": "' GROUP BY 2--",
-    "type": "Union-query attack",
-    "information_features": "constant",
-    "set": "train",
-    "expected_types": null
-  },
-  {
-    "payload": "' GROUP BY 3--",
-    "type": "Union-query attack",
-    "information_features": "constant",
-    "set": "train",
-    "expected_types": null
-  },
-  {
     "payload": "' GROUP BY 1 HAVING 1 = 1--",
-    "type": "Union-query attack",
-    "information_features": "constant",
-    "set": "train",
-    "expected_types": null
-  },
-  {
-    "payload": "' GROUP BY 1,2 HAVING 1 = 1--",
     "type": "Union-query attack",
     "information_features": "constant",
     "set": "train",
@@ -254,13 +212,6 @@
   {
     "type": "Union-query attack",
     "payload": "' GROUP BY 3--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Union-query attack",
-    "payload": "' GROUP BY 1 HAVING 1 = 1--",
     "expected_types": null,
     "information_features": "constant",
     "set": "test"

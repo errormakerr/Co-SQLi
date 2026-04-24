@@ -162,7 +162,7 @@ def generate_comment(
     if comment_type == "Authoritative statement":
         candidates = [c for c in comment_list if c["type"] == "Authoritative statement"]
         return random.choice(candidates)["comment"]
-    # Rational explanation — use LLM
+    # Rational explanation — use LLM (with fallback if API is unavailable)
     project_root = Path(__file__).resolve().parents[2]
     templates_dir = project_root / "prompt_templates"
     gpt_config = _get_gpt_config()
@@ -171,12 +171,17 @@ def generate_comment(
         payload_template=payload_template_str,
         payload=payload,
     )
-    return _get_gpt().generate(
-        prompt=prompt,
-        model=gpt_config.get("model", "gpt-3.5-turbo"),
-        temperature=gpt_config.get("temperature", 0.5),
-        max_tokens=gpt_config.get("max_tokens", 1024),
-    )
+    try:
+        return _get_gpt().generate(
+            prompt=prompt,
+            model=gpt_config.get("model", "gpt-3.5-turbo"),
+            temperature=gpt_config.get("temperature", 0.5),
+            max_tokens=gpt_config.get("max_tokens", 1024),
+        )
+    except Exception:
+        # API unavailable — fall back to a random pre-stored comment
+        fallback = random.choice(comment_list)
+        return fallback["comment"]
 
 
 def insert_payload(sql: str, payload: str) -> Optional[str]:

@@ -1,4 +1,21 @@
-"""SQLI Main Entry Point — Adversarial Training Loop (Attack-Defend-Verify)"""
+"""SQLI Main Entry Point — Adversarial Training Loop (Attack-Defend-Verify).
+
+.. deprecated::
+    This module is the legacy entry point and is no longer the authoritative
+    training driver.  It is retained only for reference; do NOT use it to
+    reproduce the paper results.
+
+    Key differences from the current entry point ``ablation_main.py``:
+
+    * ``ATTACKER_K = 8`` here vs. ``ATTACKER_K = 6`` in ``ablation_main.py``
+      (the paper uses $K=6$).
+    * Two-phase probability-then-top-k selection schedule in the final
+      rounds; the paper's EXP3 ablation uses pure EXP3 throughout.
+    * No ``schema_mode`` flag; context-free ($T_1$) vs. schema-aware ($T_2$)
+      ablations cannot be reproduced from this file.
+
+    Please use ``python ablation_main.py --strategy exp3`` instead.
+"""
 
 import os
 import shutil

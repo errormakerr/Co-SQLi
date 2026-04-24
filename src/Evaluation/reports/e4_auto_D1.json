@@ -1,0 +1,129 @@
+{
+  "dimension": "D1_Structural_Completeness",
+  "results": [
+    {
+      "dataset": "SQLiV3",
+      "n": 10000,
+      "structural_rate": 0.4025,
+      "ok_count": 4025,
+      "failure_breakdown": {
+        "fragment": 5975
+      },
+      "by_label": {
+        "mal": {
+          "n": 3682,
+          "ok": 368,
+          "ok_rate": 0.09994568169473113,
+          "fail": {
+            "fragment": 3314
+          }
+        },
+        "ben": {
+          "n": 6318,
+          "ok": 3657,
+          "ok_rate": 0.5788224121557455,
+          "fail": {
+            "fragment": 2661
+          }
+        },
+        "other": {
+          "n": 0,
+          "ok": 0,
+          "ok_rate": 0.0,
+          "fail": {}
+        }
+      }
+    },
+    {
+      "dataset": "rbsqli",
+      "n": 10000,
+      "structural_rate": 0.7064,
+      "ok_count": 7064,
+      "failure_breakdown": {
+        "fragment": 2936
+      },
+      "by_label": {
+        "mal": {
+          "n": 2607,
+          "ok": 2126,
+          "ok_rate": 0.8154967395473725,
+          "fail": {
+            "fragment": 481
+          }
+        },
+        "ben": {
+          "n": 7393,
+          "ok": 4938,
+          "ok_rate": 0.6679291221425673,
+          "fail": {
+            "fragment": 2455
+          }
+        },
+        "other": {
+          "n": 0,
+          "ok": 0,
+          "ok_rate": 0.0,
+          "fail": {}
+        }
+      }
+    },
+    {
+      "dataset": "Superviz25",
+      "n": 10000,
+      "structural_rate": 0.9947,
+      "ok_count": 9947,
+      "failure_breakdown": {
+        "fragment": 53
+      },
+      "by_label": {
+        "mal": {
+          "n": 919,
+          "ok": 919,
+          "ok_rate": 1.0,
+          "fail": {}
+        },
+        "ben": {
+          "n": 9081,
+          "ok": 9028,
+          "ok_rate": 0.9941636383658188,
+          "fail": {
+            "fragment": 53
+          }
+        },
+        "other": {
+          "n": 0,
+          "ok": 0,
+          "ok_rate": 0.0,
+          "fail": {}
+        }
+      }
+    },
+    {
+      "dataset": "Ours",
+      "n": 2613,
+      "structural_rate": 1.0,
+      "ok_count": 2613,
+      "failure_breakdown": {},
+      "by_label": {
+        "mal": {
+          "n": 1738,
+          "ok": 1738,
+          "ok_rate": 1.0,
+          "fail": {}
+        },
+        "ben": {
+          "n": 875,
+          "ok": 875,
+          "ok_rate": 1.0,
+          "fail": {}
+        },
+        "other": {
+          "n": 0,
+          "ok": 0,
+          "ok_rate": 0.0,
+          "fail": {}
+        }
+      }
+    }
+  ]
+}

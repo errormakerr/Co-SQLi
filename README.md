@@ -171,7 +171,7 @@ The framework mathematically guarantees the model confronts its weakest areas:
 When enabled, the Attacker uses LLM capabilities to mutate SQL injection payloads on the fly:
 - **Type-focused Mutation**: Alters the implementation technique of the attack.
 - **Info-focused Mutation**: Alters the query structure seamlessly.
-- Includes an 18-category memory system to prevent repetitive generations and employs anti-imitation few-shot prompting.
+- Includes a 16-category memory system to prevent repetitive generations and employs anti-imitation few-shot prompting.
 
 ---
 

@@ -109,6 +109,14 @@ class ClusterKey:
     """Immutable, structured representation of a four-part cluster key.
 
     Format: ``payload_type||annotator||information_features||comment``
+
+    Field-to-paper correspondence (paper \\S 5.1 "Attack-Space Taxonomy"):
+
+    * ``payload_type``         ↔ attack type ``τ``
+    * ``annotator``            ↔ annotator ``α_ann``  (note: distinct from
+                                  the ambiguity ratio ``α`` in Def. 4)
+    * ``information_features`` ↔ information feature ``φ``
+    * ``comment``              ↔ comment polluter ``γ``
     """
 
     payload_type: str

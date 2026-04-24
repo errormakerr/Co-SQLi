@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SQLi Audit — Admin</title>
+<link rel="stylesheet" href="/static/style.css" />
+<style>
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { border-bottom: 1px solid var(--border); padding: 7px 9px; text-align: left; }
+  th { background: #f1f4fb; font-weight: 600; color: #2a3048; }
+  .bar { height: 6px; background: #e5e8f0; border-radius: 3px; overflow: hidden; }
+  .bar > div { height: 100%; background: var(--accent); }
+</style>
+</head>
+<body>
+
+<section id="gate" class="card">
+  <h1>Admin console</h1>
+  <label>Admin key</label>
+  <input id="key" type="password" autocomplete="off" />
+  <button id="go" class="primary">Unlock</button>
+  <p id="msg" class="muted small"></p>
+</section>
+
+<section id="panel" class="hidden">
+  <div class="topbar">
+    <div><strong>SQLi Expert Audit — Admin</strong></div>
+    <div>
+      <button id="refresh" class="flat">Refresh</button>
+      <a id="export" class="flat" style="text-decoration:none;padding:4px 8px">Export CSV</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Per-dataset completion</h3>
+    <table id="ds-table">
+      <thead><tr><th>Dataset</th><th>Samples</th><th>Annotations</th><th>Progress</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Experts</h3>
+    <table id="ex-table">
+      <thead><tr><th>ID</th><th>Name</th><th>Started</th><th>Last seen</th><th>Done / Total</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+<script>
+const $ = (q) => document.querySelector(q);
+let KEY = "";
+
+$("#go").addEventListener("click", async () => {
+  KEY = $("#key").value.trim();
+  if (!KEY) return;
+  try {
+    await loadStats();
+    $("#gate").classList.add("hidden");
+    $("#panel").classList.remove("hidden");
+    $("#export").href = `/admin/export?admin_key=${encodeURIComponent(KEY)}`;
+  } catch (e) {
+    $("#msg").textContent = `Failed: ${e.message}`;
+  }
+});
+$("#refresh").addEventListener("click", loadStats);
+
+async function loadStats() {
+  const r = await fetch(`/admin/stats?admin_key=${encodeURIComponent(KEY)}`);
+  if (!r.ok) throw new Error(`${r.status}: ${await r.text()}`);
+  const s = await r.json();
+
+  const tb = $("#ds-table tbody"); tb.innerHTML = "";
+  for (const d of s.per_dataset) {
+    const pct = d.n_samples ? Math.round(d.n_annotations / d.n_samples * 100 /
+      Math.max(1, Object.keys(s.experts).length)) : 0;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${d.dataset}</td>
+      <td>${d.n_samples}</td>
+      <td>${d.n_annotations}</td>
+      <td><div class="bar"><div style="width:${pct}%"></div></div></td>`;
+    tb.appendChild(tr);
+  }
+
+  const et = $("#ex-table tbody"); et.innerHTML = "";
+  for (const e of s.experts) {
+    const pct = s.total_samples ? Math.round(e.done * 100 / s.total_samples) : 0;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${e.expert_id}</td>
+      <td>${escHtml(e.display_name)}</td>
+      <td>${e.started_at}</td>
+      <td>${e.last_seen || ""}</td>
+      <td>${e.done} / ${s.total_samples}</td>
+      <td><div class="bar" style="width:120px"><div style="width:${pct}%"></div></div></td>`;
+    et.appendChild(tr);
+  }
+}
+
+function escHtml(s) {
+  return (s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,154 @@
+{
+  "dimension": "D5_Attack_Type_Coverage",
+  "results": [
+    {
+      "dataset": "SQLiV3",
+      "malicious_n": 3682,
+      "taxonomy": [
+        "union_based",
+        "error_based",
+        "time_based",
+        "stacked",
+        "tautology",
+        "inline_injection",
+        "boolean_inference"
+      ],
+      "primary_counts": {
+        "union_based": 761,
+        "error_based": 253,
+        "time_based": 577,
+        "stacked": 0,
+        "tautology": 1266,
+        "inline_injection": 424,
+        "boolean_inference": 313,
+        "none": 88
+      },
+      "multi_label_counts": {
+        "time_based": 620,
+        "inline_injection": 2226,
+        "tautology": 1949,
+        "boolean_inference": 2084,
+        "none": 88,
+        "error_based": 253,
+        "union_based": 761
+      },
+      "type_coverage_rate": 0.8571428571428571,
+      "per_type_min_count": 0,
+      "shannon_entropy_bits": 2.3680858567727996,
+      "shannon_entropy_normalized": 0.8435292018713296,
+      "gini_coefficient": 0.4036886874950314
+    },
+    {
+      "dataset": "rbsqli",
+      "malicious_n": 2607,
+      "taxonomy": [
+        "union_based",
+        "error_based",
+        "time_based",
+        "stacked",
+        "tautology",
+        "inline_injection",
+        "boolean_inference"
+      ],
+      "primary_counts": {
+        "union_based": 235,
+        "error_based": 0,
+        "time_based": 486,
+        "stacked": 0,
+        "tautology": 425,
+        "inline_injection": 1339,
+        "boolean_inference": 14,
+        "none": 108
+      },
+      "multi_label_counts": {
+        "time_based": 486,
+        "inline_injection": 2403,
+        "none": 108,
+        "tautology": 489,
+        "boolean_inference": 922,
+        "union_based": 235
+      },
+      "type_coverage_rate": 0.7142857142857143,
+      "per_type_min_count": 0,
+      "shannon_entropy_bits": 1.7390491897766216,
+      "shannon_entropy_normalized": 0.6194618201328154,
+      "gini_coefficient": 0.6173898130680844
+    },
+    {
+      "dataset": "Superviz25",
+      "malicious_n": 919,
+      "taxonomy": [
+        "union_based",
+        "error_based",
+        "time_based",
+        "stacked",
+        "tautology",
+        "inline_injection",
+        "boolean_inference"
+      ],
+      "primary_counts": {
+        "union_based": 413,
+        "error_based": 47,
+        "time_based": 82,
+        "stacked": 5,
+        "tautology": 161,
+        "inline_injection": 122,
+        "boolean_inference": 35,
+        "none": 54
+      },
+      "multi_label_counts": {
+        "tautology": 347,
+        "inline_injection": 734,
+        "boolean_inference": 680,
+        "time_based": 83,
+        "stacked": 36,
+        "union_based": 413,
+        "error_based": 47,
+        "none": 54
+      },
+      "type_coverage_rate": 1.0,
+      "per_type_min_count": 5,
+      "shannon_entropy_bits": 2.1400057777490593,
+      "shannon_entropy_normalized": 0.7622854384869077,
+      "gini_coefficient": 0.5123038810900082
+    },
+    {
+      "dataset": "Ours",
+      "malicious_n": 1738,
+      "taxonomy": [
+        "union_based",
+        "error_based",
+        "time_based",
+        "stacked",
+        "tautology",
+        "inline_injection",
+        "boolean_inference"
+      ],
+      "primary_counts": {
+        "union_based": 254,
+        "error_based": 26,
+        "time_based": 233,
+        "stacked": 223,
+        "tautology": 30,
+        "inline_injection": 569,
+        "boolean_inference": 295,
+        "none": 108
+      },
+      "multi_label_counts": {
+        "union_based": 254,
+        "inline_injection": 1057,
+        "boolean_inference": 1257,
+        "time_based": 268,
+        "stacked": 245,
+        "tautology": 43,
+        "error_based": 26,
+        "none": 108
+      },
+      "type_coverage_rate": 1.0,
+      "per_type_min_count": 26,
+      "shannon_entropy_bits": 2.3893687195523725,
+      "shannon_entropy_normalized": 0.8511103105556473,
+      "gini_coefficient": 0.3838737949167397
+    }
+  ]
+}

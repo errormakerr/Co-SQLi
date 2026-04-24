@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SQLi Expert Audit</title>
+<link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+<!-- LOGIN -->
+<section id="login" class="card hidden-on-quiz">
+  <h1>SQLi Expert Audit</h1>
+  <p class="muted">
+    You will label SQL queries for a schema-aware SQLi benchmark study.
+    Your answers auto-save after each submit — you can leave and resume later
+    with the same token.
+  </p>
+
+  <label>Display name <span class="muted">(shown to admin)</span></label>
+  <input id="in-name" type="text" maxlength="64" placeholder="e.g. Alice Zhang" />
+
+  <label>Personal token <span class="muted">(any secret string, remember it — used to resume)</span></label>
+  <input id="in-token" type="text" maxlength="64" autocomplete="off" />
+
+  <button id="btn-login">Start / Resume</button>
+  <p id="login-msg" class="muted"></p>
+</section>
+
+<!-- QUIZ -->
+<section id="quiz" class="hidden">
+  <header class="topbar">
+    <div>
+      <span id="who"></span>
+      &nbsp;<span class="sep">•</span>&nbsp;
+      <span id="progress-text"></span>
+    </div>
+    <div>
+      <button id="btn-back" class="flat" title="Re-open previous sample">« Back</button>
+      <button id="btn-logout" class="flat">Logout</button>
+    </div>
+  </header>
+  <div id="progress-bar"><div id="progress-fill"></div></div>
+
+  <div class="card sql-card">
+    <div class="sql-meta">
+      <span id="cal-badge" class="badge hidden">CALIBRATION</span>
+    </div>
+    <pre id="sql-box"></pre>
+  </div>
+
+  <div class="card">
+    <h3>Q1. What is this SQL?</h3>
+    <div class="btn-row" id="q1-row">
+      <button class="q1" data-v="mal">Malicious <kbd>1</kbd></button>
+      <button class="q1" data-v="ben">Benign <kbd>2</kbd></button>
+      <button class="q1" data-v="ambiguous">Ambiguous <kbd>3</kbd></button>
+      <button class="q1" data-v="invalid">Invalid / fragment <kbd>4</kbd></button>
+    </div>
+
+    <div id="q2-block" class="hidden sub">
+      <h3>Q2. Could <em>some realistic schema</em> flip the verdict?</h3>
+      <p class="muted small">
+        E.g. a tautology <code>OR 1=1</code> labeled malicious — is there a
+        production-plausible schema where the same query would be benign?
+      </p>
+      <div class="btn-row" id="q2-row">
+        <button class="q2" data-v="yes">Yes <kbd>Y</kbd></button>
+        <button class="q2" data-v="no">No <kbd>N</kbd></button>
+      </div>
+    </div>
+
+    <div id="q3-block" class="hidden sub">
+      <h3>Q3. Attack class(es) <span class="muted small">(check all that apply, only if Q1 = Malicious)</span></h3>
+      <div class="chk-grid">
+        <label><input type="checkbox" class="q3" value="tautology"> tautology (OR 1=1)</label>
+        <label><input type="checkbox" class="q3" value="boolean_inference"> boolean inference</label>
+        <label><input type="checkbox" class="q3" value="union_based"> union-based</label>
+        <label><input type="checkbox" class="q3" value="error_based"> error-based</label>
+        <label><input type="checkbox" class="q3" value="time_based"> time-based</label>
+        <label><input type="checkbox" class="q3" value="stacked"> stacked / piggy-backed</label>
+        <label><input type="checkbox" class="q3" value="inline_injection"> inline (comment/quote escape)</label>
+        <label><input type="checkbox" class="q3" value="other"> other / unsure</label>
+      </div>
+    </div>
+
+    <div class="sub">
+      <h3>Notes <span class="muted small">(optional)</span></h3>
+      <textarea id="notes" rows="2" placeholder="anything the admin should know"></textarea>
+    </div>
+
+    <div class="submit-row">
+      <button id="btn-submit" class="primary">Submit & Next <kbd>Enter</kbd></button>
+      <span id="submit-msg" class="muted small"></span>
+    </div>
+  </div>
+</section>
+
+<section id="done" class="card hidden">
+  <h1>All done — thank you!</h1>
+  <p>You have labelled every sample in the queue. You can close this tab.</p>
+</section>
+
+<script src="/static/main.js"></script>
+</body>
+</html>

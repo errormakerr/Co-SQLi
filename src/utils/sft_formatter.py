@@ -88,28 +88,41 @@ def create_sft_format(
     sql_entry: Dict[str, Any],
     schemas: Union[Dict[str, Dict], List[Dict]],
     format_type: str = "openai",
+    schema_mode: str = "aware",
 ) -> Dict[str, Any]:
     """
     Convert a single SQL example into an SFT training record using schema dicts directly.
+
+    Args:
+        sql_entry:   The SQL example record.
+        schemas:     Schema dict (db_name -> schema) or a list of schemas.
+        format_type: Output format, currently only ``"openai"`` is supported.
+        schema_mode: ``"aware"`` (default) — include real DDL when resolvable,
+                     falling back to ``"N/A"`` when the schema is missing or the
+                     entry has no ``db``.  ``"free"`` — use the literal string
+                     ``"N/A"`` for every record regardless of the schema map.
     """
-    db_name = sql_entry.get("db")
-    if db_name is None and "original_sql" in sql_entry:
-        db_name = sql_entry["original_sql"].get("db")
-    
-    # If the schema cannot be found, fallback to no schema text
-    schema_text = ""
-    if db_name:
-        if isinstance(schemas, dict) and db_name in schemas:
-            schema_text = schema_to_create_statements(schemas[db_name])
-        elif isinstance(schemas, list):
-            for schema_dict in schemas:
-                if schema_dict.get("database_name") == db_name:
-                    schema_text = schema_to_create_statements(schema_dict)
-                    break
-                     
-    if not schema_text:
-        # Fallback to empty string or a dummy statement to prevent crash
-        schema_text = f"-- No schema found for database: {db_name}"
+    if schema_mode == "free":
+        schema_text = "N/A"
+    else:
+        db_name = sql_entry.get("db")
+        if db_name is None and "original_sql" in sql_entry:
+            db_name = sql_entry["original_sql"].get("db")
+
+        # If the schema cannot be found, fallback to "N/A" (same literal as
+        # the context-free branch and the evaluation test files).
+        schema_text = ""
+        if db_name:
+            if isinstance(schemas, dict) and db_name in schemas:
+                schema_text = schema_to_create_statements(schemas[db_name])
+            elif isinstance(schemas, list):
+                for schema_dict in schemas:
+                    if schema_dict.get("database_name") == db_name:
+                        schema_text = schema_to_create_statements(schema_dict)
+                        break
+
+        if not schema_text:
+            schema_text = "N/A"
 
     sql = sql_entry.get("sql", "")
     label = sql_entry.get("label", True)
@@ -164,10 +177,26 @@ def create_sft_format(
     else:
         raise ValueError(f"SFTFormatter currently only supports format_type='openai'")
 
-def batch_process_to_sft(sql_data: List[Dict], schemas: Dict[str, Dict], format_type: str = "openai") -> List[Dict]:
-    """Batch convert SQL examples to SFT format."""
+def batch_process_to_sft(
+    sql_data: List[Dict],
+    schemas: Dict[str, Dict],
+    format_type: str = "openai",
+    schema_mode: str = "aware",
+) -> List[Dict]:
+    """Batch convert SQL examples to SFT format.
+
+    In ``"aware"`` mode (default) entries whose ``db`` resolves to a known
+    schema render with the real DDL; entries whose ``db`` is ``None`` (e.g. the
+    public-dataset benigns merged into ``normal_sqls.json``) fall through with
+    ``schema_text = "N/A"`` rather than being silently dropped; entries whose
+    ``db`` is set but unknown are skipped (preserving the prior behaviour for
+    accidentally malformed records).
+
+    In ``"free"`` mode every entry is emitted and the schema text is
+    unconditionally ``"N/A"``.
+    """
     output_data = []
-    
+
     # Check if schemas is a list and convert to DB indexed dict
     schema_dict = {}
     if isinstance(schemas, list):
@@ -176,14 +205,30 @@ def batch_process_to_sft(sql_data: List[Dict], schemas: Dict[str, Dict], format_
                 schema_dict[s["database_name"]] = s
     else:
         schema_dict = schemas
-        
+
     for entry in sql_data:
+        if schema_mode == "free":
+            sft_entry = create_sft_format(
+                entry, schema_dict, format_type, schema_mode="free"
+            )
+            output_data.append(sft_entry)
+            continue
+
         db_name = entry.get("db")
         if db_name is None and "original_sql" in entry:
             db_name = entry["original_sql"].get("db")
-            
-        if db_name and db_name in schema_dict:
-            sft_entry = create_sft_format(entry, schema_dict, format_type)
+
+        if db_name is None:
+            # No schema (e.g. public-dataset benign): emit with N/A.
+            sft_entry = create_sft_format(
+                entry, schema_dict, format_type, schema_mode="aware"
+            )
             output_data.append(sft_entry)
-            
+        elif db_name in schema_dict:
+            sft_entry = create_sft_format(
+                entry, schema_dict, format_type, schema_mode="aware"
+            )
+            output_data.append(sft_entry)
+        # else: db set but unknown -> skip (preserve original behaviour)
+
     return output_data
