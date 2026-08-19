@@ -1,5 +1,6 @@
 """SQLI Main Entry Point — Adversarial Training Loop (Attack-Defend-Verify)"""
 
+import argparse
 import os
 import shutil
 from dataclasses import dataclass
@@ -12,6 +13,7 @@ from Verifier.verifier import Verifier
 from utils.cluster import cluster_injection_sqls
 from utils.json_operation import read_json_file, read_jsonl_file, write_jsonl_file, write_json_file
 from utils.logging_config import setup_logging
+from utils.yaml_operation import load_yaml_to_dict
 
 
 # ==================== Configuration Constants ====================
@@ -29,15 +31,44 @@ class ProjectPaths:
 
     @classmethod
     def create(cls) -> "ProjectPaths":
-        """Create the default path configuration."""
+        """Load local model and output paths from the runtime configuration."""
         project_root = Path(__file__).resolve().parents[1]
+        config_dir = project_root / "config"
+        runtime_config_path = config_dir / "runtime_config.yaml"
+        if not runtime_config_path.is_file():
+            raise FileNotFoundError(
+                "Missing runtime configuration: "
+                f"{runtime_config_path}. Copy runtime_config.yaml.example and "
+                "set base_model_path and run_output_dir."
+            )
+
+        runtime_config = load_yaml_to_dict(str(runtime_config_path))
+        required_keys = {"base_model_path", "run_output_dir"}
+        missing_keys = required_keys.difference(runtime_config)
+        if missing_keys:
+            raise ValueError(
+                f"{runtime_config_path} is missing required keys: "
+                f"{', '.join(sorted(missing_keys))}"
+            )
+
+        base_model_path = Path(runtime_config["base_model_path"]).expanduser().resolve()
+        run_output_dir = Path(runtime_config["run_output_dir"]).expanduser().resolve()
+        if not base_model_path.is_dir():
+            raise FileNotFoundError(
+                f"Configured base model directory does not exist: {base_model_path}"
+            )
+        if base_model_path == run_output_dir or base_model_path in run_output_dir.parents:
+            raise ValueError(
+                "run_output_dir must not be the base model directory or a directory within it."
+            )
+
         return cls(
             project_root=project_root,
             raw_datas_dir=project_root / "data" / "raw_datas_for_generation",
             benchmark_dir=project_root / "data" / "benchmark",
-            temp_datas_dir=Path("/home/panhao/model/temp_data/Qwen2.5-Coder-1.5B-Instruct_with_modify_test"),
-            config_dir=project_root / "config",
-            base_model_path=Path("/home/panhao/model/base_model/Qwen2.5-Coder-1.5B-Instruct"),
+            temp_datas_dir=run_output_dir,
+            config_dir=config_dir,
+            base_model_path=base_model_path,
         )
 
 
@@ -191,6 +222,12 @@ def run_training_round(
         do_inference=True,
     )
 
+    if results is None:
+        raise RuntimeError(
+            "Defender pipeline failed before producing inference results. "
+            "See the preceding fine-tuning, merge, or inference output."
+        )
+
     # Step 4: Update verifier weights (EXP3)
     verifier.update_reward(results=results)
     verifier.update_weight(
@@ -293,11 +330,42 @@ def run_training_loop(start_round: int = 0, breakpoint_round: int = -1) -> None:
 
 # ==================== Entry Point ====================
 
+def parse_args() -> argparse.Namespace:
+    """Parse optional overrides used for small-scale validation runs."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--num-rounds",
+        type=int,
+        default=NUM_ROUNDS,
+        help=f"Number of adversarial rounds to run (default: {NUM_ROUNDS}).",
+    )
+    parser.add_argument(
+        "--num-training-sqls",
+        type=int,
+        default=NUM_TRAINING_SQLS,
+        help=(
+            "Training examples generated per round "
+            f"(default: {NUM_TRAINING_SQLS})."
+        ),
+    )
+    return parser.parse_args()
+
+
 def main() -> None:
-    """Main entry point."""
+    """Run the configured training loop."""
+    global NUM_ROUNDS, NUM_TRAINING_SQLS, PROBABILITY_ROUNDS
+
+    args = parse_args()
+    if args.num_rounds <= 0:
+        raise ValueError("--num-rounds must be positive")
+    if args.num_training_sqls <= 0:
+        raise ValueError("--num-training-sqls must be positive")
+
+    NUM_ROUNDS = args.num_rounds
+    NUM_TRAINING_SQLS = args.num_training_sqls
+    PROBABILITY_ROUNDS = NUM_ROUNDS - 2
     setup_logging()
     run_training_loop(start_round=0)
-    # run_training_loop(start_round=0, breakpoint_round=2)  # Resume from breakpoint
 
 
 if __name__ == "__main__":

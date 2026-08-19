@@ -108,7 +108,11 @@ def _get_gpt() -> LLM:
     global _gpt
     if _gpt is None:
         cfg = _get_gpt_config()
-        _gpt = LLM(api_key=cfg["api_key"], base_url=cfg.get("base_url"))
+        _gpt = LLM(
+            api_key=cfg["api_key"],
+            base_url=cfg.get("base_url"),
+            request_extra_body=cfg.get("extra_body"),
+        )
     return _gpt
 
 

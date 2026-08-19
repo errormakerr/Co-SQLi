@@ -25,7 +25,7 @@ import torch
 from functools import partial
 from accelerate import Accelerator
 from accelerate.logging import get_logger
-from accelerate.utils import set_seed, InitProcessGroupKwargs
+from accelerate.utils import DistributedType, set_seed, InitProcessGroupKwargs
 from datasets import load_dataset
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
@@ -492,6 +492,19 @@ def _load_model_and_tokenizer(args, accelerator):
             target_modules=["q_proj", "o_proj", "v_proj", "k_proj", "gate_proj", "up_proj", "down_proj"],
         )
         model = get_peft_model(model, peft_config)
+
+        # PEFT creates new LoRA parameters in torch.float32 by default, even
+        # when from_pretrained() loaded the base model in bfloat16. FSDP flattens
+        # parameters within each wrapped module and requires a uniform dtype.
+        # Convert the complete non-quantized model before accelerator.prepare()
+        # so that both the frozen base weights and the LoRA adapters agree.
+        if (
+            accelerator.distributed_type == DistributedType.FSDP
+            and not args.use_qlora
+            and accelerator.mixed_precision == "bf16"
+        ):
+            model = model.to(dtype=torch.bfloat16)
+            logger.info("Cast LoRA model to bfloat16 for FSDP parameter flattening.")
         model.print_trainable_parameters()
     elif args.gradient_checkpointing:
         model.gradient_checkpointing_enable()

@@ -28,7 +28,7 @@ use_qlora: false
 with_tracking: true
 report_to: "tensorboard"
 
-accelerate_config_file: "/home/panhao/project/SQLI/config/fsdp_config.yaml"
+accelerate_config_file: "config/accelerate_single_gpu.yaml"
 mixed_precision: "bf16"
 main_process_port: 29522
 

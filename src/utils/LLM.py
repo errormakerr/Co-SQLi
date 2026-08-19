@@ -31,9 +31,15 @@ class LLM:
       compatible interface.
     """
 
-    def __init__(self, api_key: str, base_url: str):
+    def __init__(
+        self,
+        api_key: str,
+        base_url: str,
+        request_extra_body: Optional[Dict[str, Any]] = None,
+    ):
         self.api_key = api_key
         self.base_url = base_url
+        self.request_extra_body = dict(request_extra_body or {})
         self._is_hkust = (base_url == HKUST_BASE_URL)
 
         if self._is_hkust:
@@ -56,12 +62,14 @@ class LLM:
         max_tokens: int,
     ) -> Dict[str, Any]:
         """Build the request body for the HKUST API."""
-        return {
+        payload = {
             "model": model,
             "messages": [{"role": "user", "content": prompt}],
             "temperature": temperature,
             "max_tokens": max_tokens,
         }
+        payload.update(self.request_extra_body)
+        return payload
 
     # ------------------------------------------------------------------
     # Synchronous methods
@@ -85,11 +93,16 @@ class LLM:
             raise RuntimeError(
                 "Current base_url is the HKUST gateway — use generate_by_hkust() instead."
             )
+        request_kwargs = {
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+        if self.request_extra_body:
+            request_kwargs["extra_body"] = self.request_extra_body
         response = self.sync_client.chat.completions.create(
-            model=model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=temperature,
-            max_tokens=max_tokens,
+            **request_kwargs,
         )
         return response.choices[0].message.content
 
@@ -227,11 +240,16 @@ class LLM:
             raise RuntimeError(
                 "Current base_url is the HKUST gateway — use async_generate_by_hkust() instead."
             )
+        request_kwargs = {
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+        if self.request_extra_body:
+            request_kwargs["extra_body"] = self.request_extra_body
         response = await self.async_client.chat.completions.create(
-            model=model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=temperature,
-            max_tokens=max_tokens,
+            **request_kwargs,
         )
         return response.choices[0].message.content
 

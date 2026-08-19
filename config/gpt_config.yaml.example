@@ -3,3 +3,7 @@ api_key: YOUR_API_KEY_HERE
 model: gpt-5.1-2025-11-13
 temperature: 0.5
 max_tokens: 1500
+# Provider-specific OpenAI-compatible fields.  Disable reasoning for short,
+# format-constrained generation such as payload mutation.
+extra_body:
+  enable_thinking: false

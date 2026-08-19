@@ -48,7 +48,9 @@ SQLI/
 │   ├── inference_config.yaml        # Inference settings
 │   ├── gpt_config.yaml              # LLM API config (for payload mutation)
 │   ├── database_connection.yaml     # MySQL connection details
-│   └── fsdp_config.yaml             # Distributed training config (FSDP/DeepSpeed)
+│   ├── runtime_config.yaml           # Local model and training-output paths
+│   ├── accelerate_single_gpu.yaml   # Current one-GPU Accelerate configuration
+│   └── fsdp_config.yaml             # Optional multi-GPU FSDP configuration
 ├── data/                            # 📊 Datasets and Materials
 │   ├── raw_datas_for_generation/    # Raw SQLs, schemas, and payload templates
 │   └── benchmark/                   # Training/Testing benchmark datasets
@@ -96,6 +98,8 @@ Before running the framework, ensure the files in the `config/` directory are pr
 | `inference_config.yaml` | Sets inference batch size, temperature, seq length, and target device. |
 | `gpt_config.yaml` | Stores LLM API keys and model names used by the Attacker for payload mutation. |
 | `database_connection.yaml`| Credentials for the MySQL template database. |
+| `runtime_config.yaml` | Local base-model directory and the dedicated directory for round outputs. |
+| `accelerate_single_gpu.yaml` | Single-GPU Accelerate configuration used by the current training setup. |
 | `fsdp_config.yaml` | Multi-GPU distributed training configuration. |
 
 ### Key Training Parameters (`src/main.py`)
@@ -115,6 +119,21 @@ To run the automated Attack-Defend-Verify loop across all configured rounds:
 cd SQLI
 python src/main.py
 ```
+
+On Slurm clusters where MySQL is deployed as a job-local service, first run a
+sidecar preflight and then submit the full loop through the provided script:
+
+```bash
+SQLI_MODE=db-check sbatch scripts/sqli_slurm_job.sh
+SQLI_MODE=generate-smoke sbatch scripts/sqli_slurm_job.sh
+SQLI_MODE=mutation-smoke sbatch scripts/sqli_slurm_job.sh
+SQLI_MODE=full SQLI_MAIN_ARGS="--num-rounds 1 --num-training-sqls 12" \
+    sbatch scripts/sqli_slurm_job.sh
+```
+
+The script starts MySQL on the allocated compute node, checks the configured
+read-only account, and shuts down only the MySQL process it started. The MySQL
+data directory must not be in use by another server when the job begins.
 
 *🔥 Tip: You can resume training from a specific breakpoint by modifying the `breakpoint_round` argument in `main.py` -> `run_training_loop(start_round=0, breakpoint_round=3)`.*
 

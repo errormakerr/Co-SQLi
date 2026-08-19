@@ -321,6 +321,7 @@ class Attacker:
             llm = LLM(
                 api_key=gpt_config["api_key"],
                 base_url=gpt_config.get("base_url"),
+                request_extra_body=gpt_config.get("extra_body"),
             )
             model = mutation_model or gpt_config.get("model")
 

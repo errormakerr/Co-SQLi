@@ -27,6 +27,7 @@ Thumbs.db
 
 # Project-specific
 *.log
+slurm-*.out
 runs/
 checkpoints/
 wandb/
@@ -34,9 +35,11 @@ wandb/
 # Sensitive configs
 config/gpt_config.yaml
 config/database_connection.yaml
+config/runtime_config.yaml
 
 # Temp/runtime data
 data/temp_data/
+.local/
 
 # Git artifacts
 FETCH_HEAD

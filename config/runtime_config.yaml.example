@@ -1,0 +1,3 @@
+# Copy this file to runtime_config.yaml and set local absolute paths.
+base_model_path: '/absolute/path/to/Qwen2.5-Coder-1.5B-Instruct'
+run_output_dir: '/absolute/path/to/sqli-runs/Qwen2.5-Coder-1.5B-Instruct'

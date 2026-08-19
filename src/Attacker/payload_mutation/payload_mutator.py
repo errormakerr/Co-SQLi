@@ -136,6 +136,11 @@ class PayloadMutator:
 
         if not mutated:
             self._stats["failed"] += 1
+            if self._stats["failed"] <= 3:
+                print(
+                    "[PayloadMutator] LLM returned no visible mutation content.",
+                    file=sys.stderr,
+                )
             return None
 
         # Step 5 — validate
@@ -143,6 +148,11 @@ class PayloadMutator:
         validation = _validator.validate(template, mutated)
         if not validation.is_valid:
             self._stats["failed"] += 1
+            if self._stats["failed"] <= 3:
+                print(
+                    f"[PayloadMutator] Rejected mutation: {validation.reason}",
+                    file=sys.stderr,
+                )
             return None
 
         # Clean LLM output to a single, prefix-stripped line
