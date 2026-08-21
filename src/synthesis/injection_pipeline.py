@@ -24,12 +24,11 @@ from utils.yaml_operation import load_yaml_to_dict
 from utils.LLM import LLM
 from utils.j2_operation import load_prompt_template
 
-# Re-export extracted classes so existing ``from generate_injection_sql import X``
-# statements continue to work without modification.
-from Attacker.symbol_checker import SymbolChecker
-from Attacker.random_attributes import GetRandomAttribute
-from Attacker.template_fillers.specific_db_filler import SpecificDatabaseTemplateFiller
-from Attacker.template_fillers.system_info_filler import SystemInformationTemplateFiller
+# Re-export synthesis helpers from the refactored package boundary.
+from .symbol_checker import SymbolChecker
+from .random_attributes import GetRandomAttribute
+from .template_fillers.specific_db_filler import SpecificDatabaseTemplateFiller
+from .template_fillers.system_info_filler import SystemInformationTemplateFiller
 
 
 # ---------------------------------------------------------------------------

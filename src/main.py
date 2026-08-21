@@ -298,7 +298,7 @@ def run_training_loop(start_round: int = 0, breakpoint_round: int = -1) -> None:
 
         # Restore MutationMemory (if mutation is enabled)
         if ENABLE_PAYLOAD_MUTATION and attacker.mutation_memory is not None:
-            from Attacker.payload_mutation.memory import MutationMemory
+            from synthesis.payload_mutation.memory import MutationMemory
             memory_file = paths.temp_datas_dir / f"round_{breakpoint_round}" / "mutation_memory.json"
             if memory_file.exists():
                 restored_memory = MutationMemory.load(str(memory_file))

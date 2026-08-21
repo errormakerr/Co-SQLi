@@ -58,10 +58,12 @@ SQLI/
 ├── prompt_templates/                # 📝 Prompt files (e.g. generate_comment.j2)
 └── src/                             # 💻 Source Code
     ├── main.py                      # Multi-round training entry point
-    ├── Attacker/                    # Generator & LLM mutation logic
-    ├── Defender/                    # LoRA fine-tuning, merging, and inference
+    ├── Attacker/                    # Attack-cluster sampling and generation strategy
+    ├── Defender/                    # Model-improvement workflow orchestration
     ├── Verifier/                    # Acc metrics & MAB weight processing
-    └── utils/                       # Shared tools (formatting, clustering)
+    ├── synthesis/                   # SQL template filling, mutation, and SFT formatting
+    ├── model_ops/                   # LoRA fine-tuning, merging, and inference
+    └── utils/                       # Shared clients, serialization, and clustering
 ```
 
 ---
@@ -127,6 +129,7 @@ sidecar preflight and then submit the full loop through the provided script:
 SQLI_MODE=db-check sbatch scripts/sqli_slurm_job.sh
 SQLI_MODE=generate-smoke sbatch scripts/sqli_slurm_job.sh
 SQLI_MODE=mutation-smoke sbatch scripts/sqli_slurm_job.sh
+SQLI_MODE=refactor-smoke sbatch scripts/sqli_slurm_job.sh
 SQLI_MODE=full SQLI_MAIN_ARGS="--num-rounds 1 --num-training-sqls 12" \
     sbatch scripts/sqli_slurm_job.sh
 ```
@@ -134,6 +137,8 @@ SQLI_MODE=full SQLI_MAIN_ARGS="--num-rounds 1 --num-training-sqls 12" \
 The script starts MySQL on the allocated compute node, checks the configured
 read-only account, and shuts down only the MySQL process it started. The MySQL
 data directory must not be in use by another server when the job begins.
+`refactor-smoke` does not call the LLM API or train a model; it validates the
+refactored package boundaries and performs one database-specific synthesis.
 
 *🔥 Tip: You can resume training from a specific breakpoint by modifying the `breakpoint_round` argument in `main.py` -> `run_training_loop(start_round=0, breakpoint_round=3)`.*
 
@@ -144,7 +149,7 @@ If you need to isolate specific behaviors, you can run the Defender scripts indi
 **1. Fine-Tune (via Accelerate):**
 ```bash
 accelerate launch --config_file config/fsdp_config.yaml \
-    src/Defender/finetune.py \
+    src/model_ops/finetune.py \
     --model_name_or_path /path/to/model \
     --train_file /path/to/train_data.jsonl \
     --output_dir /path/to/output \
@@ -153,7 +158,7 @@ accelerate launch --config_file config/fsdp_config.yaml \
 
 **2. Merge LoRA Adapter:**
 ```bash
-python src/Defender/merge_lora.py \
+python src/model_ops/merge_lora.py \
     --lora_model_name_or_path /path/to/adapter \
     --output_dir /path/to/merged \
     --save_tokenizer
@@ -161,7 +166,7 @@ python src/Defender/merge_lora.py \
 
 **3. Run Inference:**
 ```bash
-python src/Defender/inference.py \
+python src/model_ops/inference.py \
     --model_path /path/to/merged_model \
     --test_file /path/to/test_data.jsonl \
     --output_file /path/to/results.jsonl

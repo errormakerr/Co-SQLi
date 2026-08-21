@@ -24,10 +24,10 @@ from utils.cluster import NORMAL_CLUSTER_KEY, ClusterKey, cluster_payload_templa
 from utils.json_operation import read_json_file
 from utils.LLM import LLM
 from utils.yaml_operation import load_yaml_to_dict
-from utils.sft_formatter import batch_process_to_sft
+from synthesis.sft_formatter import batch_process_to_sft
 
-from .generate_injection_sql import pipeline
-from .payload_mutation import MutationMemory, PayloadMutator
+from synthesis.injection_pipeline import pipeline
+from synthesis.payload_mutation import MutationMemory, PayloadMutator
 
 # ---------------------------------------------------------------------------
 # Named constants (extracted from inline magic numbers)

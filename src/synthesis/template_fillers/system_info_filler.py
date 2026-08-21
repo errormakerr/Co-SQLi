@@ -10,7 +10,7 @@ from typing import Any, Dict, List
 
 import pymysql
 
-from Attacker.random_attributes import GetRandomAttribute
+from ..random_attributes import GetRandomAttribute
 
 
 class SystemInformationTemplateFiller:

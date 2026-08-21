@@ -21,11 +21,14 @@ from utils.json_operation import read_jsonl_file
 from utils.yaml_operation import load_yaml_to_dict
 
 
-# Absolute paths to companion scripts (same directory as this file)
+# Absolute paths to lower-level model operation scripts. Keeping these as
+# paths avoids importing heavyweight training dependencies into the
+# orchestration process.
 _THIS_DIR = Path(__file__).resolve().parent
-FINETUNE_PY = str(_THIS_DIR / "finetune.py")
-MERGE_PY = str(_THIS_DIR / "merge_lora.py")
-INFER_PY = str(_THIS_DIR / "inference.py")
+_MODEL_OPS_DIR = _THIS_DIR.parent / "model_ops"
+FINETUNE_PY = str(_MODEL_OPS_DIR / "finetune.py")
+MERGE_PY = str(_MODEL_OPS_DIR / "merge_lora.py")
+INFER_PY = str(_MODEL_OPS_DIR / "inference.py")
 
 
 class Defender:

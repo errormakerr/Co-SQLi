@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional
 
 import pymysql
 
-from Attacker.random_attributes import GetRandomAttribute
+from ..random_attributes import GetRandomAttribute
 
 
 class SpecificDatabaseTemplateFiller:
