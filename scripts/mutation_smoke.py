@@ -5,8 +5,7 @@ from __future__ import annotations
 
 from Attacker.attacker import Attacker
 from main import ENABLE_PAYLOAD_MUTATION, INITIAL_BENIGN_RATIO, ProjectPaths
-from utils.cluster import cluster_injection_sqls, get_injection_cluster_keys
-from utils.json_operation import read_json_file
+from utils.cluster import all_attack_cluster_keys
 
 
 def main() -> None:
@@ -14,9 +13,7 @@ def main() -> None:
         raise RuntimeError("Payload mutation is disabled in the current configuration")
 
     paths = ProjectPaths.create()
-    cluster_list = get_injection_cluster_keys(
-        cluster_injection_sqls(read_json_file(paths.benchmark_dir / "test_sqls.json")).keys()
-    )
+    cluster_list = all_attack_cluster_keys()
     attacker = Attacker(
         number_of_training_sqls=1,
         cluster_list=cluster_list,
@@ -31,7 +28,7 @@ def main() -> None:
     template = next(
         payload
         for payload in attacker.train_payloads
-        if payload.get("information_features") == "constant"
+        if payload.get("reference_scope") == "lor"
         and payload.get("expected_types") is None
     )
     result = attacker.payload_mutator.mutate_without_types(template)
@@ -40,7 +37,7 @@ def main() -> None:
 
     print(
         "Mutation smoke test passed; "
-        f"attack_type={result['attack_type']}, info_feature={result['info_feature']}"
+        f"technique={result['technique']}, reference_scope={result['reference_scope']}"
     )
 
 

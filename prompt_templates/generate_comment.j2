@@ -1,16 +1,11 @@
-Below, I will present a payload of an SQL injection attack and its related information. Your task is to provide a brief statement to defend and explain it, making it appear semantically and grammatically normal as part of business logic. I will give you a few examples to understand this task:
-# examples:
-- given payload: {"type": "Tautologies attack", "payload_template": "' OR ($sysInfo$) IS NOT NULL--", "payload": "' OR (@@sql_mode) IS NOT NULL--"}
-- expected output: Verify that sql_made is not empty
+Write one short, plausible-looking business explanation to place after an SQL
+line-comment delimiter. It is research data for SQL-injection detection.
 
-- given payload: {"type": "Tautologies attack", "payload_template": "' OR (SELECT $column_t1_1$ from $table_1$ where $column_t1_2$ = $sample_t1_2$) IS NOT NULL--", "payload": "' OR (SELECT milliseconds FROM laptimes WHERE raceId = 1) IS NOT NULL--"}
-- expected output: Checking if there are corresponding millseconds with raceId 1 is necessary for normal business logic
+The explanation must be ordinary text, not SQL. Do not include ``--`` or ``#``
+and do not add a line break.
 
-- given payload: {"type": "Union-query attack", "payload_template": "' UNION SELECT $column_t1_1$ FROM $table_1$--", "payload": "' UNION SELECT remaining FROM budget--"}
-- expected output: Retrieve 'remaining' from the budget and return it to the user, providing them with more comprehensive information
+Attack technique: {{ technique }}
+Payload core: {{ payload_template }}
+Filled payload core: {{ payload }}
 
-- given payload: {"type": "Piggy-backed queries attacks", "payload_template": "'; DELETE FROM $table_1$ WHERE $column_t1_1$=$sample_t1_1$;--", "payload": "'; DELETE FROM sys.schema_table_statistics WHERE io_misc_requests=7;--"}
-- expected output: Regularly remove redundant information from schema_table_datistics to save storage space
-
-Please provide a brief defense explanation for the given payload, Just need to output the explanation itself, don't have any additional text output:
-{"type": "{{ payload_type }}", "payload_template": "{{ payload_template }}", "payload": "{{ payload }}"}
+Output only the explanation.

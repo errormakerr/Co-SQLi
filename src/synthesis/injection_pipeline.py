@@ -127,26 +127,48 @@ def _get_checker() -> SymbolChecker:
 # Pipeline helper functions (extracted from nested definitions)
 # ---------------------------------------------------------------------------
 
-def identify_difficulty(annotator: bool, comment: bool, information_features: str) -> str:
-    """Assign a difficulty label based on query and payload metadata."""
-    if information_features == "constant":
+SQL_COMMENT_PREFIX = "-- "
+
+
+def _is_safe_cepp_text(value: object) -> bool:
+    """Return whether a local or LLM CEPP string obeys the CEPP contract."""
+    return (
+        isinstance(value, str)
+        and bool(value.strip())
+        and "\n" not in value
+        and "\r" not in value
+        and "--" not in value
+        and "#" not in value
+    )
+
+
+def _local_cepp_candidates(
+    comment_list: List[Dict], comment_type: Optional[str] = None
+) -> List[str]:
+    """Return only local CEPP entries that satisfy the canonical contract."""
+    return [
+        entry["comment"].strip()
+        for entry in comment_list
+        if (comment_type is None or entry.get("type") == comment_type)
+        and _is_safe_cepp_text(entry.get("comment"))
+    ]
+
+
+def identify_difficulty(reference_scope: str, comment_state: str) -> str:
+    """Assign a display-only difficulty label from canonical taxonomy fields."""
+    if reference_scope == "lor":
         return "simple"
-    if information_features == "system information":
+    if reference_scope == "scr":
         return "medium"
-    if information_features == "specific database":
-        if annotator and comment:
-            return "hard"
-        if annotator and not comment:
-            return "medium"
-        return "hard"
-    return "medium"
+    return "hard" if comment_state == "cepp" else "medium"
 
 
 def generate_comment(
-    payload_type: str,
+    technique: str,
     payload_template_str: str,
     payload: str,
     comment_list: List[Dict],
+    allow_llm: bool = True,
 ) -> str:
     """
     Generate a deceptive natural-language comment to append to the payload.
@@ -156,30 +178,39 @@ def generate_comment(
     - **Authoritative statement**: authority-sounding assertion
     - **Rational explanation**: LLM-generated contextual explanation
     """
-    comment_type = random.choice(
-        ["Rational explanation", "Irrelevant text dilution", "Authoritative statement"]
-    )
-    if comment_type == "Irrelevant text dilution":
-        candidates = [c for c in comment_list if c["type"] == "Irrelevant text dilution"]
-        return random.choice(candidates)["comment"]
-    if comment_type == "Authoritative statement":
-        candidates = [c for c in comment_list if c["type"] == "Authoritative statement"]
-        return random.choice(candidates)["comment"]
-    # Rational explanation — use LLM
+    comment_types = ["Irrelevant text dilution", "Authoritative statement"]
+    if allow_llm:
+        comment_types.append("Rational explanation")
+    comment_type = random.choice(comment_types)
+    candidates = _local_cepp_candidates(comment_list, comment_type)
+    if candidates:
+        return random.choice(candidates)
+
+    fallback_candidates = _local_cepp_candidates(comment_list)
+    if not fallback_candidates:
+        raise ValueError("CEPP generation requires a safe local comment candidate")
+    if comment_type != "Rational explanation" or not allow_llm:
+        return random.choice(fallback_candidates)
+
+    # Rational explanation uses the LLM only after a safe deterministic fallback
+    # has been established.  An invalid model response cannot escape the CEPP
+    # contract and falls back to locally curated text.
     project_root = Path(__file__).resolve().parents[2]
     templates_dir = project_root / "prompt_templates"
     gpt_config = _get_gpt_config()
-    prompt = load_prompt_template(templates_dir, "generate_comment.j2").render(
-        payload_type=payload_type,
-        payload_template=payload_template_str,
-        payload=payload,
-    )
-    return _get_gpt().generate(
-        prompt=prompt,
+    response = _get_gpt().generate(
+        prompt=load_prompt_template(templates_dir, "generate_comment.j2").render(
+            technique=technique,
+            payload_template=payload_template_str,
+            payload=payload,
+        ),
         model=gpt_config.get("model", "gpt-3.5-turbo"),
         temperature=gpt_config.get("temperature", 0.5),
         max_tokens=gpt_config.get("max_tokens", 1024),
     )
+    if _is_safe_cepp_text(response):
+        return response.strip()
+    return random.choice(fallback_candidates)
 
 
 def insert_payload(sql: str, payload: str) -> Optional[str]:
@@ -191,30 +222,13 @@ def insert_payload(sql: str, payload: str) -> Optional[str]:
       quote of the payload.
     - **Non-string context**: strip the leading quote from the payload.
 
-    Also removes trailing ``--`` comment terminators that would be
-    redundant (i.e., followed only by whitespace or nothing), and attempts
-    to fix bracket imbalances by inserting a closing ``)`` before ``--``.
+    The payload is inserted verbatim apart from the established non-string
+    context quote handling.  In particular, comment delimiters are never
+    removed or rewritten: they encode the canonical ``comment_state``.
     """
 
     def remove_first_char(text: str) -> str:
         return text[1:] if text else text
-
-    def insert_char_at_position(text: str, position: int, char: str) -> str:
-        return text[:position] + char + text[position:]
-
-    def remove_unnecessary_comments(sql_text: str) -> str:
-        """
-        Remove ``--`` terminators that appear at the very end of the string
-        or are followed only by whitespace — they are structurally redundant.
-        """
-        for match in reversed(list(re.finditer(r"--", sql_text))):
-            comment_pos = match.start()
-            comment_end = match.end()
-            if comment_end >= len(sql_text):
-                sql_text = sql_text[:comment_pos]
-            elif sql_text[comment_end:].strip() == "":
-                sql_text = sql_text[:comment_pos]
-        return sql_text
 
     if not isinstance(sql, str) or not isinstance(payload, str):
         return None
@@ -235,19 +249,6 @@ def insert_payload(sql: str, payload: str) -> Optional[str]:
         else:
             injection_sql = sql.replace("$$", remove_first_char(payload))
 
-        injection_sql = remove_unnecessary_comments(injection_sql)
-
-        # Check bracket balance in the fragment before any comment terminator
-        checker = SymbolChecker()
-        effective_sql = injection_sql.split("--")[0] if "--" in injection_sql else injection_sql
-        balanced, _ = checker.check_balanced(effective_sql)
-
-        if not balanced:
-            comment_matches = list(re.finditer(r"--", injection_sql))
-            bracket_pos = comment_matches[0].start() if comment_matches else len(injection_sql)
-            injection_sql = insert_char_at_position(injection_sql, bracket_pos, ")")
-            injection_sql = remove_unnecessary_comments(injection_sql)
-
         return injection_sql
 
     except Exception as e:
@@ -259,6 +260,81 @@ def insert_payload(sql: str, payload: str) -> Optional[str]:
 # Injection-SQL generation pipeline
 # ---------------------------------------------------------------------------
 
+def _has_line_comment_marker(value: str) -> bool:
+    """Return whether *value* contains a SQL line-comment delimiter."""
+    return "--" in value or "#" in value
+
+
+def _validate_comment_state(
+    sql_example: Dict[str, Any],
+    payload_core: str,
+    payload: str,
+    comment_state: str,
+    cepp_text: str = "",
+) -> None:
+    """Enforce the three-state comment taxonomy before SQL insertion."""
+    requires_delimiter = sql_example.get("requires_comment_delimiter")
+    if not isinstance(requires_delimiter, bool):
+        raise ValueError("sql_example requires boolean requires_comment_delimiter")
+    if _has_line_comment_marker(payload_core):
+        raise ValueError("payload_core must not contain SQL line-comment delimiters")
+
+    if comment_state == "no_comment":
+        if requires_delimiter:
+            raise ValueError("no_comment requires requires_comment_delimiter=False")
+        if _has_line_comment_marker(payload) or cepp_text.strip():
+            raise ValueError("no_comment must contain neither delimiter nor CEPP")
+        return
+
+    if comment_state == "clean_comment":
+        if not requires_delimiter:
+            raise ValueError("clean_comment requires requires_comment_delimiter=True")
+        if payload != payload_core + SQL_COMMENT_PREFIX or cepp_text.strip():
+            raise ValueError("clean_comment requires exactly one trailing '-- ' delimiter")
+        return
+
+    if comment_state == "cepp":
+        if not requires_delimiter:
+            raise ValueError("cepp requires requires_comment_delimiter=True")
+        if not cepp_text.strip():
+            raise ValueError("cepp requires non-empty text after the delimiter")
+        if not _is_safe_cepp_text(cepp_text):
+            raise ValueError("CEPP must be a single plain-text line")
+        if payload != payload_core + SQL_COMMENT_PREFIX + cepp_text:
+            raise ValueError("CEPP must occur directly after the '-- ' delimiter")
+        return
+
+    raise ValueError(f"Unsupported comment_state: {comment_state!r}")
+
+
+def _fill_payload_core(
+    sql_example: Dict[str, Any],
+    payload_template: Dict[str, Any],
+    db_schemas: List[Dict],
+    sys_schemas: List[Dict],
+    system_vars: List[Dict],
+) -> str:
+    """Fill a comment-free canonical payload template with live values."""
+    if payload_template["expected_types"] is None:
+        return str(payload_template["payload"])
+
+    reference_scope = payload_template["reference_scope"]
+    mysql_config = get_mysql_config().copy()
+    mysql_config["database"] = sql_example["db"]
+    if reference_scope == "scr":
+        if "table" in payload_template["expected_types"]:
+            filler = SpecificDatabaseTemplateFiller(random.choice(sys_schemas), mysql_config)
+        else:
+            filler = SystemInformationTemplateFiller(system_vars, mysql_config)
+        return str(filler.fill_template(payload_template))
+    if reference_scope == "tsr":
+        schema = next(
+            (schema for schema in db_schemas if schema["database_name"] == sql_example["db"]),
+            {},
+        )
+        return str(SpecificDatabaseTemplateFiller(schema, mysql_config).fill_template(payload_template))
+    return str(payload_template["payload"])
+
 def pipeline(
     sql_example: Dict[str, Any],
     payload_template: Dict[str, Any],
@@ -266,17 +342,15 @@ def pipeline(
     sys_schemas: List[Dict],
     system_vars: List[Dict],
     comment_list: List[Dict],
-    comment_flag: bool,
+    comment_state: str,
+    allow_llm_comment: bool = True,
 ) -> Optional[Dict[str, Any]]:
     """
     Convert a raw SQL example + payload template into a labelled injection sample.
 
-    Steps:
-    1. Fill the payload template's placeholders (system info or DB-specific).
-    2. Optionally append a deceptive natural-language comment.
-    3. Insert the filled payload at the ``$$`` injection point in the SQL query.
-    4. Validate bracket balance; fix with a closing ``)`` if needed.
-    5. Return a structured dict with the injection SQL, metadata, and label.
+    ``payload_template`` always supplies only a comment-free ``payload_core``.
+    The requested ``comment_state`` is assembled here, where the carrier SQL
+    context is known and can be checked.
 
     Args:
         sql_example:      A raw SQL query dict from ``sql_data_with_injection_point.json``.
@@ -285,82 +359,62 @@ def pipeline(
         sys_schemas:      List of MySQL system-table schemas.
         system_vars:      List of MySQL system variable definitions.
         comment_list:     Repository of pre-written deceptive comments.
-        comment_flag:     Whether to append a deceptive comment to the payload.
+        comment_state:    ``no_comment``, ``clean_comment``, or ``cepp``.
 
     Returns:
         An injection sample dict, or ``None`` if generation failed.
     """
 
-    mysql_config = get_mysql_config().copy()
-    mysql_config["database"] = sql_example["db"]
+    if sql_example.get("sql") is None:
+        return None
 
-    injection_sql_example = None
-
-    # Fill payload placeholders
-    if payload_template["expected_types"] is None:
-        raw_payload = payload_template["payload"]
-    else:
-        info_features = payload_template["information_features"]
-        if info_features == "system information":
-            if "table" in payload_template["expected_types"]:
-                sys_schema = random.choice(sys_schemas)
-                filler = SpecificDatabaseTemplateFiller(sys_schema, mysql_config)
-                raw_payload = filler.fill_template(payload_template)
-            else:
-                filler = SystemInformationTemplateFiller(system_vars, mysql_config)
-                raw_payload = filler.fill_template(payload_template)
-        elif info_features == "specific database":
-            schema = next(
-                (s for s in db_schemas if s["database_name"] == sql_example["db"]), {}
-            )
-            filler = SpecificDatabaseTemplateFiller(schema, mysql_config)
-            raw_payload = filler.fill_template(payload_template)
-        else:
-            # constant — expected_types is non-None but there are no placeholders
-            raw_payload = payload_template["payload"]
-
-    # Non-annotator queries never have deceptive comments
-    if not sql_example["annotator"]:
-        comment_flag = False
-
-    # Optionally append a deceptive comment
-    if comment_flag:
-        payload = str(raw_payload) + str(
+    payload_core = _fill_payload_core(
+        sql_example, payload_template, db_schemas, sys_schemas, system_vars
+    )
+    cepp_text = ""
+    if comment_state == "no_comment":
+        payload = payload_core
+    elif comment_state == "clean_comment":
+        payload = payload_core + SQL_COMMENT_PREFIX
+    elif comment_state == "cepp":
+        cepp_text = str(
             generate_comment(
-                payload_template["type"],
+                payload_template["technique"],
                 payload_template["payload"],
-                raw_payload,
+                payload_core,
                 comment_list,
+                allow_llm=allow_llm_comment,
             )
-        )
+        ).strip()
+        payload = payload_core + SQL_COMMENT_PREFIX + cepp_text
     else:
-        payload = str(raw_payload)
+        raise ValueError(f"Unsupported comment_state: {comment_state!r}")
 
-    if sql_example["sql"] is None or payload is None:
-        return injection_sql_example
-
+    _validate_comment_state(
+        sql_example, payload_core, payload, comment_state, cepp_text
+    )
     injection_sql = insert_payload(sql_example["sql"], payload)
-    effective_sql = injection_sql.split("--")[0]
-    balanced, message = _get_checker().check_balanced(effective_sql)
-
+    if injection_sql is None:
+        return None
+    effective_sql = injection_sql.split(SQL_COMMENT_PREFIX, 1)[0]
+    balanced, _ = _get_checker().check_balanced(effective_sql)
     if not balanced:
-        print(f"'{effective_sql}'\n  -> {balanced}: {message}\n")
-    else:
-        injection_sql_example = {
-            "sql": injection_sql,
-            "original_sql": sql_example,
-            "payload_template": payload_template,
-            "payload": payload,
-            "label": False,
-            "comment": comment_flag,
-            "difficulty": identify_difficulty(
-                sql_example["annotator"],
-                comment_flag,
-                payload_template["information_features"],
-            ),
-        }
+        return None
 
-    return injection_sql_example
+    return {
+        "sql": injection_sql,
+        "original_sql": sql_example,
+        "payload_template": payload_template,
+        "payload_core": payload_core,
+        "payload": payload,
+        "label": False,
+        "technique": payload_template["technique"],
+        "reference_scope": payload_template["reference_scope"],
+        "comment_state": comment_state,
+        "difficulty": identify_difficulty(
+            payload_template["reference_scope"], comment_state
+        ),
+    }
 
 
 def batch_generate_injection_sqls(
@@ -385,7 +439,8 @@ def batch_generate_injection_sqls(
         sys_schemas:          System-table schemas list.
         system_vars:          System variable definitions.
         comment_list:         Deceptive comment repository.
-        comment_rate:         Probability (0-1) of appending a comment per sample.
+        comment_rate:         Probability (0-1) of choosing ``cepp`` instead
+                              of ``clean_comment`` where a delimiter is required.
 
     Returns:
         List of successfully generated injection SQL sample dicts.
@@ -393,15 +448,19 @@ def batch_generate_injection_sqls(
     count = 0
     injection_sql_examples = []
     while count < expected_example_num:
-        comment_flag = random.random() < comment_rate
+        sql_example = random.choice(raw_sqls)
+        if sql_example.get("requires_comment_delimiter"):
+            comment_state = "cepp" if random.random() < comment_rate else "clean_comment"
+        else:
+            comment_state = "no_comment"
         sample = pipeline(
-            random.choice(raw_sqls),
+            sql_example,
             random.choice(payloads),
             db_schemas,
             sys_schemas,
             system_vars,
             comment_list,
-            comment_flag,
+            comment_state,
         )
         if sample is not None:
             injection_sql_examples.append(sample)

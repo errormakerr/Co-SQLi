@@ -94,6 +94,9 @@ case "${SQLI_MODE:-db-check}" in
     refactor-smoke)
         "$PYTHON_BIN" "$PROJECT_ROOT/scripts/refactor_smoke.py"
         ;;
+    rebuild-data)
+        "$PYTHON_BIN" "$PROJECT_ROOT/scripts/rebuild_taxonomy_data.py"
+        ;;
     full)
         main_args=()
         if [[ -n "${SQLI_MAIN_ARGS:-}" ]]; then
@@ -102,7 +105,7 @@ case "${SQLI_MODE:-db-check}" in
         "$PYTHON_BIN" "$PROJECT_ROOT/src/main.py" "${main_args[@]}"
         ;;
     *)
-        echo "Unsupported SQLI_MODE=${SQLI_MODE:-}. Use db-check, generate-smoke, mutation-smoke, refactor-smoke, or full." >&2
+        echo "Unsupported SQLI_MODE=${SQLI_MODE:-}. Use db-check, generate-smoke, mutation-smoke, refactor-smoke, rebuild-data, or full." >&2
         exit 2
         ;;
 esac

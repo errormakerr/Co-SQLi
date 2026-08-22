@@ -179,13 +179,16 @@ python src/model_ops/inference.py \
 ## 🔬 Technical Deep-Dive
 
 ### Attack Cluster Taxonomy
-SQL injection samples are dynamically categorised using a 4-dimensional space:
-1. **Attack Type**: `Tautologies`, `Error-based`, `Union-query`, `Piggy-backed`, `Boolean Inference`, `Time Inference`.
-2. **Annotator**: True / False.
-3. **Information Features**: `constant`, `system information`, `specific database`.
-4. **Comment**: True / False.
+Each malicious sample has a canonical, versioned cluster key:
+`technique||reference_scope||comment_state`.
 
-*Benign SQL samples are mapped to a static `normal||normal||normal||normal` key.*
+1. **Technique**: `tautology`, `union_query`, `piggy_backed`, `error_based`, `boolean_blind`, or `time_blind`.
+2. **Reference scope**: `lor` (literal-only), `tsr` (target-schema reference), or `scr` (system-catalog reference).
+3. **Comment state**: `no_comment`, `clean_comment`, or `cepp` (a non-empty CEPP string after `-- `).
+
+Two invalid payload categories, `boolean_blind||lor` and `piggy_backed||lor`, are pruned. The remaining 16 categories crossed with the three comment states form the fixed 48 EXP3 arms. Arms are declared in code, never inferred from benchmark coverage. Benign samples use the separate `benign` key and are controlled outside EXP3.
+
+Comment delimiters are assembled only at injection time: canonical payload templates and mutation outputs are comment-free cores. `clean_comment` always appends `-- `, while `cepp` appends `-- ` followed by one safe, non-empty CEPP string.
 
 ### Multi-Armed Bandit (EXP3)
 The framework mathematically guarantees the model confronts its weakest areas:
@@ -197,9 +200,9 @@ The framework mathematically guarantees the model confronts its weakest areas:
 
 ### LLM Payload Mutation
 When enabled, the Attacker uses LLM capabilities to mutate SQL injection payloads on the fly:
-- **Type-focused Mutation**: Alters the implementation technique of the attack.
-- **Info-focused Mutation**: Alters the query structure seamlessly.
-- Uses category-scoped anti-imitation few-shot prompting: up to five successful full templates are sampled first, then original training templates fill any remaining slots. Successful mutations are retained without a size cap.
+- **Technique-aware Mutation**: Explores alternate payload forms while preserving the declared technique and reference scope.
+- **Structure-aware Mutation**: Varies the embedded query structure without changing the payload category.
+- Uses category-scoped anti-imitation few-shot prompting: up to five successful mutation templates are sampled first, then original templates fill remaining slots. Successful mutations are retained without a size cap.
 
 ---
 

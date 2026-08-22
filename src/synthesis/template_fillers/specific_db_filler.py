@@ -122,7 +122,7 @@ class SpecificDatabaseTemplateFiller:
         if isinstance(template_input, str):
             template = template_input
             expected_types: List[str] = []
-            information_features = "specific database"
+            reference_scope = "tsr"
             if debug:
                 print("Input type: string (no type constraints)")
         elif isinstance(template_input, dict):
@@ -131,9 +131,9 @@ class SpecificDatabaseTemplateFiller:
             # .pop() calls on the original would shorten expected_types on
             # every reuse of the same template (a subtle data-corruption bug).
             expected_types = list(template_input.get("expected_types", []))
-            information_features = template_input.get("information_features", "specific database")
+            reference_scope = template_input.get("reference_scope", "tsr")
             if debug:
-                print(f"Input type: dict | expected_types: {expected_types} | info_features: {information_features}")
+                print(f"Input type: dict | expected_types: {expected_types} | reference_scope: {reference_scope}")
         else:
             raise ValueError("template_input must be a str or dict")
 
@@ -212,7 +212,7 @@ class SpecificDatabaseTemplateFiller:
 
         replacement_values = []
         for placeholder in placeholders:
-            value = self._get_marked_replacement(placeholder, table_assignments, information_features, debug)
+            value = self._get_marked_replacement(placeholder, table_assignments, reference_scope, debug)
             replacement_values.append(value)
             if debug:
                 print(f"  {placeholder['full_match']} -> {value}")
@@ -466,14 +466,14 @@ class SpecificDatabaseTemplateFiller:
         self,
         placeholder: Dict,
         table_assignments: Dict,
-        information_features: str,
+        reference_scope: str,
         debug: bool = False,
     ) -> str:
         """
         Resolve a structured placeholder to its replacement string.
 
         Table names are returned with a ``db_name.`` prefix when
-        ``information_features`` is not ``"specific database"``.
+        ``reference_scope`` is not ``"tsr"``.
         """
         ptype = placeholder["type"]
 
@@ -482,7 +482,7 @@ class SpecificDatabaseTemplateFiller:
             table_id = placeholder["table_id"]
             if table_id in table_assignments:
                 table_name = table_assignments[table_id]["table"]
-                if information_features == "specific database":
+                if reference_scope == "tsr":
                     return table_name
                 return f"{self.db_name}.{table_name}"
             return "unknown_table"

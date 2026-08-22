@@ -114,20 +114,14 @@ def create_sft_format(
     sql = sql_entry.get("sql", "")
     label = sql_entry.get("label", True)
 
-    information_features = "normal"
-    attack_type = "normal"
-    difficulty = "normal"
-    annotator = "normal"
-    comment = "normal"
-
-    if not sql_entry["label"]:
-        if "payload_template" in sql_entry:
-            information_features = sql_entry["payload_template"].get("information_features", "normal")
-            attack_type = sql_entry["payload_template"].get("type", "normal")
-        difficulty = sql_entry.get("difficulty", "normal")
-        if "original_sql" in sql_entry:
-            annotator = sql_entry["original_sql"].get("annotator", "normal")
-        comment = sql_entry.get("comment", "normal")
+    metadata: Dict[str, Any] = {}
+    if not label:
+        metadata = {
+            "technique": sql_entry["technique"],
+            "reference_scope": sql_entry["reference_scope"],
+            "comment_state": sql_entry["comment_state"],
+            "difficulty": sql_entry.get("difficulty", "medium"),
+        }
 
     if format_type == "openai":
         return {
@@ -155,11 +149,7 @@ def create_sft_format(
             ],
             "sql": sql,
             "label": label,
-            "information_features": information_features,
-            "type": attack_type,
-            "difficulty": difficulty,
-            "annotator": str(annotator),
-            "comment": str(comment),
+            **metadata,
         }
     else:
         raise ValueError(f"SFTFormatter currently only supports format_type='openai'")

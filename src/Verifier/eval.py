@@ -1,16 +1,15 @@
 """
 Evaluation utilities for the Verifier module.
 
-Provides functions to:
-- Cluster inference results by their attack-type / annotator /
-  information-feature / comment combination.
+Provides functions to cluster inference results by the canonical
+technique / reference-scope / comment-state tuple.
 - Compute per-cluster accuracy statistics.
 """
 
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
-from utils.cluster import NORMAL_CLUSTER_KEY, str_to_bool
+from utils.cluster import get_single_key_of_injection_sql
 from utils.json_operation import read_jsonl_file
 
 
@@ -37,29 +36,16 @@ def _get_single_key_of_result(data_item: Dict[str, Any]) -> str:
     """
     Generate the cluster key for a single inference result.
 
-    Benign (label=True) items are mapped to the fixed key
-    ``"normal||normal||normal||normal"``.
+    Benign (label=True) items are mapped to the fixed benign key.
 
     Args:
         data_item: A single inference result dictionary, expected to contain
-                   ``label``, ``type``, ``annotator``, ``information_features``,
-                   and ``comment`` fields.
+                   canonical taxonomy fields when ``label`` is false.
 
     Returns:
-        A ``"type||annotator||information_features||comment"`` cluster key,
-        or the fixed benign key for normal samples.
+        A canonical three-part attack key or the fixed benign key.
     """
-    if not data_item["label"]:
-        attack_type = data_item["type"]
-        annotator = data_item["annotator"]
-        if isinstance(annotator, str):
-            annotator = str_to_bool(annotator)
-        info_features = data_item["information_features"]
-        comment = data_item.get("comment")
-        if isinstance(comment, str):
-            comment = str_to_bool(comment)
-        return f"{attack_type}||{annotator}||{info_features}||{comment}"
-    return NORMAL_CLUSTER_KEY
+    return get_single_key_of_injection_sql(data_item)
 
 
 def cluster_results(datas: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:

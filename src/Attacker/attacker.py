@@ -283,35 +283,36 @@ class Attacker:
 
     def _get_raw_data_by_cluster_feature(
         self, cluster: str
-    ) -> Tuple[Dict[str, Any], Dict[str, Any], bool]:
+    ) -> Tuple[Dict[str, Any], Dict[str, Any], str]:
         """
-        Randomly sample a (sql_example, payload_template, comment_flag) tuple
+        Randomly sample a (sql_example, payload_template, comment_state) tuple
         matching *cluster*.
 
         Args:
-            cluster: A four-part cluster key string
-                     ``type||annotator||information_features||comment``.
+            cluster: A canonical three-part MAB cluster key.
 
         Returns:
-            ``(sql_example, payload_template, comment_flag)``
+            ``(sql_example, payload_template, comment_state)``
 
         Raises:
             RuntimeError: If no matching raw SQL or payload template is found.
         """
         cluster_key = ClusterKey.from_str(cluster)
 
+        requires_delimiter = cluster_key.comment_state != "no_comment"
         sql_candidates = [
             sql for sql in self.train_raw_sqls
-            if sql.get("annotator") == cluster_key.annotator
+            if sql.get("requires_comment_delimiter") is requires_delimiter
         ]
         if not sql_candidates:
             raise RuntimeError(
-                f"No train_raw_sqls found for annotator={cluster_key.annotator!r} "
+                "No train_raw_sqls found for "
+                f"requires_comment_delimiter={requires_delimiter!r} "
                 f"(cluster={cluster!r})"
             )
         sql_example = random.choice(sql_candidates)
 
-        payload_key = cluster_key.payload_cluster_key()
+        payload_key = str(cluster_key.payload_category_key())
         payload_candidates = self.train_payloads_clusters.get(payload_key)
         if not payload_candidates:
             raise RuntimeError(
@@ -320,7 +321,7 @@ class Attacker:
             )
         payload_example = random.choice(payload_candidates)
 
-        return sql_example, payload_example, cluster_key.comment
+        return sql_example, payload_example, cluster_key.comment_state
 
     # ------------------------------------------------------------------
     # Payload mutation
@@ -506,7 +507,7 @@ class Attacker:
 
         while count < expected_injection_num:
             for cluster in target_clusters:
-                sql_example, payload_example, comment_flag = (
+                sql_example, payload_example, comment_state = (
                     self._get_raw_data_by_cluster_feature(cluster)
                 )
 
@@ -546,7 +547,7 @@ class Attacker:
                     sys_schemas=self.sys_schemas,
                     system_vars=self.system_vars,
                     comment_list=self.comment_list,
-                    comment_flag=comment_flag,
+                    comment_state=comment_state,
                 )
                 if injection_sql_example is not None:
                     injection_sql_examples.append(injection_sql_example)

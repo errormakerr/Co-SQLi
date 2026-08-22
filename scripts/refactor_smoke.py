@@ -112,12 +112,14 @@ def synthesize_one_database_sample(
     raw_candidates = [
         sample
         for sample in raw_sqls
-        if sample.get("db") and "$$" in str(sample.get("sql"))
+        if sample.get("db")
+        and "$$" in str(sample.get("sql"))
+        and sample.get("requires_comment_delimiter") is False
     ]
     payload_candidates = [
         payload
         for payload in payloads
-        if payload.get("information_features") == "specific database"
+        if payload.get("reference_scope") == "tsr"
         and payload.get("expected_types")
     ]
     if not raw_candidates or not payload_candidates:
@@ -137,7 +139,7 @@ def synthesize_one_database_sample(
                     sys_schemas,
                     system_vars,
                     comment_list,
-                    comment_flag=False,
+                    comment_state="no_comment",
                 )
                 if result is not None:
                     return result, attempt

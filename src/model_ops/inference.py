@@ -318,11 +318,10 @@ def run_inference(args: argparse.Namespace) -> None:
                 for key in (
                     "sql",
                     "label",
-                    "information_features",
-                    "type",
+                    "technique",
+                    "reference_scope",
+                    "comment_state",
                     "difficulty",
-                    "annotator",
-                    "comment",
                 ):
                     if key in batch[j]:
                         result[key] = batch[j][key]

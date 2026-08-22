@@ -3,7 +3,7 @@ Payload Mutator — core orchestrator for LLM-based payload mutation.
 
 Workflow
 --------
-1. Identify the payload's ``AttackType`` and ``InfoFeature``.
+1. Identify the payload's ``Technique`` and ``ReferenceScope``.
 2. Route to the appropriate prompt template (``type_focused`` vs ``info_focused``).
 3. Augment the prompt with anti-imitation templates from mutation memory.
 4. Call the LLM for mutation.
@@ -26,9 +26,9 @@ MUTATION_MAX_TOKENS = 2000
 """Maximum tokens allowed in a mutation LLM response."""
 
 INFO_FOCUSED_PROMPT_PROBABILITY = 0.3
-"""Probability of choosing info-focused (vs type-focused) for specific_db payloads."""
+"""Probability of choosing structure-focused mutation for TSR payloads."""
 
-from .type_identifier import identify, AttackType, InfoFeature
+from .type_identifier import ReferenceScope, Technique, identify
 from .prompt_templates import (
     SECURITY_DECLARATION,
     ATTACK_FORM_MUTATION_TEMPLATE,
@@ -95,8 +95,8 @@ class PayloadMutator:
         Mutate *template* and optionally infer ``expected_types``.
 
         Args:
-            template:     Payload template dict with ``"payload"``, ``"type"``,
-                          and ``"information_features"`` keys.
+            template:     Canonical payload template with ``payload``, ``technique``,
+                          and ``reference_scope`` keys.
             infer_types:  Override the instance-level ``infer_types`` setting
                           for this call.
 
@@ -107,17 +107,17 @@ class PayloadMutator:
         self._stats["attempts"] += 1
 
         # Step 1 — identify type
-        attack_type, info_feature = identify(template)
-        attack_type_str = template.get("type", attack_type.value)
-        info_feature_str = template.get("information_features", info_feature.value)
+        technique, reference_scope = identify(template)
+        technique_str = template.get("technique", technique.value)
+        reference_scope_str = template.get("reference_scope", reference_scope.value)
 
         # Step 2 — route to prompt template
-        prompt_type = self._decide_prompt_type(attack_type, info_feature)
+        prompt_type = self._decide_prompt_type(technique, reference_scope)
 
         # Step 3 — build prompt with memory augmentation
         prompt = self._build_prompt(
-            template, attack_type, info_feature,
-            attack_type_str, info_feature_str, prompt_type,
+            template, technique, reference_scope,
+            technique_str, reference_scope_str, prompt_type,
         )
 
         # Step 4 — LLM call
@@ -168,8 +168,8 @@ class PayloadMutator:
         if should_infer and self.types_inferrer is not None:
             expected_types = self.types_inferrer.infer(
                 payload=mutated,
-                attack_type=attack_type_str,
-                info_features=info_feature_str,
+                technique=technique_str,
+                reference_scope=reference_scope_str,
                 use_llm=True,
             )
             if expected_types:
@@ -188,8 +188,8 @@ class PayloadMutator:
             "payload": mutated,
             "expected_types": expected_types,
             "original": template["payload"],
-            "attack_type": attack_type_str,
-            "info_feature": info_feature_str,
+            "technique": technique_str,
+            "reference_scope": reference_scope_str,
             "mutation_type": prompt_type,
         }
 
@@ -204,8 +204,8 @@ class PayloadMutator:
     def infer_expected_types(
         self,
         payload: str,
-        attack_type: str = "",
-        info_features: str = "",
+        technique: str = "",
+        reference_scope: str = "",
         use_llm: bool = True,
     ) -> Optional[List[str]]:
         """
@@ -213,8 +213,8 @@ class PayloadMutator:
 
         Args:
             payload:      The SQL injection payload template string.
-            attack_type:  Attack type label (e.g. ``"Error base attack"``).
-            info_features: Information-feature label.
+            technique:       Canonical attack-technique label.
+            reference_scope: Canonical LOR/TSR/SCR label.
             use_llm:      Whether to use LLM inference (falls back to heuristics).
 
         Returns:
@@ -224,8 +224,8 @@ class PayloadMutator:
             self.types_inferrer = ExpectedTypesInferrer(llm=self.llm, model=self.model)
         return self.types_inferrer.infer(
             payload=payload,
-            attack_type=attack_type,
-            info_features=info_features,
+            technique=technique,
+            reference_scope=reference_scope,
             use_llm=use_llm,
         )
 
@@ -234,7 +234,7 @@ class PayloadMutator:
     # ------------------------------------------------------------------
 
     def _decide_prompt_type(
-        self, attack_type: AttackType, info_feature: InfoFeature
+        self, technique: Technique, reference_scope: ReferenceScope
     ) -> str:
         """
         Select ``"type_focused"`` or ``"info_focused"`` prompt routing.
@@ -248,9 +248,9 @@ class PayloadMutator:
         - **system_information** → always ``type_focused``
           (limited structural variation room for ``$sysInfo$`` payloads)
         """
-        if info_feature == InfoFeature.CONSTANT:
+        if reference_scope == ReferenceScope.LOR:
             return "type_focused"
-        if info_feature == InfoFeature.SPECIFIC_DB:
+        if reference_scope == ReferenceScope.TSR:
             return "info_focused" if random.random() < INFO_FOCUSED_PROMPT_PROBABILITY else "type_focused"
         # SYSTEM_INFO
         return "type_focused"
@@ -262,28 +262,28 @@ class PayloadMutator:
     def _build_prompt(
         self,
         template: Dict,
-        attack_type: AttackType,
-        info_feature: InfoFeature,
-        attack_type_str: str,
-        info_feature_str: str,
+        technique: Technique,
+        reference_scope: ReferenceScope,
+        technique_str: str,
+        reference_scope_str: str,
         prompt_type: str,
     ) -> str:
         """Assemble the full prompt with anti-imitation template examples."""
         payload = template.get("payload", "")
         memory_addons = self.memory.get_prompt_addons(
-            attack_type_str, info_feature_str
+            technique_str, reference_scope_str
         )
         if prompt_type == "type_focused":
             tmpl = ATTACK_FORM_MUTATION_TEMPLATE
-            dimensions = get_type_dimensions(attack_type)
+            dimensions = get_type_dimensions(technique).replace("--", "")
         else:
             tmpl = SQL_STRUCTURE_MUTATION_TEMPLATE
             dimensions = get_info_dimensions()
 
         return tmpl.format(
             security_declaration=SECURITY_DECLARATION,
-            attack_type=attack_type_str,
-            info_feature=info_feature_str,
+            technique=technique_str,
+            reference_scope=reference_scope_str,
             payload=payload,
             dimensions=dimensions,
             memory_addons=memory_addons,
@@ -295,24 +295,24 @@ class PayloadMutator:
 
     def get_routing_info(self, template: Dict) -> Dict:
         """Return routing metadata for *template* (for debugging or analysis)."""
-        attack_type, info_feature = identify(template)
-        prompt_type = self._decide_prompt_type(attack_type, info_feature)
+        technique, reference_scope = identify(template)
+        prompt_type = self._decide_prompt_type(technique, reference_scope)
         return {
-            "attack_type": template.get("type", attack_type.value),
-            "info_feature": template.get("information_features", info_feature.value),
+            "technique": template.get("technique", technique.value),
+            "reference_scope": template.get("reference_scope", reference_scope.value),
             "prompt_type": prompt_type,
-            "reason": self._get_routing_reason(info_feature),
+            "reason": self._get_routing_reason(reference_scope),
         }
 
-    def _get_routing_reason(self, info_feature: InfoFeature) -> str:
+    def _get_routing_reason(self, reference_scope: ReferenceScope) -> str:
         """Return a human-readable explanation of the routing decision."""
         return {
-            InfoFeature.CONSTANT: "No placeholders → type_focused only",
-            InfoFeature.SPECIFIC_DB: (
+            ReferenceScope.LOR: "No placeholders → type_focused only",
+            ReferenceScope.TSR: (
                 "Attack-form diversity → prefer type_focused (70 %); info_focused (30 %)"
             ),
-            InfoFeature.SYSTEM_INFO: "System queries → type_focused only",
-        }.get(info_feature, "default")
+            ReferenceScope.SCR: "System queries → type_focused only",
+        }.get(reference_scope, "default")
 
     def get_stats(self) -> Dict:
         """Return cumulative mutation and type-inference statistics."""
@@ -355,22 +355,22 @@ class PayloadMutator:
         Returns:
             ``(full_prompt, memory_addons, routing_info)``
         """
-        attack_type, info_feature = identify(template)
-        attack_type_str = template.get("type", attack_type.value)
-        info_feature_str = template.get("information_features", info_feature.value)
-        prompt_type = self._decide_prompt_type(attack_type, info_feature)
+        technique, reference_scope = identify(template)
+        technique_str = template.get("technique", technique.value)
+        reference_scope_str = template.get("reference_scope", reference_scope.value)
+        prompt_type = self._decide_prompt_type(technique, reference_scope)
 
         memory_addons = self.memory.get_prompt_addons(
-            attack_type_str, info_feature_str, prompt_type
+            technique_str, reference_scope_str
         )
         full_prompt = self._build_prompt(
-            template, attack_type, info_feature,
-            attack_type_str, info_feature_str, prompt_type,
+            template, technique, reference_scope,
+            technique_str, reference_scope_str, prompt_type,
         )
         routing_info = {
-            "attack_type": attack_type_str,
-            "info_feature": info_feature_str,
+            "technique": technique_str,
+            "reference_scope": reference_scope_str,
             "prompt_type": prompt_type,
-            "reason": self._get_routing_reason(info_feature),
+            "reason": self._get_routing_reason(reference_scope),
         }
         return full_prompt, memory_addons, routing_info

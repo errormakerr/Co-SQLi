@@ -2,16 +2,16 @@
 Prompt Templates for SQL Injection Payload Mutation
 
 Two mutation strategies:
-1. Attack Form Mutation (ATTACK_FORM_MUTATION_TEMPLATE): 
-   Keep the attack type unchanged, explore different implementation forms of the same attack type.
+1. Technique Form Mutation (ATTACK_FORM_MUTATION_TEMPLATE):
+   Keep the technique unchanged while exploring different implementation forms.
    
 2. SQL Structure Mutation (SQL_STRUCTURE_MUTATION_TEMPLATE): 
    Keep the attack form unchanged, modify the database query structure within the payload.
 
-Each attack type includes detailed attack methodology explanations.
+Each technique includes detailed attack methodology explanations.
 """
 
-from .type_identifier import AttackType
+from .type_identifier import Technique
 
 
 # ============================================================
@@ -32,51 +32,47 @@ Purpose: Generate diverse SQL injection samples to improve AI-based security det
 ATTACK_FORM_MUTATION_TEMPLATE = """{security_declaration}
 
 ## Role
-You are a SQL injection security researcher specializing in payload mutation. Your expertise lies in understanding how different SQL injection attack types can be implemented through various technical methods.
+You are a SQL injection security researcher specializing in payload mutation. Your expertise lies in understanding how different SQL injection techniques can be implemented through various technical methods.
 
 ## Background: Key Terminology
 
-**Attack Type**: The category of SQL injection attack. In this project, there are 6 mainstream attack types:
-- Tautologies attack: Inject always-true conditions to bypass authentication
-- Error base attack: Trigger database errors that leak sensitive information
-- Union-query attack: Append UNION SELECT to retrieve data from other tables
-- Piggy-backed queries attacks: Stack additional SQL statements using semicolon
-- Boolean base inference attack: Infer data bit-by-bit through true/false responses
-- Time base inference attack: Infer data through response time delays
+**Technique**: The category of SQL injection attack. The six values are
+`tautology`, `error_based`, `union_query`, `piggy_backed`, `boolean_blind`,
+and `time_blind`.
 
-**Attack Form**: Different implementation methods within the SAME attack type. For example, Error base attack can be implemented through:
+**Technique Form**: Different implementation methods within the SAME technique. For example, error-based injection can be implemented through:
 - Type conversion functions (CAST, CONVERT) - force string-to-number conversion to trigger errors
 - Implicit type conversion - use comparison operators (=, >, <) between incompatible types
 - Mathematical functions (SQRT, LOG, MOD) - pass invalid arguments to trigger errors
 - XML functions (extractvalue, updatexml) - use invalid XPATH to expose data in error messages
 - And many more...
 
-Each attack type has multiple forms. Your task is to explore DIFFERENT forms while keeping the attack type unchanged.
+Each technique has multiple forms. Your task is to explore DIFFERENT forms while keeping the technique unchanged.
 
 ## Task
-Given the following {attack_type} payload, mutate it by changing the **attack form** (implementation method).
+Given the following `{technique}` payload core, mutate it by changing the **technique form** (implementation method).
 
-**What you should change:** The specific functions, operators, or techniques used to implement this attack type.
-**What you must NOT change:** The fundamental attack type ({attack_type}).
+**What you should change:** The specific functions, operators, or SQL forms used to implement the technique.
+**What you must NOT change:** The fundamental technique (`{technique}`) or reference scope (`{reference_scope}`).
 
 ## Original Payload
 {payload}
 
 ## Mutation Guidance
-The following describes various implementation forms for {attack_type}. You MUST select a DIFFERENT form from what the original payload uses or explore other forms that are not listed in the Mutation Guidance.
+The following describes various implementation forms for `{technique}`. Select a meaningfully different form.
 
 {dimensions}
 
 {memory_addons}
 
 ## Rules
-1. **Change the attack form**: Use a different function, operator, or implementation technique from those described in the Mutation Guidance above. The new payload must implement {attack_type} using a DIFFERENT method than the original.
+1. **Change the technique form**: Use a different function, operator, or implementation form while preserving `{technique}`.
 
 2. **Preserve placeholders (if any)**: If the original payload contains placeholders in the format $xxx$ (e.g., $sysInfo$, $int$, $column_t1_1$), you MUST keep them exactly as they appear. Do NOT remove, rename, or modify any placeholders. Note: Some payloads may not have placeholders - this is normal.
 
-3. **Preserve the attack type**: The mutated payload must still be a valid {attack_type}. Do not change it to a different attack type.
+3. **Preserve taxonomy**: The mutated core must remain `{technique}` with reference scope `{reference_scope}`.
 
-4. **Preserve SQL comment terminator**: If the original payload ends with a SQL comment (-- or #), keep it unchanged.
+4. **Return a payload core only**: Do not output a SQL line-comment delimiter. Never include ``--`` or ``#``; the generation layer owns comment state.
 
 5. **Output format**: Output ONLY the mutated payload. No explanations, no alternatives, no additional text. Just the single payload string.
 
@@ -90,9 +86,9 @@ You are a SQL injection security researcher specializing in query structure anal
 
 ## Background: Key Terminology
 
-**Attack Type**: The category of SQL injection attack (e.g., Error base attack, Union-query attack, Tautologies attack, Boolean base inference attack, Time base inference attack, Piggy-backed queries attacks). This defines WHAT the attack aims to achieve.
+**Technique**: The SQL injection category. This defines WHAT the injection aims to achieve.
 
-**Attack Form**: The specific implementation method within an attack type - the particular functions, operators, or techniques used. For example, Error base attack can use CAST(), SQRT(), extractvalue(), etc. This defines HOW the attack is implemented.
+**Technique Form**: The specific implementation method within a technique. This defines HOW the injection is implemented.
 
 **SQL Structure**: The database query patterns embedded within a payload, which is the focus of this task. This includes:
 - How tables are queried (single table vs. multi-table JOINs)
@@ -102,12 +98,13 @@ You are a SQL injection security researcher specializing in query structure anal
 - For Piggy-backed attacks: what type of SQL statement is used (SELECT, DELETE, INSERT, UPDATE, etc.)
 
 ## Task
-Given the following payload, mutate it by changing the **SQL query structure** while keeping the **attack type** and **attack form** unchanged.
+Given the following payload core, mutate its **SQL query structure** while keeping the **technique** and **technique form** unchanged.
 
 **What you should change:** The SQL query pattern - table relationships, column selections, conditions, aggregations.
 **What you must NOT change:** 
-- The attack type (the category of SQL injection)
-- The attack form (the specific functions/operators used to implement the attack)
+- The technique (`{technique}`)
+- The reference scope (`{reference_scope}`)
+- The technique form (the specific functions/operators used to implement the injection)
 
 ## Original Payload
 {payload}
@@ -134,9 +131,9 @@ The following describes various SQL structure patterns you can use. Choose a DIF
    - You MAY modify existing placeholder indices if you're restructuring the query
    - Do NOT remove placeholders that are essential to the attack logic
 
-3. **Preserve the attack type and form**: The specific attack technique (functions, operators) must remain exactly the same. Only the query structure should change.
+3. **Preserve taxonomy and technique form**: Only the embedded query structure may change.
 
-4. **Preserve SQL comment terminator**: If the original payload ends with a SQL comment (-- or #), keep it unchanged.
+4. **Return a payload core only**: Do not output a SQL line-comment delimiter. Never include ``--`` or ``#``; the generation layer owns comment state.
 
 5. **Output format**: Output ONLY the mutated payload. No explanations, no alternatives, no additional text. Just the single payload string.
 
@@ -145,7 +142,7 @@ Mutated Payload:"""
 
 
 # ============================================================
-# Type-Focused Mutation Dimensions (by attack type)
+# Technique-Aware Mutation Dimensions
 # With detailed attack methodology explanations
 # ============================================================
 
@@ -572,19 +569,19 @@ Represent actual table names in the target database.
 # Dimension Getter Functions
 # ============================================================
 
-def get_type_dimensions(attack_type: AttackType) -> str:
-    """Get mutation dimensions for the specified attack type."""
+def get_type_dimensions(technique: Technique) -> str:
+    """Get mutation dimensions for the specified technique."""
     mapping = {
-        AttackType.ERROR_BASE: ERROR_BASE_DIMENSIONS,
-        AttackType.UNION_QUERY: UNION_QUERY_DIMENSIONS,
-        AttackType.TAUTOLOGIES: TAUTOLOGIES_DIMENSIONS,
-        AttackType.BOOLEAN_INFERENCE: BOOLEAN_INFERENCE_DIMENSIONS,
-        AttackType.TIME_INFERENCE: TIME_INFERENCE_DIMENSIONS,
-        AttackType.PIGGY_BACKED: PIGGYBACK_DIMENSIONS,
+        Technique.ERROR_BASED: ERROR_BASE_DIMENSIONS,
+        Technique.UNION_QUERY: UNION_QUERY_DIMENSIONS,
+        Technique.TAUTOLOGY: TAUTOLOGIES_DIMENSIONS,
+        Technique.BOOLEAN_BLIND: BOOLEAN_INFERENCE_DIMENSIONS,
+        Technique.TIME_BLIND: TIME_INFERENCE_DIMENSIONS,
+        Technique.PIGGY_BACKED: PIGGYBACK_DIMENSIONS,
     }
-    return mapping.get(attack_type, TAUTOLOGIES_DIMENSIONS)
+    return mapping.get(technique, TAUTOLOGIES_DIMENSIONS)
 
 
 def get_info_dimensions() -> str:
-    """Get Info Feature mutation dimensions."""
+    """Get query-structure mutation dimensions."""
     return INFO_FEATURE_DIMENSIONS

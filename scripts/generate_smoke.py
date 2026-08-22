@@ -16,8 +16,7 @@ from main import (
     MODIFY_PAYLOAD_PROB_START,
     ProjectPaths,
 )
-from utils.cluster import cluster_injection_sqls, get_injection_cluster_keys
-from utils.json_operation import read_json_file
+from utils.cluster import all_attack_cluster_keys
 
 
 def parse_args() -> argparse.Namespace:
@@ -37,9 +36,7 @@ def main() -> None:
         raise ValueError("--samples must be positive")
 
     paths = ProjectPaths.create()
-    cluster_list = get_injection_cluster_keys(
-        cluster_injection_sqls(read_json_file(paths.benchmark_dir / "test_sqls.json")).keys()
-    )
+    cluster_list = all_attack_cluster_keys()
     attacker = Attacker(
         number_of_training_sqls=args.samples,
         cluster_list=cluster_list,

@@ -1,163 +1,171 @@
-"""
-Cluster utilities for grouping and keying SQL injection samples.
+"""Canonical SQL-injection taxonomy and cluster helpers.
 
-Provides helper functions to cluster raw payloads and generated injection
-SQL examples by their attack-type / information-feature / annotator / comment
-combination, as well as a frozen dataclass for structured cluster keys.
+Attack samples are classified by exactly three dimensions:
+
+``(technique, reference_scope, comment_state)``.
+
+The MAB arm set is declared here, rather than inferred from a benchmark file.
+This prevents an incomplete dataset from silently removing attack arms.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, Iterable, List, Tuple
 
 
-# Canonical cluster key for benign / normal SQL samples.
-NORMAL_CLUSTER_KEY = "normal||normal||normal||normal"
+TAXONOMY_VERSION = 3
+"""Version of the persisted taxonomy and cluster-key contract."""
+
+NORMAL_CLUSTER_KEY = "benign"
+"""Fixed key used only for benign / normal SQL examples."""
+
+TECHNIQUES: Tuple[str, ...] = (
+    "tautology",
+    "union_query",
+    "piggy_backed",
+    "error_based",
+    "boolean_blind",
+    "time_blind",
+)
+
+REFERENCE_SCOPES: Tuple[str, ...] = ("lor", "tsr", "scr")
+COMMENT_STATES: Tuple[str, ...] = ("no_comment", "clean_comment", "cepp")
+
+# The two omitted combinations follow the paper's semantic pruning rules:
+# boolean-blind/LOR collapses to tautology and piggy-backed/LOR has no
+# meaningful exploit effect.
+_PRUNED_PAYLOAD_CATEGORIES = frozenset({
+    ("boolean_blind", "lor"),
+    ("piggy_backed", "lor"),
+})
+
+VALID_PAYLOAD_CATEGORIES: Tuple[Tuple[str, str], ...] = tuple(
+    (technique, reference_scope)
+    for technique in TECHNIQUES
+    for reference_scope in REFERENCE_SCOPES
+    if (technique, reference_scope) not in _PRUNED_PAYLOAD_CATEGORIES
+)
 
 
-def get_injection_cluster_keys(cluster_keys: Iterable[str]) -> List[str]:
-    """Return the attack-only portion of an ordered cluster collection.
-
-    The benign cluster is evaluated separately and must not participate in
-    EXP3 sampling or weighting.  Iteration order is preserved so callers can
-    use the result as a stable MAB arm ordering.
-    """
-    return [key for key in cluster_keys if key != NORMAL_CLUSTER_KEY]
-
-# ---------------------------------------------------------------------------
-# Boolean helper
-# ---------------------------------------------------------------------------
-
-def str_to_bool(s: str) -> bool:
-    """Convert a case-insensitive ``"true"``/``"false"`` string to a Python bool.
-
-    Args:
-        s: The string to convert.
-
-    Returns:
-        ``True`` if *s* is ``"true"``, ``False`` if *s* is ``"false"``.
-
-    Raises:
-        ValueError: If the string is not exactly ``"true"`` or ``"false"``
-                    (case-insensitive).
-    """
-    v = s.strip().lower()
-    if v == "true":
-        return True
-    if v == "false":
-        return False
-    raise ValueError(f"Cannot convert {s!r} to bool — expected 'true' or 'false'")
+def is_valid_payload_category(technique: str, reference_scope: str) -> bool:
+    """Return whether a technique/scope pair is a valid payload category."""
+    return (technique, reference_scope) in VALID_PAYLOAD_CATEGORIES
 
 
-# ---------------------------------------------------------------------------
-# Payload-template clustering
-# ---------------------------------------------------------------------------
+@dataclass(frozen=True)
+class PayloadCategoryKey:
+    """Technique/scope key for payload templates and mutation memory."""
 
-def get_single_key_of_payload_template(data_item: Dict[str, Any]) -> str:
-    """Return the cluster key for a payload template: ``type||information_features``."""
-    return f"{data_item['type']}||{data_item['information_features']}"
+    technique: str
+    reference_scope: str
 
+    def __post_init__(self) -> None:
+        if not is_valid_payload_category(self.technique, self.reference_scope):
+            raise ValueError(
+                "Invalid payload category "
+                f"({self.technique!r}, {self.reference_scope!r})"
+            )
 
-def cluster_payload_templates(datas: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
-    """Group a list of payload template dicts by ``type||information_features``.
+    @classmethod
+    def from_str(cls, value: str) -> "PayloadCategoryKey":
+        parts = value.split("||")
+        if len(parts) != 2:
+            raise ValueError(
+                f"PayloadCategoryKey requires technique||reference_scope, got {value!r}"
+            )
+        return cls(*parts)
 
-    Args:
-        datas: List of payload template dictionaries.
+    def __str__(self) -> str:
+        return f"{self.technique}||{self.reference_scope}"
 
-    Returns:
-        Dict mapping each cluster key to its list of matching payload templates.
-    """
-    clusters: Dict[str, List[Dict[str, Any]]] = {}
-    for item in datas:
-        key = get_single_key_of_payload_template(item)
-        clusters.setdefault(key, []).append(item)
-    return clusters
-
-
-# ---------------------------------------------------------------------------
-# Injection-SQL clustering
-# ---------------------------------------------------------------------------
-
-def get_single_key_of_injection_sql(data_item: Dict[str, Any]) -> str:
-    """Return the cluster key for a generated injection SQL example.
-
-    Format: ``type||annotator||information_features||comment``
-    Normal (benign) samples use the fixed key ``"normal||normal||normal||normal"``.
-    """
-    if not data_item["label"]:
-        payload_type = data_item["payload_template"]["type"]
-        annotator = data_item["original_sql"]["annotator"]
-        info_features = data_item["payload_template"]["information_features"]
-        comment = data_item.get("comment")
-        return f"{payload_type}||{annotator}||{info_features}||{comment}"
-    return NORMAL_CLUSTER_KEY
-
-
-def cluster_injection_sqls(datas: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
-    """Group a list of injection SQL dicts by their cluster key.
-
-    Args:
-        datas: List of injection SQL example dicts.
-
-    Returns:
-        Dict mapping each cluster key to its list of matching injection SQL examples.
-    """
-    clusters: Dict[str, List[Dict[str, Any]]] = {}
-    for item in datas:
-        key = get_single_key_of_injection_sql(item)
-        clusters.setdefault(key, []).append(item)
-    return clusters
-
-
-# ---------------------------------------------------------------------------
-# Structured cluster key
-# ---------------------------------------------------------------------------
 
 @dataclass(frozen=True)
 class ClusterKey:
-    """Immutable, structured representation of a four-part cluster key.
+    """Three-part MAB cluster identity for an attack sample."""
 
-    Format: ``payload_type||annotator||information_features||comment``
-    """
+    technique: str
+    reference_scope: str
+    comment_state: str
 
-    payload_type: str
-    annotator: bool
-    information_features: str
-    comment: bool
+    def __post_init__(self) -> None:
+        PayloadCategoryKey(self.technique, self.reference_scope)
+        if self.comment_state not in COMMENT_STATES:
+            raise ValueError(
+                f"Invalid comment_state {self.comment_state!r}; "
+                f"expected one of {COMMENT_STATES}"
+            )
 
     @classmethod
-    def from_str(cls, s: str) -> ClusterKey:
-        """Parse a cluster key string into a :class:`ClusterKey` instance.
-
-        Args:
-            s: String in the form ``type||annotator||info_features||comment``.
-
-        Returns:
-            Parsed :class:`ClusterKey`.
-
-        Raises:
-            ValueError: If the string does not have exactly four
-                        ``||``-separated parts.
-        """
-        parts = s.split("||")
-        if len(parts) != 4:
+    def from_str(cls, value: str) -> "ClusterKey":
+        parts = value.split("||")
+        if len(parts) != 3:
             raise ValueError(
-                f"ClusterKey.from_str: invalid cluster key {s!r} — "
-                f"expected 4 parts (type||annotator||information_features||comment), "
-                f"got {len(parts)}"
+                "ClusterKey requires technique||reference_scope||comment_state, "
+                f"got {value!r}"
             )
-        payload_type, annotator_str, info_feat, comment_str = parts
-        return cls(
-            payload_type=payload_type,
-            annotator=str_to_bool(annotator_str),
-            information_features=info_feat,
-            comment=str_to_bool(comment_str),
+        return cls(*parts)
+
+    def payload_category_key(self) -> PayloadCategoryKey:
+        """Return the mutation/template category that underlies this MAB arm."""
+        return PayloadCategoryKey(self.technique, self.reference_scope)
+
+    def __str__(self) -> str:
+        return f"{self.technique}||{self.reference_scope}||{self.comment_state}"
+
+
+def all_attack_cluster_keys() -> List[str]:
+    """Return all 48 legal MAB attack arms in stable canonical order."""
+    return [
+        str(ClusterKey(technique, reference_scope, comment_state))
+        for technique, reference_scope in VALID_PAYLOAD_CATEGORIES
+        for comment_state in COMMENT_STATES
+    ]
+
+
+def get_injection_cluster_keys(cluster_keys: Iterable[str]) -> List[str]:
+    """Return attack keys from an ordered collection, excluding benign samples."""
+    return [key for key in cluster_keys if key != NORMAL_CLUSTER_KEY]
+
+
+def get_single_key_of_payload_template(data_item: Dict[str, Any]) -> str:
+    """Return the two-part category key for a canonical payload template."""
+    return str(
+        PayloadCategoryKey(
+            data_item["technique"],
+            data_item["reference_scope"],
         )
+    )
 
-    def payload_cluster_key(self) -> str:
-        """Return the two-part payload-level cluster key.
 
-        Format: ``payload_type||information_features``
-        """
-        return f"{self.payload_type}||{self.information_features}"
+def cluster_payload_templates(
+    datas: Iterable[Dict[str, Any]],
+) -> Dict[str, List[Dict[str, Any]]]:
+    """Group payload templates by their technique/scope category."""
+    clusters: Dict[str, List[Dict[str, Any]]] = {}
+    for item in datas:
+        clusters.setdefault(get_single_key_of_payload_template(item), []).append(item)
+    return clusters
+
+
+def get_single_key_of_injection_sql(data_item: Dict[str, Any]) -> str:
+    """Return the taxonomy key for one generated or inferred sample."""
+    if data_item["label"]:
+        return NORMAL_CLUSTER_KEY
+    return str(
+        ClusterKey(
+            data_item["technique"],
+            data_item["reference_scope"],
+            data_item["comment_state"],
+        )
+    )
+
+
+def cluster_injection_sqls(
+    datas: Iterable[Dict[str, Any]],
+) -> Dict[str, List[Dict[str, Any]]]:
+    """Group generated injection SQL records by canonical cluster identity."""
+    clusters: Dict[str, List[Dict[str, Any]]] = {}
+    for item in datas:
+        clusters.setdefault(get_single_key_of_injection_sql(item), []).append(item)
+    return clusters

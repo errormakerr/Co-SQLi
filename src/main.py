@@ -10,7 +10,12 @@ from typing import Dict, List, Tuple
 from Attacker.attacker import Attacker
 from Defender.defender import Defender
 from Verifier.verifier import Verifier
-from utils.cluster import cluster_injection_sqls, get_injection_cluster_keys
+from utils.cluster import (
+    TAXONOMY_VERSION,
+    all_attack_cluster_keys,
+    cluster_injection_sqls,
+    get_injection_cluster_keys,
+)
 from utils.json_operation import read_json_file, read_jsonl_file, write_jsonl_file, write_json_file
 from utils.logging_config import setup_logging
 from utils.yaml_operation import load_yaml_to_dict
@@ -119,16 +124,15 @@ def initialize_components(paths: ProjectPaths) -> Tuple[Attacker, Defender, Veri
         Tuple of (Attacker, Defender, Verifier).
     """
     # Load paths
-    test_sqls_path = paths.benchmark_dir / "test_sqls.json"
     normal_sqls_path = paths.raw_datas_dir / "normal_sqls.json"
     valid_datas_path = paths.benchmark_dir / "valid_datas_openai_format.jsonl"
     training_config_path = paths.config_dir / "training_config.yaml"
     inference_config_path = paths.config_dir / "inference_config.yaml"
 
-    # The benign cluster is evaluated separately; EXP3 has attack-only arms.
-    cluster_list = get_injection_cluster_keys(
-        cluster_injection_sqls(read_json_file(test_sqls_path)).keys()
-    )
+    # MAB arms are fixed by taxonomy, never inferred from a dataset's contents.
+    cluster_list = all_attack_cluster_keys()
+    _validate_benchmark_coverage(paths.benchmark_dir / "valid_sqls.json", cluster_list)
+    _validate_benchmark_coverage(paths.benchmark_dir / "test_sqls.json", cluster_list)
 
     # Initialize components
     attacker = Attacker(
@@ -153,6 +157,21 @@ def initialize_components(paths: ProjectPaths) -> Tuple[Attacker, Defender, Veri
     )
 
     return attacker, defender, verifier
+
+
+def _validate_benchmark_coverage(benchmark_file: Path, expected_clusters: List[str]) -> None:
+    """Fail fast when a benchmark does not cover every declared MAB arm."""
+    observed = set(
+        get_injection_cluster_keys(
+            cluster_injection_sqls(read_json_file(str(benchmark_file))).keys()
+        )
+    )
+    expected = set(expected_clusters)
+    if observed != expected:
+        raise ValueError(
+            f"Benchmark taxonomy coverage mismatch in {benchmark_file}: "
+            f"missing={sorted(expected - observed)}, extra={sorted(observed - expected)}"
+        )
 
 
 def run_training_round(
@@ -192,6 +211,13 @@ def run_training_round(
     # Create output directory for this round
     round_output_dir = paths.temp_datas_dir / f"round_{round_idx}"
     round_output_dir.mkdir(parents=True, exist_ok=True)
+    write_json_file(
+        str(round_output_dir / "round_metadata.json"),
+        {
+            "taxonomy_version": TAXONOMY_VERSION,
+            "attack_clusters": attacker.cluster_list,
+        },
+    )
 
     # Compute current-round payload mutation probability (linearly increases)
     modify_payload_prob = MODIFY_PAYLOAD_PROB_START + \
@@ -290,6 +316,20 @@ def run_training_loop(start_round: int = 0, breakpoint_round: int = -1) -> None:
 
     # If resuming from a breakpoint, load saved Verifier state and MutationMemory.
     if breakpoint_round >= 0:
+        metadata_file = paths.temp_datas_dir / f"round_{breakpoint_round}" / "round_metadata.json"
+        if not metadata_file.exists():
+            raise ValueError(
+                "Cannot restore a pre-taxonomy-v3 checkpoint. Start a new run instead."
+            )
+        round_metadata = read_json_file(str(metadata_file))
+        if (
+            round_metadata.get("taxonomy_version") != TAXONOMY_VERSION
+            or round_metadata.get("attack_clusters") != verifier.cluster_list
+        ):
+            raise ValueError(
+                "Checkpoint taxonomy mismatch; start a new taxonomy-v3 run instead."
+            )
+
         weights_file = paths.temp_datas_dir / f"round_{breakpoint_round}" / "cluster_weights.jsonl"
         if weights_file.exists():
             current_weights = read_jsonl_file(str(weights_file))

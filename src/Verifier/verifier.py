@@ -21,6 +21,7 @@ from typing import Dict, List
 
 from utils.cluster import (
     NORMAL_CLUSTER_KEY,
+    all_attack_cluster_keys,
     cluster_injection_sqls,
     get_injection_cluster_keys,
 )
@@ -297,9 +298,7 @@ def main() -> None:
     test_sqls_file = project_root / "data" / "benchmark" / "test_sqls.json"
 
     results = read_jsonl_file(str(results_file))
-    cluster_list = get_injection_cluster_keys(
-        cluster_injection_sqls(read_json_file(str(test_sqls_file))).keys()
-    )
+    cluster_list = all_attack_cluster_keys()
 
     n = len(cluster_list)
     init_prob = 1.0 / n

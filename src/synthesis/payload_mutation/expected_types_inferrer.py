@@ -40,11 +40,11 @@ and appear in the SAME ORDER as the placeholders appear in the payload (left to 
 {payload}
 ```
 
-## Attack Type
-{attack_type}
+## Technique
+{technique}
 
-## Information Features
-{info_features}
+## Reference Scope
+{reference_scope}
 
 ## Placeholder Types Reference
 
@@ -216,8 +216,8 @@ class ExpectedTypesInferrer:
     def infer(
         self, 
         payload: str, 
-        attack_type: str = "",
-        info_features: str = "",
+        technique: str = "",
+        reference_scope: str = "",
         use_llm: bool = True
     ) -> Optional[List[str]]:
         """
@@ -225,8 +225,8 @@ class ExpectedTypesInferrer:
         
         Args:
             payload: The SQL injection payload template
-            attack_type: Attack type (e.g., "Error base attack")
-            info_features: Information features (e.g., "system information")
+            technique: Canonical attack technique (e.g., ``error_based``)
+            reference_scope: Canonical reference scope (``lor``, ``tsr``, or ``scr``)
             use_llm: Whether to use LLM for inference (fallback to heuristics if False)
         
         Returns:
@@ -242,14 +242,14 @@ class ExpectedTypesInferrer:
         
         # Try LLM inference first
         if use_llm and self.llm is not None:
-            result = self._infer_with_llm(payload, attack_type, info_features, placeholders)
+            result = self._infer_with_llm(payload, technique, reference_scope, placeholders)
             if result is not None:
                 self._stats["llm_success"] += 1
                 return result
         
         # Fallback to heuristic inference
         self._stats["fallback_used"] += 1
-        return self._infer_with_heuristics(payload, attack_type, placeholders)
+        return self._infer_with_heuristics(payload, technique, placeholders)
     
     def _extract_placeholders(self, payload: str) -> List[Dict[str, Any]]:
         """
@@ -273,8 +273,8 @@ class ExpectedTypesInferrer:
     def _infer_with_llm(
         self, 
         payload: str, 
-        attack_type: str,
-        info_features: str,
+        technique: str,
+        reference_scope: str,
         placeholders: List[Dict]
     ) -> Optional[List[str]]:
         """
@@ -283,8 +283,8 @@ class ExpectedTypesInferrer:
         prompt = EXPECTED_TYPES_INFERENCE_TEMPLATE.format(
             security_declaration=SECURITY_DECLARATION,
             payload=payload,
-            attack_type=attack_type or "Unknown",
-            info_features=info_features or "Unknown"
+            technique=technique or "unknown",
+            reference_scope=reference_scope or "unknown"
         )
         
         try:
@@ -356,16 +356,16 @@ class ExpectedTypesInferrer:
     def _infer_with_heuristics(
         self, 
         payload: str, 
-        attack_type: str,
+        technique: str,
         placeholders: List[Dict]
     ) -> List[str]:
         """
         Fallback heuristic inference when LLM is unavailable.
         
-        Uses pattern matching and attack type to infer types.
+        Uses pattern matching and the declared technique to infer types.
         """
         expected_types = []
-        attack_type_lower = attack_type.lower() if attack_type else ""
+        technique_lower = technique.lower() if technique else ""
         
         # Analyze payload context for each placeholder
         for ph in placeholders:
@@ -389,7 +389,7 @@ class ExpectedTypesInferrer:
                 expected_types.append('character')
             # Context-dependent types
             elif content == 'sysInfo' or re.match(r'(column|sample)_t\d+_\d+$', content) or content == 'sample':
-                inferred_type = self._infer_context_type(payload, ph, attack_type_lower)
+                inferred_type = self._infer_context_type(payload, ph, technique_lower)
                 expected_types.append(inferred_type)
             else:
                 expected_types.append('all')
@@ -400,7 +400,7 @@ class ExpectedTypesInferrer:
         self, 
         payload: str, 
         placeholder: Dict,
-        attack_type_lower: str
+        technique_lower: str
     ) -> str:
         """
         Infer type for context-dependent placeholders based on surrounding context.
@@ -408,8 +408,8 @@ class ExpectedTypesInferrer:
         ph_pattern = re.escape(placeholder['full_match'])
         
         # ──────────────────────────────────────────────────────────
-        # Cross-attack-type common patterns: check unambiguous contexts
-        # before branching into attack-specific logic.
+        # Cross-technique common patterns: check unambiguous contexts before
+        # branching into technique-specific logic.
         # ──────────────────────────────────────────────────────────
 
         # XML functions (extractvalue / updatexml) content argument → integer
@@ -444,9 +444,9 @@ class ExpectedTypesInferrer:
             return 'string'
 
         # ──────────────────────────────────────────────────────────
-        # Error-based attack patterns
+        # Error-based technique patterns
         # ──────────────────────────────────────────────────────────
-        if 'error' in attack_type_lower:
+        if 'error' in technique_lower:
             # CAST/CONVERT: passing a string into a numeric cast triggers a conversion error
             if re.search(rf'CAST\s*\(\s*\(?{ph_pattern}', payload, re.IGNORECASE):
                 return 'string'
@@ -483,9 +483,9 @@ class ExpectedTypesInferrer:
             return 'string'  # Default for error-based attacks
         
         # ──────────────────────────────────────────────────────────
-        # Tautologies attack patterns
+        # Tautology technique patterns
         # ──────────────────────────────────────────────────────────
-        if 'tautolog' in attack_type_lower:
+        if 'tautolog' in technique_lower:
             # Numeric comparisons: use "integer" for $sysInfo$, "number" for DB columns
             is_sysinfo = 'sysInfo' in placeholder.get('content', placeholder['full_match'])
             if re.search(rf'{ph_pattern}\s*\)?\s*[><=]+\s*\d+', payload):
@@ -498,9 +498,9 @@ class ExpectedTypesInferrer:
             return 'all'
         
         # ──────────────────────────────────────────────────────────
-        # Boolean / Time inference attack patterns
+        # Boolean / time blind technique patterns
         # ──────────────────────────────────────────────────────────
-        if 'inference' in attack_type_lower or 'boolean' in attack_type_lower or 'time' in attack_type_lower:
+        if 'inference' in technique_lower or 'boolean' in technique_lower or 'time' in technique_lower:
             # Numeric comparison inside IF/WHERE → integer (applicable to $sysInfo$)
             is_sysinfo = 'sysInfo' in placeholder.get('content', placeholder['full_match'])
             if is_sysinfo:
@@ -512,7 +512,7 @@ class ExpectedTypesInferrer:
             return 'string'  # Default for inference attacks
         
         # Union query / Piggy-backed: usually flexible, any type is acceptable
-        if 'union' in attack_type_lower or 'piggy' in attack_type_lower:
+        if 'union' in technique_lower or 'piggy' in technique_lower:
             return 'all'
         
         # Default fallback
@@ -538,8 +538,8 @@ class ExpectedTypesInferrer:
 
 def infer_expected_types(
     payload: str,
-    attack_type: str = "",
-    info_features: str = ""
+    technique: str = "",
+    reference_scope: str = ""
 ) -> Optional[List[str]]:
     """
     Standalone function to infer expected_types using heuristics only.
@@ -547,4 +547,4 @@ def infer_expected_types(
     Use this when LLM is not available.
     """
     inferrer = ExpectedTypesInferrer()
-    return inferrer.infer(payload, attack_type, info_features, use_llm=False)
+    return inferrer.infer(payload, technique, reference_scope, use_llm=False)

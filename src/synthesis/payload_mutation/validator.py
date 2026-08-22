@@ -4,8 +4,8 @@ Mutation Result Validator
 Validates mutated payloads against requirements:
 1. Single line output
 2. Placeholder preservation (no missing, no illegal introduction)
-3. Information feature consistency (constant must remain placeholder-free)
-4. Attack type consistency
+3. Reference-scope consistency (LOR must remain placeholder-free)
+4. Technique consistency
 5. Basic SQL syntax
 """
 
@@ -13,7 +13,7 @@ import re
 from dataclasses import dataclass
 from typing import Dict, List
 
-from .type_identifier import identify, AttackType
+from .type_identifier import Technique, identify
 
 
 @dataclass
@@ -36,10 +36,8 @@ class PayloadValidator:
     - "empty": Empty output
     - "multiline": Multiple lines
     - "placeholder": Missing or illegal placeholders
-    - "info_feature": Information feature category changed
-    - "comment": Missing comment terminator
     - "syntax": SQL syntax error
-    - "type": Attack type mismatch
+    - "technique": Technique mismatch
     """
     
     def validate(self, original: Dict, mutated_payload: str) -> ValidationResult:
@@ -72,10 +70,10 @@ class PayloadValidator:
         # Step 4: Run content checks on the cleaned single-line payload
         content_checks = [
             self._check_placeholders,
-            self._check_info_feature_consistency,
-            self._check_comment_terminator,
+            self._check_reference_scope_consistency,
+            self._check_comment_free_core,
             self._check_parenthesis_balance,
-            self._check_attack_type,
+            self._check_technique,
         ]
         for check in content_checks:
             result = check(original, mutated_payload)
@@ -155,13 +153,13 @@ class PayloadValidator:
         the placeholder COUNT and TYPE CATEGORY are consistent.
         """
         original_payload = original.get("payload", "")
-        info_feature = original.get("information_features", "")
+        reference_scope = original.get("reference_scope", "")
         
         original_ph = set(re.findall(r'\$\w+\$', original_payload))
         mutated_ph = set(re.findall(r'\$\w+\$', mutated))
         
         # No placeholders in original → nothing to check here
-        # (info_feature consistency handled separately in _check_info_feature_consistency)
+        # Reference-scope consistency is checked separately below.
         if not original_ph:
             return ValidationResult(is_valid=True)
         
@@ -174,7 +172,7 @@ class PayloadValidator:
         
         # For specific_database: allow structural restructuring, but require
         # that at least some DB-structural placeholders remain (not all gone)
-        if info_feature == "specific database":
+        if reference_scope == "tsr":
             mutated_structural = {p for p in mutated_ph if any(k in p for k in ['table', 'column'])}
             if mutated_structural:
                 # Still has table/column placeholders — structural change is acceptable
@@ -192,33 +190,33 @@ class PayloadValidator:
             suggestions=[f"Must preserve: {', '.join(missing)}"]
         )
     
-    def _check_info_feature_consistency(self, original: Dict, mutated: str) -> ValidationResult:
+    def _check_reference_scope_consistency(self, original: Dict, mutated: str) -> ValidationResult:
         """
-        Check that information_features category has not changed.
+        Check that the canonical reference_scope has not changed.
         
         - constant:          mutated must have NO $xxx$ placeholders
         - system information: mutated must NOT introduce $table_x$/$column_x$ placeholders
         - specific database:  mutated must NOT introduce $sysInfo$ if original had none
         """
-        info_feature = original.get("information_features", "")
+        reference_scope = original.get("reference_scope", "")
         original_payload = original.get("payload", "")
         
         original_ph = set(re.findall(r'\$\w+\$', original_payload))
         mutated_ph = set(re.findall(r'\$\w+\$', mutated))
         
-        if info_feature == "constant":
+        if reference_scope == "lor":
             # constant payloads must remain placeholder-free
             if mutated_ph:
                 return ValidationResult(
                     is_valid=False,
-                    reason=f"info_feature violation: constant payload gained placeholders {mutated_ph}",
+                    reason=f"reference_scope violation: LOR payload gained placeholders {mutated_ph}",
                     suggestions=[
                         "constant payloads must not contain $xxx$ placeholders",
                         "Do not introduce $sysInfo$, $table_x$, or $column_x$ style tokens"
                     ]
                 )
         
-        elif info_feature == "system information":
+        elif reference_scope == "scr":
             # system information payloads must not introduce database-specific placeholders
             db_placeholders_in_mutated = {
                 p for p in mutated_ph
@@ -228,14 +226,14 @@ class PayloadValidator:
             if db_placeholders_in_mutated:
                 return ValidationResult(
                     is_valid=False,
-                    reason=f"info_feature violation: system information payload gained DB-specific placeholders {db_placeholders_in_mutated}",
+                    reason=f"reference_scope violation: SCR payload gained DB-specific placeholders {db_placeholders_in_mutated}",
                     suggestions=[
                         "system information payloads must only use $sysInfo$ style placeholders",
                         "Do not introduce $table_x$ or $column_x$ placeholders"
                     ]
                 )
         
-        elif info_feature == "specific database":
+        elif reference_scope == "tsr":
             # specific database payloads should not degrade to pure $sysInfo$ only
             # (covered by _check_placeholders, but add sysInfo-only detection)
             original_has_sys_info = any('sysInfo' in p for p in original_ph)
@@ -246,7 +244,7 @@ class PayloadValidator:
             if not original_has_sys_info and mutated_has_sys_info_new and not mutated_structural:
                 return ValidationResult(
                     is_valid=False,
-                    reason="info_feature violation: specific database payload converted to system information style",
+                    reason="reference_scope violation: TSR payload converted to SCR style",
                     suggestions=[
                         "specific database payloads must retain table/column placeholders",
                         "Do not replace all structural placeholders with $sysInfo$"
@@ -255,20 +253,15 @@ class PayloadValidator:
         
         return ValidationResult(is_valid=True)
     
-    def _check_comment_terminator(self, original: Dict, mutated: str) -> ValidationResult:
-        """Check if comment terminator is preserved."""
-        original_payload = original.get("payload", "")
-        
-        has_original_comment = bool(re.search(r'(--|#)\s*$', original_payload))
-        has_mutated_comment = bool(re.search(r'(--|#)\s*$', mutated))
-        
-        if has_original_comment and not has_mutated_comment:
+    def _check_comment_free_core(self, original: Dict, mutated: str) -> ValidationResult:
+        """Mutation must not leak comment-state control into a payload core."""
+        del original
+        if "--" in mutated or "#" in mutated:
             return ValidationResult(
                 is_valid=False,
-                reason="comment terminator missing",
-                suggestions=["Payload should end with -- or #"]
+                reason="comment delimiter introduced",
+                suggestions=["Payload mutation only returns a comment-free core; use no -- or #"],
             )
-        
         return ValidationResult(is_valid=True)
     
     def _check_parenthesis_balance(self, original: Dict, mutated: str) -> ValidationResult:
@@ -278,10 +271,7 @@ class PayloadValidator:
         Note: Single-quote balance is intentionally NOT checked — SQL injection
         payloads are designed to have unbalanced quotes to escape the original query.
         """
-        # Remove comment part before checking
-        payload = re.sub(r'(--|#).*$', '', mutated)
-        
-        if payload.count('(') != payload.count(')'):
+        if mutated.count('(') != mutated.count(')'):
             return ValidationResult(
                 is_valid=False,
                 reason="syntax error: parenthesis unbalanced",
@@ -290,57 +280,58 @@ class PayloadValidator:
         
         return ValidationResult(is_valid=True)
     
-    def _check_attack_type(self, original: Dict, mutated: str) -> ValidationResult:
+    def _check_technique(self, original: Dict, mutated: str) -> ValidationResult:
         """
-        Check if attack type is consistent.
+        Check if technique is consistent.
         
         Note: This check has limited effectiveness because the type_identifier
         may return UNKNOWN for many valid payloads. It serves as a best-effort
         guard against clear type violations (e.g., SLEEP appearing in an
         Error base attack).
         """
-        original_type = original.get("type", "")
+        original_technique = original.get("technique", "")
         
-        if not original_type:
+        if not original_technique:
             return ValidationResult(is_valid=True)
         
-        # Identify mutated type
-        mutated_template = {"payload": mutated, "type": None, "information_features": None}
-        mutated_type, _ = identify(mutated_template)
+        # Identify the mutated technique.
+        mutated_template = {"payload": mutated}
+        mutated_technique, _ = identify(mutated_template)
         
         # Compatible types mapping (these can legitimately overlap)
         compatible = {
-            AttackType.TAUTOLOGIES: [AttackType.BOOLEAN_INFERENCE],
-            AttackType.BOOLEAN_INFERENCE: [AttackType.TAUTOLOGIES],
+            Technique.TAUTOLOGY: [Technique.BOOLEAN_BLIND],
+            Technique.BOOLEAN_BLIND: [Technique.TAUTOLOGY],
         }
         
         try:
-            original_attack_type = AttackType(original_type)
+            expected_technique = Technique(original_technique)
             
             # UNKNOWN means identifier could not determine type — allow it
-            if mutated_type == AttackType.UNKNOWN:
+            if mutated_technique == Technique.UNKNOWN:
                 return ValidationResult(is_valid=True)
             
             # Exact match
-            if mutated_type == original_attack_type:
+            if mutated_technique == expected_technique:
                 return ValidationResult(is_valid=True)
             
             # Compatible match
-            if mutated_type in compatible.get(original_attack_type, []):
+            if mutated_technique in compatible.get(expected_technique, []):
                 return ValidationResult(is_valid=True)
             
-            # Clear mismatch: identified a DIFFERENT known attack type
+            # Clear mismatch: identified a different known technique.
             return ValidationResult(
                 is_valid=False,
-                reason=f"type mismatch: expected {original_type}, got {mutated_type.value}",
+                reason=f"technique mismatch: expected {original_technique}, got {mutated_technique.value}",
                 suggestions=[
-                    f"Mutated payload appears to be {mutated_type.value}, not {original_type}",
+                    f"Mutated payload appears to be {mutated_technique.value}, not {original_technique}",
                     "Keep the same attack category while changing the implementation method"
                 ]
             )
                     
         except ValueError:
-            # original_type not a known AttackType enum value — skip check
+            # Unknown taxonomy values are rejected elsewhere; preserve this
+            # fallback for standalone validator use.
             return ValidationResult(is_valid=True)
 
 
