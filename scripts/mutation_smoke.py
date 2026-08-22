@@ -4,8 +4,8 @@
 from __future__ import annotations
 
 from Attacker.attacker import Attacker
-from main import ENABLE_PAYLOAD_MUTATION, ProjectPaths
-from utils.cluster import cluster_injection_sqls
+from main import ENABLE_PAYLOAD_MUTATION, INITIAL_BENIGN_RATIO, ProjectPaths
+from utils.cluster import cluster_injection_sqls, get_injection_cluster_keys
 from utils.json_operation import read_json_file
 
 
@@ -14,7 +14,7 @@ def main() -> None:
         raise RuntimeError("Payload mutation is disabled in the current configuration")
 
     paths = ProjectPaths.create()
-    cluster_list = list(
+    cluster_list = get_injection_cluster_keys(
         cluster_injection_sqls(read_json_file(paths.benchmark_dir / "test_sqls.json")).keys()
     )
     attacker = Attacker(
@@ -22,6 +22,7 @@ def main() -> None:
         cluster_list=cluster_list,
         normal_sqls_path=str(paths.raw_datas_dir / "normal_sqls.json"),
         raw_datas_dir=str(paths.raw_datas_dir),
+        benign_ratio=INITIAL_BENIGN_RATIO,
         enable_payload_mutation=True,
     )
     if attacker.payload_mutator is None:

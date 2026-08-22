@@ -33,8 +33,8 @@ from synthesis.payload_mutation import MutationMemory, PayloadMutator
 # Named constants (extracted from inline magic numbers)
 # ---------------------------------------------------------------------------
 
-NORMAL_CLUSTER_WEIGHT_MULTIPLIER = 10.0
-"""Normal cluster probability is scaled by this factor when computing the injection ratio."""
+DEFAULT_BENIGN_RATIO = 0.25
+"""Initial benign fraction of a training round before adaptive control is added."""
 
 DEFAULT_MODIFY_PROBABILITY = 0.5
 """Default probability of mutating a payload template."""
@@ -53,9 +53,8 @@ class Attacker:
     Args:
         number_of_training_sqls: Total number of SQL samples (injection +
             normal) to generate per round.
-        cluster_list:            Complete list of cluster key strings
-            (as returned by ``cluster_injection_sqls``), including the normal
-            cluster ``NORMAL_CLUSTER_KEY``.
+        cluster_list:            Attack-only cluster key strings used as MAB
+            arms. The benign cluster is managed through ``benign_ratio``.
         normal_sqls_path:        Path to ``normal_sqls.json``.
         raw_datas_dir:           Directory containing ``payloads.json``,
             ``sql_data_with_injection_point.json``, ``schema.json``, etc.
@@ -75,11 +74,21 @@ class Attacker:
         cluster_list: List[str],
         normal_sqls_path: Optional[str] = None,
         raw_datas_dir: Optional[str] = None,
+        benign_ratio: float = DEFAULT_BENIGN_RATIO,
         enable_payload_mutation: bool = True,
         mutation_model: Optional[str] = None,
     ) -> None:
         if not cluster_list:
             raise ValueError("cluster_list must not be empty")
+        if NORMAL_CLUSTER_KEY in cluster_list:
+            raise ValueError(
+                "cluster_list must contain attack clusters only; "
+                "manage benign samples with benign_ratio"
+            )
+        if not 0.0 <= benign_ratio <= 1.0:
+            raise ValueError(
+                f"benign_ratio must be in [0, 1], got {benign_ratio}"
+            )
         if normal_sqls_path is None:
             raise ValueError("normal_sqls_path must be provided")
         if raw_datas_dir is None:
@@ -87,18 +96,13 @@ class Attacker:
 
         self.cluster_list = cluster_list
         self.number_of_training_sqls = number_of_training_sqls
+        self.benign_ratio = benign_ratio
 
         # Initialise uniform cluster probability distribution
         init_prob = 1.0 / len(cluster_list)
         self.clusters_probability_distribution: Dict[str, float] = {
             key: init_prob for key in cluster_list
         }
-
-        # Injection ratio: derived from the normal cluster's probability
-        # (normal cluster weight is 10× its probability in the training set)
-        self.rate_of_injection_sqls = (
-            1.0 - NORMAL_CLUSTER_WEIGHT_MULTIPLIER * self.clusters_probability_distribution[NORMAL_CLUSTER_KEY]
-        )
 
         # Load raw data files
         self.normal_sqls: List[Dict[str, Any]] = read_json_file(normal_sqls_path)
@@ -135,6 +139,20 @@ class Attacker:
     # ------------------------------------------------------------------
     # Normal SQL sampling
     # ------------------------------------------------------------------
+
+    def set_benign_ratio(self, benign_ratio: float) -> None:
+        """Set the explicit benign share for subsequent training rounds."""
+        if not 0.0 <= benign_ratio <= 1.0:
+            raise ValueError(
+                f"benign_ratio must be in [0, 1], got {benign_ratio}"
+            )
+        self.benign_ratio = benign_ratio
+
+    def _get_sample_counts(self, expected_example_num: int) -> Tuple[int, int]:
+        """Return ``(injection_count, benign_count)`` for a round budget."""
+        expected_normal_num = round(expected_example_num * self.benign_ratio)
+        expected_injection_num = expected_example_num - expected_normal_num
+        return expected_injection_num, expected_normal_num
 
     def _sample_normal_sqls(
         self, k: int, replace: bool = False
@@ -213,7 +231,7 @@ class Attacker:
 
     def _select_clusters(self, strategy: str = "by_probability", k: int = 10) -> List[str]:
         """
-        Select *k* non-normal clusters for the current training round.
+        Select *k* attack clusters for the current training round.
 
         Args:
             strategy: ``"by_probability"`` — weighted random sampling without
@@ -226,32 +244,32 @@ class Attacker:
 
         Raises:
             ValueError: If *k* is non-positive or exceeds the number of
-                        non-normal clusters.
+                        attack clusters.
         """
-        # Exclude the "normal" cluster from selection
-        non_normal = {
-            key: prob
-            for key, prob in self.clusters_probability_distribution.items()
-            if key != NORMAL_CLUSTER_KEY
-        }
-
         if k <= 0:
             raise ValueError(f"_select_clusters: k must be > 0, got {k}")
-        if k > len(non_normal):
+        if k > len(self.cluster_list):
             raise ValueError(
-                f"_select_clusters: k={k} exceeds the number of non-normal "
-                f"clusters ({len(non_normal)})"
+                f"_select_clusters: k={k} exceeds the number of attack "
+                f"clusters ({len(self.cluster_list)})"
             )
 
         if strategy == "top_k":
             return [
                 key
-                for key, _ in sorted(non_normal.items(), key=lambda x: x[1], reverse=True)[:k]
+                for key, _ in sorted(
+                    self.clusters_probability_distribution.items(),
+                    key=lambda x: x[1],
+                    reverse=True,
+                )[:k]
             ]
 
         if strategy == "by_probability":
-            keys = list(non_normal.keys())
-            probs = np.array(list(non_normal.values()), dtype=float)
+            keys = list(self.cluster_list)
+            probs = np.array(
+                [self.clusters_probability_distribution[key] for key in keys],
+                dtype=float,
+            )
             total = probs.sum()
             probs = probs / total if total > 0 else np.full(len(probs), 1.0 / len(probs))
             indices = np.random.default_rng().choice(len(keys), size=k, replace=False, p=probs)
@@ -325,7 +343,9 @@ class Attacker:
             )
             model = mutation_model or gpt_config.get("model")
 
-            self.mutation_memory = MutationMemory()
+            self.mutation_memory = MutationMemory(
+                source_templates=self.train_payloads,
+            )
             self.payload_mutator = PayloadMutator(llm, model, self.mutation_memory)
 
             print(f"✓ PayloadMutator initialised with model: {model}")
@@ -369,13 +389,11 @@ class Attacker:
             if result is None:
                 return payload_template.copy()
 
-            mutated = payload_template.copy()
-            mutated["payload"] = result["payload"]
+            mutated = result["template"].copy()
             mutated["_original_payload"] = payload_template["payload"]
             mutated["_mutation_type"] = result.get("mutation_type", "unknown")
 
             if result.get("expected_types") is not None:
-                mutated["expected_types"] = result["expected_types"]
                 mutated["_expected_types_inferred"] = True
             else:
                 mutated["_expected_types_inferred"] = False
@@ -463,11 +481,9 @@ class Attacker:
 
         self._update_clusters_probability_distribution(gamma, clusters_weight_distribution)
 
-        self.rate_of_injection_sqls = (
-            1.0 - NORMAL_CLUSTER_WEIGHT_MULTIPLIER * self.clusters_probability_distribution[NORMAL_CLUSTER_KEY]
+        expected_injection_num, expected_normal_num = self._get_sample_counts(
+            expected_example_num
         )
-        expected_injection_num = int(expected_example_num * self.rate_of_injection_sqls)
-        expected_normal_num = expected_example_num - expected_injection_num
 
         target_clusters = self._select_clusters(strategy=strategy, k=k)
         print(f"Selected clusters: {target_clusters}")
@@ -512,29 +528,14 @@ class Attacker:
                     modify_probability=effective_prob,
                 )
 
-                # Record successful mutations for later inspection / saving
+                # Keep a reusable full payload template for round-level export.
                 if modified_payload.get("_mutation_type") is not None:
                     mutation_count += 1
                     self.mutated_payloads.append(
                         {
-                            "original_payload": modified_payload.get("_original_payload"),
-                            "mutated_payload": modified_payload.get("payload"),
-                            "mutation_type": modified_payload.get("_mutation_type"),
-                            "attack_type": payload_example.get("type"),
-                            "information_features": payload_example.get("information_features"),
-                            "original_expected_types": payload_example.get("expected_types"),
-                            "inferred_expected_types": modified_payload.get("expected_types"),
-                            "expected_types_inferred": modified_payload.get(
-                                "_expected_types_inferred", False
-                            ),
-                            "sql_db": sql_example.get("db"),
-                            "sql_raw": sql_example.get("sql_raw"),
-                            "sql_with_injection_point": sql_example.get("sql"),
-                            "sql_query_columns": sql_example.get("query_columns"),
-                            "sql_source": sql_example.get("source"),
-                            "sql_annotator": sql_example.get("annotator"),
-                            "cluster": cluster,
-                            "comment_flag": comment_flag,
+                            key: value
+                            for key, value in modified_payload.items()
+                            if not key.startswith("_")
                         }
                     )
 

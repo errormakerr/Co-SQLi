@@ -5,7 +5,7 @@ Workflow
 --------
 1. Identify the payload's ``AttackType`` and ``InfoFeature``.
 2. Route to the appropriate prompt template (``type_focused`` vs ``info_focused``).
-3. Augment the prompt with category-specific few-shot examples from memory.
+3. Augment the prompt with anti-imitation templates from mutation memory.
 4. Call the LLM for mutation.
 5. Validate the result; update memory on success.
 6. Infer ``expected_types`` for the mutated payload (separate LLM call).
@@ -101,9 +101,8 @@ class PayloadMutator:
                           for this call.
 
         Returns:
-            A dict with keys ``payload``, ``expected_types``, ``original``,
-            ``attack_type``, ``info_feature``, and ``mutation_type`` on
-            success; ``None`` on failure.
+            A dict whose ``template`` key contains the complete mutated payload
+            template, plus mutation metadata; ``None`` on failure.
         """
         self._stats["attempts"] += 1
 
@@ -163,14 +162,7 @@ class PayloadMutator:
             self._stats["duplicates"] += 1
             return None
 
-        # Step 7 — record success
-        self._stats["success"] += 1
-        self.memory.record_success(
-            attack_type_str, info_feature_str,
-            template["payload"], mutated, prompt_type,
-        )
-
-        # Step 8 — infer expected_types (separate task)
+        # Step 7 — infer expected_types (separate task)
         should_infer = infer_types if infer_types is not None else self.infer_types
         expected_types = None
         if should_infer and self.types_inferrer is not None:
@@ -183,7 +175,16 @@ class PayloadMutator:
             if expected_types:
                 self._stats["types_inferred"] += 1
 
+        # Step 8 — retain a complete, reusable payload-template record.
+        mutated_template = template.copy()
+        mutated_template["payload"] = mutated
+        if expected_types is not None:
+            mutated_template["expected_types"] = expected_types
+        self.memory.record_success(mutated_template)
+        self._stats["success"] += 1
+
         return {
+            "template": mutated_template,
             "payload": mutated,
             "expected_types": expected_types,
             "original": template["payload"],
@@ -267,10 +268,10 @@ class PayloadMutator:
         info_feature_str: str,
         prompt_type: str,
     ) -> str:
-        """Assemble the full LLM prompt with memory-augmented few-shot addons."""
+        """Assemble the full prompt with anti-imitation template examples."""
         payload = template.get("payload", "")
         memory_addons = self.memory.get_prompt_addons(
-            attack_type_str, info_feature_str, prompt_type
+            attack_type_str, info_feature_str
         )
         if prompt_type == "type_focused":
             tmpl = ATTACK_FORM_MUTATION_TEMPLATE

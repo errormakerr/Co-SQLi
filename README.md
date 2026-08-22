@@ -35,7 +35,7 @@ graph TD
 1. **Attacker**: Samples attack clusters based on EXP3 probabilities. Generates injection SQLs (optionally mutating payloads via an LLM to increase diversity) and mixes them with benign samples.
 2. **SFT Formatter**: Pairs each SQL query with its corresponding database schema and formats the data into OpenAI-style conversational SFT data.
 3. **Defender**: Fine-tunes the base model (e.g., *Qwen2.5-Coder-1.5B*) using LoRA, merges the trained adapter into the base weights, and runs inference evaluations.
-4. **Verifier**: Computes per-cluster accuracy from the Defender's inference results. It calculates EXP3 rewards (`1 − accuracy`) and updates cluster weights, ensuring the next round forces the model to confront its weakest areas.
+4. **Verifier**: Computes a smoothed per-cluster false-negative reward from the Defender's inference results and updates EXP3 weights, ensuring the next round focuses on missed attacks.
 
 ---
 
@@ -109,6 +109,8 @@ You can tweak the core loop behaviour directly in `main.py`:
 - `NUM_ROUNDS = 8`: Total adversarial training iterations.
 - `NUM_TRAINING_SQLS = 300`: Volume of samples generated per round.
 - `ATTACKER_GAMMA = 0.7` / `VERIFIER_GAMMA = 0.3`: MAB exploration/learning rates.
+- `ATTACKER_STRATEGY = "by_probability"` / `ATTACKER_K = 6`: Every round samples six attack clusters without replacement according to EXP3 probabilities. `top_k` remains available only as an explicit ablation override.
+- `INITIAL_BENIGN_RATIO = 0.25`: Initial share of benign samples in each round. Benign samples are outside the attack-cluster MAB and subsequently follow FPR-based feedback control.
 - `ENABLE_PAYLOAD_MUTATION = True`: Toggles dynamic LLM-based SQL payload mutations.
 
 ---
@@ -187,15 +189,17 @@ SQL injection samples are dynamically categorised using a 4-dimensional space:
 
 ### Multi-Armed Bandit (EXP3)
 The framework mathematically guarantees the model confronts its weakest areas:
-- **Reward Function**: $Reward = 1 - Accuracy$
+- **Attack Arms**: EXP3 operates over injection clusters only; benign examples are budgeted separately.
+- **Reward Function**: $Reward_k = (FN_k + 1) / (n_k + 2)$
 - **Weight Update**: $W_{k} = W_{k} \times \exp(\frac{\gamma}{N} \times \frac{Reward_{k}}{Prob_{k}})$
+- **Benign Controller**: A smoothed benign FPR is tracked with EMA and adjusts the next-round benign ratio within `[0.15, 0.35]`.
 - MAB heavily samples clusters with high weights (low detection accuracy) in subsequent rounds.
 
 ### LLM Payload Mutation
 When enabled, the Attacker uses LLM capabilities to mutate SQL injection payloads on the fly:
 - **Type-focused Mutation**: Alters the implementation technique of the attack.
 - **Info-focused Mutation**: Alters the query structure seamlessly.
-- Includes an 18-category memory system to prevent repetitive generations and employs anti-imitation few-shot prompting.
+- Uses category-scoped anti-imitation few-shot prompting: up to five successful full templates are sampled first, then original training templates fill any remaining slots. Successful mutations are retained without a size cap.
 
 ---
 

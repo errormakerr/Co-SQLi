@@ -20,11 +20,13 @@ from utils.json_operation import read_jsonl_file
 
 @dataclass
 class ClusterStat:
-    """Per-cluster accuracy statistics."""
+    """Per-cluster accuracy, false-negative, and false-positive statistics."""
 
     acc: float
     total: int
     correct: int
+    false_negatives: int
+    false_positives: int
 
 
 # ---------------------------------------------------------------------------
@@ -87,7 +89,8 @@ def compute_cluster_acc(
     """
     Compute per-cluster accuracy.
 
-    ``ACC = #correct / #total``
+    ``ACC = #correct / #total``. For attack clusters, a false negative is a
+    malicious example that the model explicitly classifies as ``"benign"``.
 
     Args:
         clusters: Dict mapping cluster keys to lists of result dicts,
@@ -101,7 +104,25 @@ def compute_cluster_acc(
         total = len(items)
         correct = sum(1 for item in items if item.get("is_correct"))
         acc = correct / total if total > 0 else 0.0
-        stats[key] = ClusterStat(acc=acc, total=total, correct=correct)
+        false_negatives = sum(
+            1
+            for item in items
+            if not item.get("label", True)
+            and item.get("predicted_answer") == "benign"
+        )
+        false_positives = sum(
+            1
+            for item in items
+            if item.get("label", False)
+            and item.get("predicted_answer") == "malicious"
+        )
+        stats[key] = ClusterStat(
+            acc=acc,
+            total=total,
+            correct=correct,
+            false_negatives=false_negatives,
+            false_positives=false_positives,
+        )
     return stats
 
 

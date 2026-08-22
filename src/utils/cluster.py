@@ -9,11 +9,21 @@ combination, as well as a frozen dataclass for structured cluster keys.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any, Dict, Iterable, List
 
 
 # Canonical cluster key for benign / normal SQL samples.
 NORMAL_CLUSTER_KEY = "normal||normal||normal||normal"
+
+
+def get_injection_cluster_keys(cluster_keys: Iterable[str]) -> List[str]:
+    """Return the attack-only portion of an ordered cluster collection.
+
+    The benign cluster is evaluated separately and must not participate in
+    EXP3 sampling or weighting.  Iteration order is preserved so callers can
+    use the result as a stable MAB arm ordering.
+    """
+    return [key for key in cluster_keys if key != NORMAL_CLUSTER_KEY]
 
 # ---------------------------------------------------------------------------
 # Boolean helper

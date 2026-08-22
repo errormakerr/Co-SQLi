@@ -12,10 +12,11 @@ from main import (
     ATTACKER_K,
     ATTACKER_STRATEGY,
     ENABLE_PAYLOAD_MUTATION,
+    INITIAL_BENIGN_RATIO,
     MODIFY_PAYLOAD_PROB_START,
     ProjectPaths,
 )
-from utils.cluster import cluster_injection_sqls
+from utils.cluster import cluster_injection_sqls, get_injection_cluster_keys
 from utils.json_operation import read_json_file
 
 
@@ -36,7 +37,7 @@ def main() -> None:
         raise ValueError("--samples must be positive")
 
     paths = ProjectPaths.create()
-    cluster_list = list(
+    cluster_list = get_injection_cluster_keys(
         cluster_injection_sqls(read_json_file(paths.benchmark_dir / "test_sqls.json")).keys()
     )
     attacker = Attacker(
@@ -44,6 +45,7 @@ def main() -> None:
         cluster_list=cluster_list,
         normal_sqls_path=str(paths.raw_datas_dir / "normal_sqls.json"),
         raw_datas_dir=str(paths.raw_datas_dir),
+        benign_ratio=INITIAL_BENIGN_RATIO,
         enable_payload_mutation=ENABLE_PAYLOAD_MUTATION,
     )
     verifier = Verifier(cluster_list=cluster_list)
