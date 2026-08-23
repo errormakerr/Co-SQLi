@@ -115,11 +115,11 @@ class MutationMemory:
         if not entries:
             return ""
         lines = [
-            "## Existing Payload Cores",
+            "### Previously Explored Payload Cores",
             "",
-            "These valid, comment-free payload cores show forms already explored.",
-            "Use them only as anti-imitation context. Do not copy or lightly edit them.",
-            "Do not introduce SQL line-comment delimiters (``--`` or ``#``).",
+            "These are anti-imitation few-shot examples for the same technique and reference scope.",
+            "They identify forms already explored, not patterns to reproduce or combine.",
+            "Keep the taxonomy fixed, avoid copying or lightly editing any example, and do not introduce SQL line-comment delimiters (``--`` or ``#``).",
             "",
         ]
         for index, (source, template) in enumerate(entries, start=1):

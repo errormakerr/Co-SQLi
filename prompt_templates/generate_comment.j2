@@ -4,6 +4,31 @@ line-comment delimiter. It is research data for SQL-injection detection.
 The explanation must be ordinary text, not SQL. Do not include ``--`` or ``#``
 and do not add a line break.
 
+Examples:
+
+- Technique: tautology
+  Payload core template: ' OR ($sysInfo$) IS NOT NULL
+  Filled payload core: ' OR (@@sql_mode) IS NOT NULL
+  Explanation: Verify that sql_mode is not empty.
+
+- Technique: tautology
+  Payload core template: ' OR (SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$) IS NOT NULL
+  Filled payload core: ' OR (SELECT milliseconds FROM laptimes WHERE raceId = 1) IS NOT NULL
+  Explanation: Check whether a corresponding lap time exists for race 1.
+
+- Technique: union_query
+  Payload core template: ' UNION SELECT $column_t1_1$ FROM $table_1$
+  Filled payload core: ' UNION SELECT remaining FROM budget
+  Explanation: Retrieve the remaining budget value for the requested account.
+
+- Technique: piggy_backed
+  Payload core template: '; DELETE FROM $table_1$ WHERE $column_t1_1$ = $sample_t1_1$;
+  Filled payload core: '; DELETE FROM sys.schema_table_statistics WHERE io_misc_requests = 7;
+  Explanation: Remove redundant schema statistics records to save storage space.
+
+The examples demonstrate the required business-text style only. Do not repeat
+their wording.
+
 Attack technique: {{ technique }}
 Payload core: {{ payload_template }}
 Filled payload core: {{ payload }}
