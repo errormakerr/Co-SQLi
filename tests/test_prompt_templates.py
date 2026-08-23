@@ -3,18 +3,16 @@
 from __future__ import annotations
 
 import unittest
-from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
 
-from synthesis.payload_mutation.memory import MutationMemory
-from synthesis.payload_mutation.prompt_templates import (
-    ATTACK_FORM_MUTATION_TEMPLATE,
-    SECURITY_DECLARATION,
-    SQL_STRUCTURE_MUTATION_TEMPLATE,
+from cosqli.paths import PROJECT_ROOT
+from cosqli.synthesis.payload_mutation.memory import MutationMemory
+from cosqli.synthesis.payload_mutation.prompt_renderer import (
     get_type_dimensions,
+    render_mutation_prompt,
 )
-from synthesis.payload_mutation.type_identifier import Technique
+from cosqli.synthesis.payload_mutation.type_identifier import Technique
 
 
 SOURCE_TEMPLATE = {
@@ -31,9 +29,9 @@ class PromptTemplateTests(unittest.TestCase):
         memory_addons = MutationMemory([SOURCE_TEMPLATE]).get_prompt_addons(
             "tautology", "lor"
         )
-        for template in (ATTACK_FORM_MUTATION_TEMPLATE, SQL_STRUCTURE_MUTATION_TEMPLATE):
-            prompt = template.format(
-                security_declaration=SECURITY_DECLARATION,
+        for prompt_type in ("type_focused", "info_focused"):
+            prompt = render_mutation_prompt(
+                prompt_type,
                 technique="tautology",
                 reference_scope="lor",
                 payload=SOURCE_TEMPLATE["payload"],
@@ -44,7 +42,7 @@ class PromptTemplateTests(unittest.TestCase):
             self.assertIn("`tsr`: target-schema reference", prompt)
             self.assertIn("`scr`: system-catalog reference", prompt)
             self.assertIn("Anti-Imitation Few-Shot Context", prompt)
-            self.assertIn("negative examples", prompt)
+            self.assertIn("negative few-shot examples", prompt)
             self.assertIn("Previously Explored Payload Cores", prompt)
 
     def test_technique_guidance_examples_are_comment_free_cores(self) -> None:
@@ -54,10 +52,9 @@ class PromptTemplateTests(unittest.TestCase):
             self.assertNotIn("--", get_type_dimensions(technique))
 
     def test_cepp_prompt_has_canonical_few_shot_examples(self) -> None:
-        project_root = Path(__file__).resolve().parents[1]
         prompt = Environment(
-            loader=FileSystemLoader(project_root / "prompt_templates")
-        ).get_template("generate_comment.j2").render(
+            loader=FileSystemLoader(PROJECT_ROOT / "prompts")
+        ).get_template("comment_generation.j2").render(
             technique="tautology",
             payload_template="' OR ($sysInfo$) IS NOT NULL",
             payload="' OR (@@sql_mode) IS NOT NULL",

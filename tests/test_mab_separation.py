@@ -8,11 +8,12 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from Attacker.attacker import Attacker
-from Verifier.verifier import Verifier
-from main import ProjectPaths, run_training_loop, run_training_round
-from synthesis.injection_pipeline import pipeline
-from utils.cluster import (
+from cosqli.attacker.attacker import Attacker
+from cosqli.verifier.verifier import Verifier
+from cosqli.main import ProjectPaths, run_training_loop, run_training_round
+from cosqli.paths import PROJECT_ROOT, require_external_path
+from cosqli.synthesis.injection_pipeline import pipeline
+from cosqli.utils.cluster import (
     NORMAL_CLUSTER_KEY,
     TAXONOMY_VERSION,
     ClusterKey,
@@ -20,7 +21,7 @@ from utils.cluster import (
     all_attack_cluster_keys,
     get_injection_cluster_keys,
 )
-from utils.json_operation import read_json_file, write_json_file, write_jsonl_file
+from cosqli.utils.json_operation import read_json_file, write_json_file, write_jsonl_file
 
 
 ATTACK_CLUSTER_A = "tautology||lor||no_comment"
@@ -40,6 +41,10 @@ def attack_result(cluster: str, predicted: str, correct: bool) -> dict:
 
 
 class TaxonomyAndMABTests(unittest.TestCase):
+    def test_project_local_artifacts_are_rejected(self) -> None:
+        with self.assertRaisesRegex(ValueError, "outside the Co-SQLi repository"):
+            require_external_path(PROJECT_ROOT / "generated", purpose="test output")
+
     def test_declared_taxonomy_has_exactly_48_stable_arms(self) -> None:
         arms = all_attack_cluster_keys()
         self.assertEqual(len(arms), 48)
@@ -174,7 +179,7 @@ class TaxonomyAndMABTests(unittest.TestCase):
             root = Path(temporary_directory)
             paths = ProjectPaths(root, root, root, root, root, root)
             verifier = Verifier([ATTACK_CLUSTER_A])
-            with patch("main.ENABLE_PAYLOAD_MUTATION", False):
+            with patch("cosqli.main.ENABLE_PAYLOAD_MUTATION", False):
                 run_training_round(0, paths, FakeAttacker(), FakeDefender(), verifier)
             metadata = read_json_file(str(root / "round_0" / "round_metadata.json"))
             self.assertEqual(metadata["taxonomy_version"], TAXONOMY_VERSION)
@@ -187,9 +192,9 @@ class TaxonomyAndMABTests(unittest.TestCase):
             verifier = Verifier([ATTACK_CLUSTER_A])
             attacker = type("FakeAttacker", (), {"mutation_memory": None, "set_benign_ratio": lambda *_: None})()
             with (
-                patch("main.ProjectPaths.create", return_value=paths),
-                patch("main.initialize_components", return_value=(attacker, object(), verifier)),
-                patch("main.os.chdir"),
+                patch("cosqli.main.ProjectPaths.create", return_value=paths),
+                patch("cosqli.main.initialize_components", return_value=(attacker, object(), verifier)),
+                patch("cosqli.main.os.chdir"),
             ):
                 with self.assertRaisesRegex(ValueError, "pre-taxonomy-v3"):
                     run_training_loop(start_round=0, breakpoint_round=0)
@@ -208,10 +213,10 @@ class TaxonomyAndMABTests(unittest.TestCase):
             verifier = Verifier([ATTACK_CLUSTER_A])
             attacker = type("FakeAttacker", (), {"mutation_memory": None, "set_benign_ratio": lambda *_: None})()
             with (
-                patch("main.ProjectPaths.create", return_value=paths),
-                patch("main.initialize_components", return_value=(attacker, object(), verifier)),
-                patch("main.os.chdir"),
-                patch("main.run_training_round") as run_round,
+                patch("cosqli.main.ProjectPaths.create", return_value=paths),
+                patch("cosqli.main.initialize_components", return_value=(attacker, object(), verifier)),
+                patch("cosqli.main.os.chdir"),
+                patch("cosqli.main.run_training_round") as run_round,
             ):
                 run_training_loop(start_round=8, breakpoint_round=0)
             run_round.assert_not_called()

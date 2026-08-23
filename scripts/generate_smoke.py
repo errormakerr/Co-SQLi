@@ -5,9 +5,9 @@ from __future__ import annotations
 
 import argparse
 
-from Attacker.attacker import Attacker
-from Verifier.verifier import Verifier
-from main import (
+from cosqli.attacker.attacker import Attacker
+from cosqli.verifier.verifier import Verifier
+from cosqli.main import (
     ATTACKER_GAMMA,
     ATTACKER_K,
     ATTACKER_STRATEGY,
@@ -16,7 +16,7 @@ from main import (
     MODIFY_PAYLOAD_PROB_START,
     ProjectPaths,
 )
-from utils.cluster import all_attack_cluster_keys
+from cosqli.utils.cluster import all_attack_cluster_keys
 
 
 def parse_args() -> argparse.Namespace:
@@ -40,8 +40,8 @@ def main() -> None:
     attacker = Attacker(
         number_of_training_sqls=args.samples,
         cluster_list=cluster_list,
-        normal_sqls_path=str(paths.raw_datas_dir / "normal_sqls.json"),
-        raw_datas_dir=str(paths.raw_datas_dir),
+        normal_sqls_path=str(paths.source_data_dir / "normal_sqls.json"),
+        source_data_dir=str(paths.source_data_dir),
         benign_ratio=INITIAL_BENIGN_RATIO,
         enable_payload_mutation=ENABLE_PAYLOAD_MUTATION,
     )

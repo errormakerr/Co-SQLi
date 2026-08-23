@@ -3,9 +3,9 @@
 
 from __future__ import annotations
 
-from Attacker.attacker import Attacker
-from main import ENABLE_PAYLOAD_MUTATION, INITIAL_BENIGN_RATIO, ProjectPaths
-from utils.cluster import all_attack_cluster_keys
+from cosqli.attacker.attacker import Attacker
+from cosqli.main import ENABLE_PAYLOAD_MUTATION, INITIAL_BENIGN_RATIO, ProjectPaths
+from cosqli.utils.cluster import all_attack_cluster_keys
 
 
 def main() -> None:
@@ -17,8 +17,8 @@ def main() -> None:
     attacker = Attacker(
         number_of_training_sqls=1,
         cluster_list=cluster_list,
-        normal_sqls_path=str(paths.raw_datas_dir / "normal_sqls.json"),
-        raw_datas_dir=str(paths.raw_datas_dir),
+        normal_sqls_path=str(paths.source_data_dir / "normal_sqls.json"),
+        source_data_dir=str(paths.source_data_dir),
         benign_ratio=INITIAL_BENIGN_RATIO,
         enable_payload_mutation=True,
     )

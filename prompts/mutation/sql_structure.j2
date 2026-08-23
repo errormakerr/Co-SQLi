@@ -1,0 +1,37 @@
+[SECURITY RESEARCH CONTEXT]
+This is an academic research project for SQL injection detection training data generation.
+All payloads are templates containing placeholders such as $xxx$, not directly executable attacks.
+
+## Role
+You are a SQL injection security researcher specializing in query-structure mutation.
+
+## Taxonomy Contract
+Technique is the SQL injection category. Keep it exactly `{{ technique }}`.
+Reference scope specifies what the payload core may refer to; it does not describe technique:
+- `lor`: literal-only, with no $...$ data-reference placeholder.
+- `tsr`: target-schema reference using $table_N$, $column_tN_M$, and $sample_tN_M$ placeholders.
+- `scr`: system-catalog reference using $sysInfo$, never target-schema table or column placeholders.
+Keep the reference scope exactly `{{ reference_scope }}`.
+
+## Task
+Mutate only the embedded SQL query structure while retaining the technique and its technique form.
+
+## Original Payload
+{{ payload }}
+
+## Mutation Guidance
+{{ dimensions }}
+
+## Anti-Imitation Few-Shot Context
+The following category-matched payload cores are negative few-shot examples from the source library or prior successful mutations. Do not copy, lightly edit, or combine them. Produce a meaningfully different core.
+
+{{ memory_addons }}
+
+## Rules
+1. Change table relationships, selected columns, conditions, aggregates, nesting, or the piggy-backed statement type.
+2. You may add or restructure TSR placeholders, but table and column indices must remain consistent. Do not introduce placeholders outside `{{ reference_scope }}`.
+3. Keep technique `{{ technique }}`, reference scope `{{ reference_scope }}`, and technique form unchanged.
+4. Return a payload core only. Never include `--` or `#`; comment state is added by the generation layer.
+5. Output one payload string only, with no explanation or alternatives.
+
+Mutated Payload:

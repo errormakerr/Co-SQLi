@@ -1,3 +1,5 @@
-# Copy this file to runtime_config.yaml and set local absolute paths.
-base_model_path: '/absolute/path/to/Qwen2.5-Coder-1.5B-Instruct'
-run_output_dir: '/absolute/path/to/sqli-runs/Qwen2.5-Coder-1.5B-Instruct'
+# Copy this file to an external directory and set COSQLI_CONFIG_DIR to it.
+# The model location remains an environment variable, never a YAML path.
+base_model_path_env: COSQLI_BASE_MODEL_PATH
+# This is the only approved absolute path in configuration.
+artifacts_root: /hpc2hdd/home/hpan285/experiment_results

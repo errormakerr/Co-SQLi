@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "co-sqli"
+version = "0.1.0"
+description = "Adversarial training for SQL-injection detection"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+dependencies = [
+  "aiohttp>=3.9.0",
+  "datasets>=2.16.0",
+  "jinja2>=3.1.0",
+  "numpy>=1.24.0",
+  "openai>=1.12.0",
+  "pymysql>=1.1.0",
+  "pyyaml>=6.0",
+  "requests>=2.31.0",
+  "tqdm>=4.66.0",
+]
+
+[project.optional-dependencies]
+training = [
+  "accelerate>=0.27.0",
+  "bitsandbytes>=0.43.0",
+  "deepspeed>=0.14.0",
+  "einops>=0.7.0",
+  "peft>=0.9.0",
+  "tensorboard>=2.15.0",
+  "torch>=2.0.0",
+  "transformers>=4.38.0",
+]
+dev = ["pytest>=8.0.0"]
+
+[project.scripts]
+co-sqli = "cosqli.main:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

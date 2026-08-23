@@ -1,5 +1,5 @@
 base_url: https://your-api-endpoint/v1
-api_key: YOUR_API_KEY_HERE
+api_key_env: COSQLI_LLM_API_KEY
 model: gpt-5.1-2025-11-13
 temperature: 0.5
 max_tokens: 1500

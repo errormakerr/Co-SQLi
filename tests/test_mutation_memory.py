@@ -9,9 +9,9 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from synthesis.payload_mutation.memory import MutationMemory
-from synthesis.payload_mutation.payload_mutator import PayloadMutator
-from utils.cluster import TAXONOMY_VERSION
+from cosqli.synthesis.payload_mutation.memory import MutationMemory
+from cosqli.synthesis.payload_mutation.payload_mutator import PayloadMutator
+from cosqli.utils.cluster import TAXONOMY_VERSION
 
 
 TECHNIQUE = "tautology"
@@ -67,7 +67,7 @@ class MutationMemoryTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             legacy_path = Path(temporary_directory) / "legacy_memory.json"
-            legacy_path.write_text(json.dumps({"format_version": 2, "categories": {}}), encoding="utf-8")
+            legacy_path.write_text(json.dumps({"format_version": 0, "categories": {}}), encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "taxonomy mismatch"):
                 MutationMemory.load(str(legacy_path))
 
@@ -105,7 +105,7 @@ class MutationMemoryTests(unittest.TestCase):
         original = source_template(1)
         memory = MutationMemory(source_templates=[original])
         mutator = PayloadMutator(llm=FakeLlm(), model="test-model", memory=memory, infer_types=False)
-        with patch("synthesis.payload_mutation.payload_mutator.PayloadValidator", return_value=FakeValidator()):
+        with patch("cosqli.synthesis.payload_mutation.payload_mutator.PayloadValidator", return_value=FakeValidator()):
             result = mutator.mutate(original)
 
         self.assertIsNotNone(result)

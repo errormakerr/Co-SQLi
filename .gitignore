@@ -25,21 +25,8 @@ env/
 .DS_Store
 Thumbs.db
 
-# Project-specific
-*.log
-slurm-*.out
-runs/
-checkpoints/
-wandb/
-
-# Sensitive configs
-config/gpt_config.yaml
-config/database_connection.yaml
-config/runtime_config.yaml
-
-# Temp/runtime data
-data/temp_data/
-.local/
+# Runtime data and secrets belong outside the repository. Do not ignore them:
+# an accidental project-local write must be visible to Git.
 
 # Git artifacts
 FETCH_HEAD
