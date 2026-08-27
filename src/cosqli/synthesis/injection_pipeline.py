@@ -129,7 +129,12 @@ def _get_checker() -> SymbolChecker:
 # Pipeline helper functions (extracted from nested definitions)
 # ---------------------------------------------------------------------------
 
-SQL_COMMENT_PREFIX = "-- "
+SQL_COMMENT_PREFIXES = ("-- ", "# ")
+
+
+def choose_comment_prefix() -> str:
+    """Return one of the supported MySQL line-comment prefixes at random."""
+    return random.choice(SQL_COMMENT_PREFIXES)
 
 
 def _is_safe_cepp_text(value: object) -> bool:
@@ -272,6 +277,7 @@ def _validate_comment_state(
     payload: str,
     comment_state: str,
     cepp_text: str = "",
+    comment_prefix: str = "",
 ) -> None:
     """Enforce the three-state comment taxonomy before SQL insertion."""
     requires_delimiter = sql_example.get("requires_comment_delimiter")
@@ -290,8 +296,10 @@ def _validate_comment_state(
     if comment_state == "clean_comment":
         if not requires_delimiter:
             raise ValueError("clean_comment requires requires_comment_delimiter=True")
-        if payload != payload_core + SQL_COMMENT_PREFIX or cepp_text.strip():
-            raise ValueError("clean_comment requires exactly one trailing '-- ' delimiter")
+        if comment_prefix not in SQL_COMMENT_PREFIXES:
+            raise ValueError("clean_comment requires a supported comment delimiter")
+        if payload != payload_core + comment_prefix or cepp_text.strip():
+            raise ValueError("clean_comment requires exactly one trailing comment delimiter")
         return
 
     if comment_state == "cepp":
@@ -301,8 +309,10 @@ def _validate_comment_state(
             raise ValueError("cepp requires non-empty text after the delimiter")
         if not _is_safe_cepp_text(cepp_text):
             raise ValueError("CEPP must be a single plain-text line")
-        if payload != payload_core + SQL_COMMENT_PREFIX + cepp_text:
-            raise ValueError("CEPP must occur directly after the '-- ' delimiter")
+        if comment_prefix not in SQL_COMMENT_PREFIXES:
+            raise ValueError("cepp requires a supported comment delimiter")
+        if payload != payload_core + comment_prefix + cepp_text:
+            raise ValueError("CEPP must occur directly after the comment delimiter")
         return
 
     raise ValueError(f"Unsupported comment_state: {comment_state!r}")
@@ -373,11 +383,14 @@ def pipeline(
         sql_example, payload_template, db_schemas, sys_schemas, system_vars
     )
     cepp_text = ""
+    comment_prefix = ""
     if comment_state == "no_comment":
         payload = payload_core
     elif comment_state == "clean_comment":
-        payload = payload_core + SQL_COMMENT_PREFIX
+        comment_prefix = choose_comment_prefix()
+        payload = payload_core + comment_prefix
     elif comment_state == "cepp":
+        comment_prefix = choose_comment_prefix()
         cepp_text = str(
             generate_comment(
                 payload_template["technique"],
@@ -387,17 +400,21 @@ def pipeline(
                 allow_llm=allow_llm_comment,
             )
         ).strip()
-        payload = payload_core + SQL_COMMENT_PREFIX + cepp_text
+        payload = payload_core + comment_prefix + cepp_text
     else:
         raise ValueError(f"Unsupported comment_state: {comment_state!r}")
 
     _validate_comment_state(
-        sql_example, payload_core, payload, comment_state, cepp_text
+        sql_example, payload_core, payload, comment_state, cepp_text, comment_prefix
     )
     injection_sql = insert_payload(sql_example["sql"], payload)
     if injection_sql is None:
         return None
-    effective_sql = injection_sql.split(SQL_COMMENT_PREFIX, 1)[0]
+    effective_sql = (
+        injection_sql.split(comment_prefix, 1)[0]
+        if comment_prefix
+        else injection_sql
+    )
     balanced, _ = _get_checker().check_balanced(effective_sql)
     if not balanced:
         return None

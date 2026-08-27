@@ -18,7 +18,11 @@ from cosqli.main import (
     run_training_round,
 )
 from cosqli.paths import PROJECT_ROOT, require_external_path
-from cosqli.synthesis.injection_pipeline import pipeline
+from cosqli.synthesis.injection_pipeline import (
+    SQL_COMMENT_PREFIXES,
+    choose_comment_prefix,
+    pipeline,
+)
 from cosqli.utils.cluster import (
     NORMAL_CLUSTER_KEY,
     TAXONOMY_VERSION,
@@ -90,27 +94,39 @@ class TaxonomyAndMABTests(unittest.TestCase):
             "db": "unused",
             "requires_comment_delimiter": True,
         }
-        clean = pipeline(
-            trailing_carrier, template, [], [], [], [], "clean_comment"
-        )
+        with patch(
+            "cosqli.synthesis.injection_pipeline.choose_comment_prefix",
+            side_effect=("-- ", "# "),
+        ):
+            clean = pipeline(
+                trailing_carrier, template, [], [], [], [], "clean_comment"
+            )
+            cepp = pipeline(
+                trailing_carrier,
+                template,
+                [],
+                [],
+                [],
+                [{"type": "Irrelevant text dilution", "comment": "routine validation"}],
+                "cepp",
+                allow_llm_comment=False,
+            )
         self.assertEqual(clean["payload"], "' OR 1=1-- ")
-        cepp = pipeline(
-            trailing_carrier,
-            template,
-            [],
-            [],
-            [],
-            [{"type": "Irrelevant text dilution", "comment": "routine validation"}],
-            "cepp",
-            allow_llm_comment=False,
-        )
-        self.assertTrue(cepp["payload"].startswith("' OR 1=1-- "))
+        self.assertEqual(cepp["payload"], "' OR 1=1# routine validation")
         no_comment = pipeline(
             no_comment_carrier, template, [], [], [], [], "no_comment"
         )
         self.assertNotIn("--", no_comment["payload"])
         with self.assertRaises(ValueError):
             pipeline(no_comment_carrier, template, [], [], [], [], "clean_comment")
+
+    def test_comment_prefix_is_chosen_from_both_supported_markers(self) -> None:
+        with patch(
+            "cosqli.synthesis.injection_pipeline.random.choice", return_value="# "
+        ) as mocked_choice:
+            self.assertEqual(choose_comment_prefix(), "# ")
+        self.assertEqual(SQL_COMMENT_PREFIXES, ("-- ", "# "))
+        mocked_choice.assert_called_once_with(SQL_COMMENT_PREFIXES)
 
     def test_filters_benign_key_without_changing_attack_order(self) -> None:
         self.assertEqual(

@@ -11,7 +11,7 @@ class SymbolChecker:
 
     Single quotes that are intentionally unbalanced (i.e., the SQL-injection
     quote-escaping trick) are **not** flagged here — callers should pass only
-    the fragment before any ``--`` comment terminator.
+    the fragment before any SQL line-comment terminator.
     """
 
     def __init__(self):
