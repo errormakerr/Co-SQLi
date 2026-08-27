@@ -47,3 +47,16 @@ class SecretConfigurationTests(unittest.TestCase):
             ):
                 self.assertEqual(resolve_runtime_base_model_path(config), Path(temporary_directory))
                 self.assertEqual(resolve_runtime_artifacts_root(config), Path(temporary_directory))
+
+    def test_runtime_paths_fall_back_to_standard_environment_variables(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            with patch.dict(
+                os.environ,
+                {
+                    "COSQLI_BASE_MODEL_PATH": temporary_directory,
+                    "COSQLI_ARTIFACTS_ROOT": temporary_directory,
+                },
+                clear=True,
+            ):
+                self.assertEqual(resolve_runtime_base_model_path({}), Path(temporary_directory))
+                self.assertEqual(resolve_runtime_artifacts_root({}), Path(temporary_directory))

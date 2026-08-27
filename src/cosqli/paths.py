@@ -52,8 +52,13 @@ def resolve_runtime_base_model_path(runtime_config: dict) -> Path:
             )
         return Path(value).expanduser().resolve()
 
+    value = os.environ.get("COSQLI_BASE_MODEL_PATH")
+    if value:
+        return Path(value).expanduser().resolve()
+
     raise ValueError(
-        "runtime_config.yaml must provide a non-empty base_model_path_env."
+        "runtime_config.yaml must provide a non-empty base_model_path_env or "
+        "COSQLI_BASE_MODEL_PATH must be set."
     )
 
 
@@ -67,7 +72,15 @@ def resolve_runtime_artifacts_root(runtime_config: dict) -> Path:
                 f"Set {environment_key} to an external artifact directory before running Co-SQLi."
             )
         return require_artifacts_root(value)
-    raise ValueError("runtime_config.yaml must provide a non-empty artifacts_root_env.")
+
+    value = os.environ.get("COSQLI_ARTIFACTS_ROOT")
+    if value:
+        return require_artifacts_root(value)
+
+    raise ValueError(
+        "runtime_config.yaml must provide a non-empty artifacts_root_env or "
+        "COSQLI_ARTIFACTS_ROOT must be set."
+    )
 
 
 def validate_run_id(run_id: str) -> str:

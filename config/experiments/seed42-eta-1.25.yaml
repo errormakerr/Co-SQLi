@@ -1,0 +1,22 @@
+schema_version: 1
+random_seed: 42
+num_rounds: 8
+num_training_sqls: 400
+initial_benign_ratio: 0.25
+
+attacker:
+  gamma_start: 0.70
+  gamma_end: 0.20
+  strategy: by_probability
+  clusters_per_round: 8
+  weight_exponent: 2.0
+
+verifier:
+  update: centered_full_information_exponential
+  learning_rate: 1.25
+
+payload_mutation:
+  enabled: true
+  probability_start: 0.10
+  probability_end: 0.40
+  model: null
