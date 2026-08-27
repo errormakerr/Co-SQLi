@@ -36,6 +36,7 @@ dev = ["pytest>=8.0.0"]
 
 [project.scripts]
 co-sqli = "cosqli.main:main"
+co-sqli-submit = "cosqli.submit:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

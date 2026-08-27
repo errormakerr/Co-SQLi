@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Build v3 taxonomy benchmarks into an external artifact directory."""
+"""Build canonical taxonomy benchmarks into an external artifact directory."""
 
 from __future__ import annotations
 
 import argparse
 import copy
+import hashlib
 import random
 from pathlib import Path
 from typing import Any, Dict, List
@@ -26,23 +27,28 @@ from cosqli.utils.json_operation import read_json_file, write_json_file, write_j
 SOURCE_DIR = PROJECT_ROOT / "data" / "source"
 
 BENCHMARK_SPECS = {
-    "train_sqls.json": ("train", 1680, 657),
-    "train_sqls_hard.json": ("train", 2276, 24),
-    "valid_sqls.json": ("test", 960, 20),
+    "valid_sqls.json": ("train", 1920, 40),
     "test_sqls.json": ("test", 1738, 875),
 }
 SFT_FILENAMES = {
-    "train_sqls.json": "train_datas_openai_format.jsonl",
-    "train_sqls_hard.json": "train_datas_hard_openai_format.jsonl",
     "valid_sqls.json": "valid_datas_openai_format.jsonl",
     "test_sqls.json": "test_datas_openai_format.jsonl",
 }
+SOURCE_FILENAMES = (
+    "payload_template.json",
+    "sql_data_with_injection_point.json",
+    "schema.json",
+    "system_table_schema.json",
+    "system_var.json",
+    "comment_repository.json",
+    "normal_sqls.json",
+)
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", required=True, help="External benchmark artifact directory.")
-    parser.add_argument("--seed", type=int, default=20260822, help="Deterministic generation seed.")
+    parser.add_argument("--seed", type=int, default=20260827, help="Deterministic generation seed.")
     return parser.parse_args()
 
 
@@ -58,10 +64,14 @@ def _counts_by_cluster(total_attacks: int) -> Dict[str, int]:
 def _validate_source(payloads: List[Dict[str, Any]], raw_sqls: List[Dict[str, Any]]) -> None:
     for payload in payloads:
         PayloadCategoryKey(payload["technique"], payload["reference_scope"])
+        if payload.get("set") not in {"train", "test"}:
+            raise ValueError(f"Source payload must declare set=train or set=test: {payload!r}")
         core = payload.get("payload")
         if not isinstance(core, str) or not core or "--" in core or "#" in core:
             raise ValueError(f"Source payload must be a non-empty comment-free core: {payload!r}")
     for raw_sql in raw_sqls:
+        if raw_sql.get("set") not in {"train", "test"}:
+            raise ValueError(f"Source SQL must declare set=train or set=test: {raw_sql!r}")
         if "$$" not in str(raw_sql.get("sql")):
             raise ValueError(f"Source SQL must contain an injection marker: {raw_sql!r}")
         if not isinstance(raw_sql.get("requires_comment_delimiter"), bool):
@@ -95,16 +105,23 @@ def _build_attacks(
             raise RuntimeError(f"No source candidates for declared cluster {cluster}")
         for _ in range(count):
             for _attempt in range(128):
-                record = pipeline(
-                    sql_example=random.choice(sql_candidates),
-                    payload_template=random.choice(payload_candidates),
-                    db_schemas=db_schemas,
-                    sys_schemas=sys_schemas,
-                    system_vars=system_vars,
-                    comment_list=comment_list,
-                    comment_state=cluster_key.comment_state,
-                    allow_llm_comment=False,
-                )
+                try:
+                    record = pipeline(
+                        sql_example=random.choice(sql_candidates),
+                        payload_template=random.choice(payload_candidates),
+                        db_schemas=db_schemas,
+                        sys_schemas=sys_schemas,
+                        system_vars=system_vars,
+                        comment_list=comment_list,
+                        comment_state=cluster_key.comment_state,
+                        allow_llm_comment=False,
+                    )
+                except ValueError as error:
+                    # A live sample value can contain a line-comment marker.
+                    # Reject that candidate while retaining contract failures.
+                    if str(error) != "payload_core must not contain SQL line-comment delimiters":
+                        raise
+                    continue
                 if record is not None:
                     records.append(record)
                     break
@@ -132,26 +149,56 @@ def _validate_records(records: List[Dict[str, Any]], expected_attack_count: int)
         )
 
 
+def _sha256(path: Path) -> str:
+    """Return a content fingerprint for a source or generated artifact."""
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _prepare_output_directory(output_dir: Path) -> None:
+    """Create an empty external directory for one immutable benchmark build."""
+    if output_dir.exists() and any(output_dir.iterdir()):
+        raise FileExistsError(
+            f"Benchmark output directory must be empty: {output_dir}. "
+            "Choose a new external directory for each build."
+        )
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+
 def main() -> None:
     args = parse_args()
     output_dir = require_external_path(args.output_dir, purpose="benchmark output")
-    output_dir.mkdir(parents=True, exist_ok=True)
+    _prepare_output_directory(output_dir)
     random.seed(args.seed)
 
-    payloads = read_json_file(str(SOURCE_DIR / "payload_template.json"))
-    raw_sqls = read_json_file(str(SOURCE_DIR / "sql_data_with_injection_point.json"))
+    source_files = {name: SOURCE_DIR / name for name in SOURCE_FILENAMES}
+    payloads = read_json_file(str(source_files["payload_template.json"]))
+    raw_sqls = read_json_file(str(source_files["sql_data_with_injection_point.json"]))
     _validate_source(payloads, raw_sqls)
-    db_schemas = read_json_file(str(SOURCE_DIR / "schema.json"))
-    sys_schemas = read_json_file(str(SOURCE_DIR / "system_table_schema.json"))
-    system_vars = read_json_file(str(SOURCE_DIR / "system_var.json"))
-    comment_list = read_json_file(str(SOURCE_DIR / "comment_repository.json"))
-    normal_sqls = read_json_file(str(SOURCE_DIR / "normal_sqls.json"))
+    db_schemas = read_json_file(str(source_files["schema.json"]))
+    sys_schemas = read_json_file(str(source_files["system_table_schema.json"]))
+    system_vars = read_json_file(str(source_files["system_var.json"]))
+    comment_list = read_json_file(str(source_files["comment_repository.json"]))
+    normal_sqls = read_json_file(str(source_files["normal_sqls.json"]))
+    if any(item.get("set") not in {"train", "test"} for item in normal_sqls):
+        raise ValueError("Each benign source SQL must declare set=train or set=test")
     schema_by_database = {schema["database_name"]: schema for schema in db_schemas}
 
-    write_json_file(
-        str(output_dir / "build_manifest.json"),
-        {"taxonomy_version": TAXONOMY_VERSION, "seed": args.seed},
-    )
+    build_manifest = {
+        "schema_version": 1,
+        "taxonomy_version": TAXONOMY_VERSION,
+        "seed": args.seed,
+        "source_files_sha256": {
+            name: _sha256(path) for name, path in sorted(source_files.items())
+        },
+        "datasets": {
+            filename: {
+                "source_split": source_set,
+                "attack_count": attack_count,
+                "benign_count": benign_count,
+            }
+            for filename, (source_set, attack_count, benign_count) in BENCHMARK_SPECS.items()
+        },
+    }
     for filename, (source_set, attack_count, benign_count) in BENCHMARK_SPECS.items():
         attacks = _build_attacks(
             [item for item in raw_sqls if item["set"] == source_set],
@@ -172,6 +219,11 @@ def main() -> None:
             raise RuntimeError(f"SFT conversion dropped records for {filename}")
         write_jsonl_file(str(output_dir / SFT_FILENAMES[filename]), sft_records)
         print(f"Built {filename}: attacks={attack_count}, benign={benign_count}")
+    build_manifest["artifact_files_sha256"] = {
+        filename: _sha256(output_dir / filename)
+        for filename in sorted((*BENCHMARK_SPECS, *SFT_FILENAMES.values()))
+    }
+    write_json_file(str(output_dir / "build_manifest.json"), build_manifest)
 
 
 if __name__ == "__main__":

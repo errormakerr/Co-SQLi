@@ -6,26 +6,19 @@ attack cluster based on the Defender's evaluation results.
 
 Reward:  ``reward[k] = (FN[k] + alpha) / (n[k] + alpha + beta)``
           (higher reward = more missed attacks)
-Weight update uses the standard EXP3 formula:
-    ``weight[k] *= exp(gamma / n * reward[k] / prob[k])``
-
-where *n* is the number of attack clusters and *prob[k]* is the probability
-assigned to attack cluster *k* in the previous Attacker round.
+Because validation observes every attack cluster in each round, weight updates
+use centered full-information exponential weighting:
+    ``weight[k] *= exp(learning_rate * (reward[k] - mean_reward))``
 """
 
 from __future__ import annotations
 
 import math
-from pathlib import Path
 from typing import Dict, List
 
 from cosqli.utils.cluster import (
     NORMAL_CLUSTER_KEY,
-    all_attack_cluster_keys,
-    cluster_injection_sqls,
-    get_injection_cluster_keys,
 )
-from cosqli.utils.json_operation import read_json_file, read_jsonl_file
 from .eval import cluster_results, compute_cluster_acc
 
 
@@ -62,6 +55,7 @@ class Verifier:
         cluster_list:    Ordered list of attack-cluster keys.
         cluster_rewards: Latest per-cluster smoothed false-negative reward.
         cluster_weight:  Current MAB weight for each cluster.
+        last_reward_baseline: Mean reward used by the latest weight update.
         benign_ratio:    Next-round benign sample share.
         benign_error_ema: Smoothed benign false-positive error.
     """
@@ -84,12 +78,13 @@ class Verifier:
         if NORMAL_CLUSTER_KEY in cluster_list:
             raise ValueError(
                 "cluster_list must contain attack clusters only; "
-                "the benign cluster is not an EXP3 arm"
+                "the benign cluster is not a sampled attack cluster"
             )
         self._validate_benign_ratio(benign_ratio)
         self.cluster_list = list(cluster_list)
         self.cluster_rewards: Dict[str, float] = {k: 0.0 for k in cluster_list}
         self.cluster_weight: Dict[str, float] = {k: 1.0 for k in cluster_list}
+        self.last_reward_baseline = 0.0
         self.benign_ratio = float(benign_ratio)
         self.benign_error_ema = 0.0
 
@@ -104,6 +99,10 @@ class Verifier:
     def get_benign_ratio(self) -> float:
         """Return the benign sample share for the next training round."""
         return self.benign_ratio
+
+    def get_last_reward_baseline(self) -> float:
+        """Return the mean reward used by the latest centered update."""
+        return self.last_reward_baseline
 
     def get_benign_state(self) -> Dict[str, float]:
         """Return the serialisable benign-ratio controller state."""
@@ -195,42 +194,36 @@ class Verifier:
 
     def update_weight(
         self,
-        gamma: float,
-        cluster_probability_distribution: Dict[str, float],
+        learning_rate: float,
     ) -> None:
         """
-        Apply the EXP3 weight-update rule for all clusters.
+        Apply a centered full-information exponential weight update.
 
         Formula:
-            ``weight[k] *= exp(gamma / n * reward[k] / prob[k])``
+            ``mean_reward = average(reward[k] for k in clusters)``
+            ``weight[k] *= exp(learning_rate * (reward[k] - mean_reward))``
+
+        ``update_reward`` requires validation feedback for every MAB arm.
+        Importance weighting by the attacker's sampling probability is therefore
+        inappropriate here: it is needed only when an arm's reward is observed
+        exclusively because that arm was sampled. Centering makes the update
+        explicitly relative to the round-wide reward baseline, increasing
+        weights above the mean and decreasing weights below it.
 
         Args:
-            gamma: EXP3 learning-rate parameter.
-            cluster_probability_distribution: Probability distribution used
-                by the Attacker in the most recent round (needed to normalise
-                the reward signal).
+            learning_rate: Positive exponentiated-gradient learning rate.
         """
-        missing_probabilities = [
-            key
-            for key in self.cluster_list
-            if key not in cluster_probability_distribution
-        ]
-        if missing_probabilities:
+        if not math.isfinite(learning_rate) or learning_rate <= 0:
             raise ValueError(
-                "EXP3 distribution is missing attack clusters: "
-                + ", ".join(missing_probabilities)
+                f"learning_rate must be finite and positive, got {learning_rate}"
             )
-
-        n = len(self.cluster_list)
+        self.last_reward_baseline = math.fsum(
+            self.cluster_rewards.get(key, 0.0) for key in self.cluster_list
+        ) / len(self.cluster_list)
         for key, weight in self.cluster_weight.items():
-            prob = float(cluster_probability_distribution[key])
-            if prob <= 0:
-                raise ValueError(
-                    f"EXP3 probability for cluster {key!r} must be positive, got {prob}"
-                )
             reward = self.cluster_rewards.get(key, 0.0)
             self.cluster_weight[key] = weight * math.exp(
-                (gamma / n) * (reward / prob)
+                learning_rate * (reward - self.last_reward_baseline)
             )
 
     def update_benign_ratio(self, results: List[Dict]) -> float:
@@ -285,38 +278,3 @@ class Verifier:
                 "benign_ratio must be in "
                 f"[{BENIGN_RATIO_MIN}, {BENIGN_RATIO_MAX}], got {benign_ratio}"
             )
-
-
-# ---------------------------------------------------------------------------
-# CLI entry point (for quick inspection / debugging)
-# ---------------------------------------------------------------------------
-
-def main() -> None:
-    """Run a single reward + weight update cycle on sample data."""
-    project_root = Path(__file__).resolve().parents[2]
-    results_file = project_root / "data" / "temp_data" / "round_0" / "inference" / "results.jsonl"
-    test_sqls_file = project_root / "data" / "benchmark" / "test_sqls.json"
-
-    results = read_jsonl_file(str(results_file))
-    cluster_list = all_attack_cluster_keys()
-
-    n = len(cluster_list)
-    init_prob = 1.0 / n
-    clusters_prob = {k: init_prob for k in cluster_list}
-
-    verifier = Verifier(cluster_list=cluster_list)
-    verifier.update_reward(results=results)
-
-    print("=== Per-cluster rewards ===")
-    for key, reward in verifier.cluster_rewards.items():
-        print(f"  {key}: {reward:.4f}")
-
-    verifier.update_weight(gamma=0.5, cluster_probability_distribution=clusters_prob)
-
-    print("\n=== Updated cluster weights ===")
-    for key, weight in verifier.cluster_weight.items():
-        print(f"  {key}: {weight:.4f}")
-
-
-if __name__ == "__main__":
-    main()

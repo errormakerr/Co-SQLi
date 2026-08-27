@@ -10,7 +10,6 @@ from dataclasses import dataclass
 from typing import Any, Dict, List
 
 from cosqli.utils.cluster import get_single_key_of_injection_sql
-from cosqli.utils.json_operation import read_jsonl_file
 
 
 # ---------------------------------------------------------------------------
@@ -110,28 +109,3 @@ def compute_cluster_acc(
             false_positives=false_positives,
         )
     return stats
-
-
-# ---------------------------------------------------------------------------
-# CLI entry point (for quick inspection)
-# ---------------------------------------------------------------------------
-
-def main() -> None:
-    """Print per-cluster accuracy for a results JSONL file."""
-    file_path = "data/temp_data/results.jsonl"
-    datas = read_jsonl_file(file_path)
-    if not datas:
-        print(f"No data loaded from {file_path!r}. Check the file path or content.")
-        return
-
-    clusters = cluster_results(datas)
-    print(f"Found {len(clusters)} cluster(s).")
-
-    stats = compute_cluster_acc(clusters)
-    print("\n==== Per-Cluster Accuracy ====")
-    for key, stat in stats.items():
-        print(f"{key}:  ACC={stat.acc:.3f}  ({stat.correct}/{stat.total})")
-
-
-if __name__ == "__main__":
-    main()

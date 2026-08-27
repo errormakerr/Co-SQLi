@@ -1,5 +1,3 @@
 # Copy this file to an external directory and set COSQLI_CONFIG_DIR to it.
-# The model location remains an environment variable, never a YAML path.
 base_model_path_env: COSQLI_BASE_MODEL_PATH
-# This is the only approved absolute path in configuration.
-artifacts_root: /hpc2hdd/home/hpan285/experiment_results
+artifacts_root_env: COSQLI_ARTIFACTS_ROOT

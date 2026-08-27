@@ -176,8 +176,7 @@ class MutationMemory:
             data = json.load(file)
         if data.get("format_version") != MUTATION_MEMORY_FORMAT_VERSION or data.get("taxonomy_version") != TAXONOMY_VERSION:
             raise ValueError(
-                "Mutation memory taxonomy mismatch; start a new taxonomy-v3 run "
-                "instead of restoring this checkpoint."
+                "Mutation memory does not match the current checkpoint contract."
             )
 
         memory = cls()

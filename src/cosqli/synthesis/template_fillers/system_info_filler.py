@@ -160,10 +160,6 @@ class SystemInformationTemplateFiller:
             payload = payload.replace("$date$", f"'{GetRandomAttribute.random_date()}'", 1)
         while "$character$" in payload:
             payload = payload.replace("$character$", f"'{GetRandomAttribute.random_character()}'", 1)
-        # Legacy format compatibility
-        while "#character$" in payload:
-            payload = payload.replace("#character$", f"'{GetRandomAttribute.random_character()}'", 1)
-
         return payload
 
     def test_connection(self) -> bool:

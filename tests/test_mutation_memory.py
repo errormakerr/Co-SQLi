@@ -1,4 +1,4 @@
-"""Regression tests for taxonomy-v3 payload-core mutation memory."""
+"""Regression tests for canonical payload-core mutation memory."""
 
 from __future__ import annotations
 
@@ -59,17 +59,20 @@ class MutationMemoryTests(unittest.TestCase):
         self.assertEqual(len(category.mutated_templates), 8)
         self.assertEqual(memory.get_prompt_addons(TECHNIQUE, REFERENCE_SCOPE).count("Example "), 5)
 
-    def test_memory_rejects_comment_delimiters_and_old_checkpoints(self) -> None:
+    def test_memory_rejects_comment_delimiters_and_incompatible_checkpoints(self) -> None:
         invalid = source_template(0)
         invalid["payload"] += "-- "
         with self.assertRaisesRegex(ValueError, "comment-free"):
             MutationMemory(source_templates=[invalid])
 
         with tempfile.TemporaryDirectory() as temporary_directory:
-            legacy_path = Path(temporary_directory) / "legacy_memory.json"
-            legacy_path.write_text(json.dumps({"format_version": 0, "categories": {}}), encoding="utf-8")
-            with self.assertRaisesRegex(ValueError, "taxonomy mismatch"):
-                MutationMemory.load(str(legacy_path))
+            checkpoint_path = Path(temporary_directory) / "memory.json"
+            checkpoint_path.write_text(
+                json.dumps({"format_version": 3, "taxonomy_version": "invalid", "categories": {}}),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "current checkpoint contract"):
+                MutationMemory.load(str(checkpoint_path))
 
     def test_checkpoint_restores_complete_templates(self) -> None:
         sources = [source_template(index) for index in range(3)]

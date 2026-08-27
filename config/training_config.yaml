@@ -5,13 +5,12 @@
 
 token_select_pattern: "default"
 data_prop: 1.0
-random_seed: 42
 
-batch_size_per_gpu: 2
-gradient_accumulation_steps: 4
+batch_size_per_gpu: 4
+gradient_accumulation_steps: 2
 max_seq_length: 2048
 num_train_epochs: 2
-learning_rate: 5e-5 
+learning_rate: 5e-5
 lr_scheduler_type: "linear"
 warmup_ratio: 0.03
 weight_decay: 0.0

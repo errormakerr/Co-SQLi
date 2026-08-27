@@ -1,7 +1,6 @@
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
 *.so
 *.egg-info/
 *.egg
@@ -14,22 +13,31 @@ eggs/
 venv/
 env/
 
-# IDE
+# Local runtime configuration and credentials
+.env
+.env.*
+config/runtime_config.yaml
+config/database_connection.yaml
+config/gpt_config.yaml
+
+# Generated local artifacts
+data/benchmark/
+artifacts/
+runs/
+logs/
+telemetry/
+reports/
+checkpoints/
+
+# IDE and operating system files
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
-
-# OS
 .DS_Store
 Thumbs.db
 
-# Runtime data and secrets belong outside the repository. Do not ignore them:
-# an accidental project-local write must be visible to Git.
-
-# Git artifacts
+# Git and tool artifacts
 FETCH_HEAD
-
-# Tool-specific
 .claude/

@@ -1,115 +1,128 @@
 # Co-SQLi
 
-Co-SQLi is an adversarial training framework for SQL-injection detection. It
-generates taxonomy-controlled training data, fine-tunes a detector, evaluates
-the result, and uses feedback to select the next attack clusters.
+Co-SQLi is a reproducible adversarial-training framework for SQL-injection
+detection. It synthesizes taxonomy-controlled SQL data, fine-tunes a Qwen
+detector, evaluates validation and held-out test sets, and adapts the next
+round's attack-cluster sampling distribution from validation feedback.
 
-## Repository Layout
+## Current Experiment
+
+The versioned configuration at `config/experiment_config.yaml` defines the
+standard experiment:
+
+- eight rounds with 400 generated training examples per round;
+- 48 attack clusters defined by technique, reference scope, and comment state;
+- eight clusters sampled without replacement each round from a squared-weight
+  distribution mixed with an exploration schedule from 0.70 to 0.20;
+- centered full-information exponential verifier updates with learning rate 1.0;
+- a validation set built from train-source attacks (1,920) and benign SQL
+  (40), plus a held-out test set built from test-source attacks (1,738) and
+  benign SQL (875).
+
+Training and inference use the tokenizer's native Qwen chat template. Rendered
+chat text is then tokenized with `add_special_tokens=False`, so template control
+tokens are encoded once. Training labels mask the system/user prompt and retain
+only assistant response tokens.
+
+## Repository Boundary
+
+The repository contains source data, code, prompts, and non-secret examples.
+Benchmarks, models, MySQL runtime files, credentials, logs, telemetry, and
+experiment reports belong in external directories. Every benchmark and run
+output path is rejected if it points inside the repository.
 
 ```text
-Co-SQLi/
-├── config/                 # Versioned, non-secret defaults and examples
-├── data/
-│   ├── source/             # Versioned source SQL, schemas, and payload templates
-│   └── benchmark/          # Versioned reviewed benchmark snapshots
-├── prompts/                # Jinja2 templates for comment and mutation prompts
-├── resources/ddl/          # MySQL reference schemas
-├── scripts/                # Batch entry points and validation tools
-├── src/cosqli/
-│   ├── attacker/           # Cluster sampling and payload mutation
-│   ├── defender/           # Fine-tuning, merging, and evaluation orchestration
-│   ├── modeling/           # Standalone model-operation programs
-│   ├── synthesis/          # SQL and SFT data generation
-│   ├── verifier/           # Feedback and EXP3 weight updates
-│   └── paths.py            # Configuration and external-artifact boundary
-└── tests/
-```
-
-All generated data, checkpoints, models, logs, and Slurm output live outside
-the repository. The runtime MySQL installation is separate from experiment
-artifacts:
-
-```text
-/hpc2hdd/home/hpan285/co-sqli-runtime/
-├── mysql/
-└── config/
-
-/hpc2hdd/home/hpan285/experiment_results/
-└── <run-id>/
+data/source/                 Versioned SQL, payload, schema, and comment inputs
+config/experiment_config.yaml  Versioned experiment definition
+scripts/build_benchmarks.py  Deterministic external benchmark builder
+src/cosqli/                  Training, inference, synthesis, and reporting code
+tests/                       Regression suite
 ```
 
 ## Setup
 
-Install the package in an existing Python environment:
+Install the package in a Python environment with the training dependencies:
 
 ```bash
 python -m pip install -e '.[training,dev]'
 ```
 
-Create external runtime configuration from the examples in `config/`, then
-export the configuration and secret locations:
+Set `COSQLI_CONFIG_DIR` to an external directory containing these runtime
+configuration files:
+
+- `runtime_config.yaml`, based on `config/runtime_config.yaml.example`, with
+  `base_model_path_env` and `artifacts_root_env` keys;
+- `database_connection.yaml`, based on `config/database_connection.yaml.example`;
+- `gpt_config.yaml`, based on `config/gpt_config.yaml.example`.
+
+The runtime configuration names environment variables; it does not store model
+locations or secrets. Export the corresponding values before a run:
 
 ```bash
-export COSQLI_CONFIG_DIR=/hpc2hdd/home/hpan285/co-sqli-runtime/config
-export COSQLI_BASE_MODEL_PATH=/path/to/base-model
+export COSQLI_CONFIG_DIR=/path/to/runtime-config
+export COSQLI_BASE_MODEL_PATH=/path/to/qwen-model
+export COSQLI_ARTIFACTS_ROOT=/path/to/experiment-results
 export COSQLI_LLM_API_KEY=...
 export COSQLI_MYSQL_PASSWORD=...
 ```
 
-`runtime_config.yaml` contains only `base_model_path_env` and the approved
-artifact root. Model locations and credentials are environment variables, not
-YAML values.
+## Build A Benchmark
 
-## Run
-
-Run a named experiment. Its files are created only below the external artifact
-root:
+The benchmark builder writes to a new, empty external directory and records
+SHA-256 checksums for every source input and generated artifact. It requires the
+same MySQL-backed synthesis environment as a full run.
 
 ```bash
-co-sqli --run-id experiment-001 --num-rounds 8 --num-training-sqls 300
+python scripts/build_benchmarks.py \
+  --output-dir /path/to/benchmarks/current \
+  --seed 20260827
 ```
 
-Resume is allowed only for a checkpoint whose persisted taxonomy version and
-cluster list match the current v3 schema:
+For a Slurm job, set `COSQLI_MODE=build-benchmarks`,
+`COSQLI_BENCHMARK_OUTPUT_DIR`, `COSQLI_PROJECT_ROOT`, `COSQLI_ENV_PREFIX`, and
+`COSQLI_RUNTIME_ROOT`, then submit `scripts/co_sqli_slurm_job.sh` with the
+resources appropriate for synthesis.
 
-```bash
-co-sqli --run-id experiment-001 --breakpoint-round 3
-```
+## Run An Experiment
 
-For Slurm, provide the environment and external runtime root before submission:
+`co-sqli-submit` creates an isolated run directory, writes scheduler logs below
+it, and submits the job. The batch script starts a MySQL sidecar, executes the
+run, stops the sidecar, and writes reports plus resource telemetry.
 
 ```bash
 export COSQLI_ENV_PREFIX=/path/to/python-environment
-export COSQLI_RUNTIME_ROOT=/hpc2hdd/home/hpan285/co-sqli-runtime
-export COSQLI_CONFIG_DIR=/hpc2hdd/home/hpan285/co-sqli-runtime/config
-COSQLI_MODE=full sbatch scripts/co_sqli_slurm_job.sh
+export COSQLI_RUNTIME_ROOT=/path/to/mysql-runtime
+
+co-sqli-submit \
+  --run-id experiment-001 \
+  --benchmark-dir /path/to/benchmarks/current \
+  --partition <partition> \
+  --gres gpu:1 \
+  --cpus-per-task 8 \
+  --mem 64G \
+  --time 12:00:00
 ```
 
-Available batch modes are `db-check`, `generate-smoke`, `mutation-smoke`,
-`synthesis-smoke`, `build-benchmarks`, and `full`. `build-benchmarks` requires
-`COSQLI_BENCHMARK_OUTPUT_DIR` and never overwrites the versioned benchmark
-snapshot in this repository.
+The default values come from `config/experiment_config.yaml`. The two execution
+size overrides are available for short validation runs:
 
-## Taxonomy And Prompts
+```bash
+co-sqli --run-id smoke-001 --benchmark-dir /path/to/benchmarks/current \
+  --num-rounds 1 --num-training-sqls 16
+```
 
-The stable taxonomy uses `technique`, `reference_scope`, and `comment_state`.
-Checkpoint and mutation-memory metadata retain the v3 schema identifier, so a
-checkpoint with another taxonomy contract is rejected rather than migrated.
+Each run records its resolved configuration, Git revision, benchmark-manifest
+checksum, per-round sampling probabilities, selected clusters, weights,
+evaluation metrics, stage timings, and resource measurements. See
+[`docs/experiment-protocol.md`](docs/experiment-protocol.md) and
+[`docs/reproducibility.md`](docs/reproducibility.md) for the full contract.
 
-All prompt bodies are Jinja2 files under `prompts/`. Mutation rendering code
-selects a template and supplies technical guidance; it does not contain a
-second prompt-template implementation. The mutation prompts define the
-`lor`, `tsr`, and `scr` reference scopes and identify memory examples as
-negative few-shot context.
-
-## Validation
-
-Run the focused regression suite:
+## Validate
 
 ```bash
 python -m pytest -q
 ```
 
-The test suite verifies taxonomy arm stability, v3 checkpoint rejection and
-restoration, mutation memory behavior, prompt rendering, CEPP few-shots, and
-the external-artifact guard.
+The suite verifies taxonomy stability, benchmark construction guards, current
+configuration validation, Qwen chat rendering and tokenization, verifier
+updates, checkpoint boundaries, reporting, telemetry, and scheduler log paths.

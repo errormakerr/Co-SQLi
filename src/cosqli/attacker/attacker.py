@@ -14,6 +14,7 @@ Responsibilities
 
 from __future__ import annotations
 
+import copy
 import random
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -60,6 +61,9 @@ class Attacker:
             mutation. Requires an external LLM configuration.
         mutation_model:          Override the LLM model name used for mutation.
             Defaults to the value in the external LLM configuration.
+        weight_exponent:         Exponent applied to weights when computing the
+            sampling distribution.
+        random_seed:             Seed for local sampling decisions.
     """
 
     # ------------------------------------------------------------------
@@ -75,6 +79,8 @@ class Attacker:
         benign_ratio: float = DEFAULT_BENIGN_RATIO,
         enable_payload_mutation: bool = True,
         mutation_model: Optional[str] = None,
+        weight_exponent: float = 2.0,
+        random_seed: Optional[int] = None,
     ) -> None:
         if not cluster_list:
             raise ValueError("cluster_list must not be empty")
@@ -91,10 +97,16 @@ class Attacker:
             raise ValueError("normal_sqls_path must be provided")
         if source_data_dir is None:
             raise ValueError("source_data_dir must be provided")
+        if weight_exponent <= 0.0:
+            raise ValueError(f"weight_exponent must be positive, got {weight_exponent}")
 
         self.cluster_list = cluster_list
         self.number_of_training_sqls = number_of_training_sqls
         self.benign_ratio = benign_ratio
+        self.weight_exponent = float(weight_exponent)
+        self.random_seed = random_seed
+        self._random = random.Random(random_seed)
+        self._rng = np.random.default_rng(random_seed)
 
         # Initialise uniform cluster probability distribution
         init_prob = 1.0 / len(cluster_list)
@@ -103,7 +115,12 @@ class Attacker:
         }
 
         # Load raw data files
-        self.normal_sqls: List[Dict[str, Any]] = read_json_file(normal_sqls_path)
+        all_normal_sqls: List[Dict[str, Any]] = read_json_file(normal_sqls_path)
+        self.normal_sqls = [
+            sql for sql in all_normal_sqls if sql.get("set") == "train"
+        ]
+        if not self.normal_sqls:
+            raise ValueError("normal_sqls.json contains no set == 'train' records")
 
         raw_sqls = read_json_file(f"{source_data_dir}/sql_data_with_injection_point.json")
         self.train_raw_sqls: List[Dict[str, Any]] = [
@@ -130,6 +147,7 @@ class Attacker:
 
         # Per-round list of successfully mutated payloads (for logging/saving)
         self.mutated_payloads: List[Dict[str, Any]] = []
+        self.last_generation_stats: Dict[str, Any] = {}
 
         if enable_payload_mutation:
             self._init_payload_mutator(mutation_model)
@@ -176,8 +194,8 @@ class Attacker:
                 f"but only {total} are available"
             )
         if replace and k > total:
-            return random.choices(self.normal_sqls, k=k)
-        return random.sample(self.normal_sqls, k=k)
+            return self._random.choices(self.normal_sqls, k=k)
+        return self._random.sample(self.normal_sqls, k=k)
 
     # ------------------------------------------------------------------
     # MAB cluster probability distribution
@@ -189,12 +207,14 @@ class Attacker:
         clusters_weight_distribution: Dict[str, float],
     ) -> None:
         """
-        Update ``clusters_probability_distribution`` using the MAB EXP3 rule.
+        Update ``clusters_probability_distribution`` from current weights.
 
         The update blends the weight-proportional distribution with a uniform
         prior controlled by *gamma* (exploration rate):
 
-            p(k) = (1 - γ) × w(k) / Σw  +  γ / N
+            p(k) = (1 - γ) × w(k)^q / Σw(j)^q  +  γ / N
+
+        ``q`` is the configured weight exponent.
 
         Args:
             gamma:                        Exploration coefficient (0 < γ ≤ 1).
@@ -204,7 +224,10 @@ class Attacker:
             key: float(clusters_weight_distribution.get(key, 0.0))
             for key in self.cluster_list
         }
-        total_weight = sum(weights.values())
+        powered_weights = {
+            key: weight ** self.weight_exponent for key, weight in weights.items()
+        }
+        total_weight = sum(powered_weights.values())
 
         n = len(self.cluster_list)
 
@@ -214,7 +237,7 @@ class Attacker:
             return
 
         new_dist: Dict[str, float] = {
-            key: (1.0 - gamma) * (weights[key] / total_weight) + gamma / n
+            key: (1.0 - gamma) * (powered_weights[key] / total_weight) + gamma / n
             for key in self.cluster_list
         }
 
@@ -270,7 +293,7 @@ class Attacker:
             )
             total = probs.sum()
             probs = probs / total if total > 0 else np.full(len(probs), 1.0 / len(probs))
-            indices = np.random.default_rng().choice(len(keys), size=k, replace=False, p=probs)
+            indices = self._rng.choice(len(keys), size=k, replace=False, p=probs)
             return [keys[i] for i in indices]
 
         raise ValueError(f"_select_clusters: unsupported strategy {strategy!r}")
@@ -308,7 +331,7 @@ class Attacker:
                 f"requires_comment_delimiter={requires_delimiter!r} "
                 f"(cluster={cluster!r})"
             )
-        sql_example = random.choice(sql_candidates)
+        sql_example = self._random.choice(sql_candidates)
 
         payload_key = str(cluster_key.payload_category_key())
         payload_candidates = self.train_payloads_clusters.get(payload_key)
@@ -317,7 +340,7 @@ class Attacker:
                 f"No payload templates found for payload cluster {payload_key!r} "
                 f"(cluster={cluster!r})"
             )
-        payload_example = random.choice(payload_candidates)
+        payload_example = self._random.choice(payload_candidates)
 
         return sql_example, payload_example, cluster_key.comment_state
 
@@ -379,7 +402,7 @@ class Attacker:
         if not self.enable_payload_mutation or self.payload_mutator is None:
             return payload_template.copy()
 
-        if random.random() > modify_probability:
+        if self._random.random() > modify_probability:
             return payload_template.copy()
 
         try:
@@ -421,6 +444,10 @@ class Attacker:
     def get_mutated_payloads(self) -> List[Dict[str, Any]]:
         """Return a copy of the mutation log for the current round."""
         return self.mutated_payloads.copy()
+
+    def get_generation_stats(self) -> Dict[str, Any]:
+        """Return the statistics for the most recent training-data synthesis round."""
+        return copy.deepcopy(self.last_generation_stats)
 
     def clear_mutated_payloads(self) -> None:
         """Reset the per-round mutation log.  Call at the start of each round."""
@@ -497,6 +524,9 @@ class Attacker:
         mean_weight = sum(active_weights.values()) / max(len(active_weights), 1)
 
         injection_sql_examples: List[Any] = []
+        cluster_sqls: Dict[str, List[str]] = {cluster: [] for cluster in target_clusters}
+        cluster_attempts: Dict[str, int] = {cluster: 0 for cluster in target_clusters}
+        cluster_failures: Dict[str, int] = {cluster: 0 for cluster in target_clusters}
         mutation_count = 0
         count = 0
 
@@ -504,6 +534,7 @@ class Attacker:
 
         while count < expected_injection_num:
             for cluster in target_clusters:
+                cluster_attempts[cluster] += 1
                 sql_example, payload_example, comment_state = (
                     self._get_raw_data_by_cluster_feature(cluster)
                 )
@@ -548,7 +579,10 @@ class Attacker:
                 )
                 if injection_sql_example is not None:
                     injection_sql_examples.append(injection_sql_example)
+                    cluster_sqls[cluster].append(injection_sql_example["sql"])
                     count += 1
+                else:
+                    cluster_failures[cluster] += 1
                 if count >= expected_injection_num:
                     break
 
@@ -577,9 +611,37 @@ class Attacker:
         normal_sql_examples = self._sample_normal_sqls(k=expected_normal_num, replace=False)
 
         training_sqls = injection_sql_examples + normal_sql_examples
-        random.shuffle(training_sqls)
+        self._random.shuffle(training_sqls)
         
         # Format to SFT format
         formatted_training_sqls = batch_process_to_sft(training_sqls, self.db_schemas, format_type="openai")
+
+        all_sqls = [record["sql"] for record in training_sqls]
+        mutation_stats = self.payload_mutator.get_stats() if self.payload_mutator else None
+        self.last_generation_stats = {
+            "requested_examples": expected_example_num,
+            "random_seed": self.random_seed,
+            "weight_exponent": self.weight_exponent,
+            "generated_examples": len(formatted_training_sqls),
+            "requested_attack_examples": expected_injection_num,
+            "generated_attack_examples": len(injection_sql_examples),
+            "requested_benign_examples": expected_normal_num,
+            "generated_benign_examples": len(normal_sql_examples),
+            "selected_clusters": target_clusters,
+            "cluster_probability_distribution": dict(self.clusters_probability_distribution),
+            "per_cluster": {
+                cluster: {
+                    "generated_examples": len(cluster_sqls[cluster]),
+                    "attempts": cluster_attempts[cluster],
+                    "pipeline_failures": cluster_failures[cluster],
+                    "retries": max(0, cluster_attempts[cluster] - len(cluster_sqls[cluster])),
+                    "duplicate_sqls": len(cluster_sqls[cluster]) - len(set(cluster_sqls[cluster])),
+                }
+                for cluster in target_clusters
+            },
+            "duplicate_sqls": len(all_sqls) - len(set(all_sqls)),
+            "round_mutated_examples": mutation_count,
+            "payload_mutation_stats": mutation_stats,
+        }
         
         return formatted_training_sqls, self.clusters_probability_distribution

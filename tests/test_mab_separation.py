@@ -1,4 +1,4 @@
-"""Regression tests for taxonomy-v3 MAB and checkpoint boundaries."""
+"""Regression tests for taxonomy, adversarial weights, and checkpoints."""
 
 from __future__ import annotations
 
@@ -9,8 +9,14 @@ from pathlib import Path
 from unittest.mock import patch
 
 from cosqli.attacker.attacker import Attacker
+from cosqli.defender.defender import DefenderOutput, EvaluationOutput
 from cosqli.verifier.verifier import Verifier
-from cosqli.main import ProjectPaths, run_training_loop, run_training_round
+from cosqli.main import (
+    ProjectPaths,
+    attacker_gamma_for_round,
+    run_training_loop,
+    run_training_round,
+)
 from cosqli.paths import PROJECT_ROOT, require_external_path
 from cosqli.synthesis.injection_pipeline import pipeline
 from cosqli.utils.cluster import (
@@ -116,6 +122,7 @@ class TaxonomyAndMABTests(unittest.TestCase):
         attacker = object.__new__(Attacker)
         attacker.cluster_list = [ATTACK_CLUSTER_A, ATTACK_CLUSTER_B]
         attacker.benign_ratio = 0.25
+        attacker.weight_exponent = 2.0
         attacker._update_clusters_probability_distribution(
             gamma=0.7,
             clusters_weight_distribution={
@@ -127,11 +134,28 @@ class TaxonomyAndMABTests(unittest.TestCase):
         probabilities = attacker.clusters_probability_distribution
         self.assertEqual(set(probabilities), {ATTACK_CLUSTER_A, ATTACK_CLUSTER_B})
         self.assertAlmostEqual(sum(probabilities.values()), 1.0)
-        self.assertAlmostEqual(probabilities[ATTACK_CLUSTER_A], 0.425)
-        self.assertAlmostEqual(probabilities[ATTACK_CLUSTER_B], 0.575)
+        self.assertAlmostEqual(probabilities[ATTACK_CLUSTER_A], 0.38)
+        self.assertAlmostEqual(probabilities[ATTACK_CLUSTER_B], 0.62)
         self.assertEqual(attacker._get_sample_counts(300), (225, 75))
 
-    def test_verifier_uses_smoothed_fnr_and_exp3_weight(self) -> None:
+    def test_attacker_gamma_schedule_matches_the_eight_round_protocol(self) -> None:
+        observed = [attacker_gamma_for_round(round_idx, 8) for round_idx in range(8)]
+        expected = [0.70, 0.6285714286, 0.5571428571, 0.4857142857, 0.4142857143, 0.3428571429, 0.2714285714, 0.20]
+        for actual, target in zip(observed, expected):
+            self.assertAlmostEqual(actual, target)
+
+    def test_attacker_filters_benign_sqls_to_the_train_split(self) -> None:
+        attacker = Attacker(
+            number_of_training_sqls=8,
+            cluster_list=[ATTACK_CLUSTER_A, ATTACK_CLUSTER_B],
+            normal_sqls_path=str(PROJECT_ROOT / "data" / "source" / "normal_sqls.json"),
+            source_data_dir=str(PROJECT_ROOT / "data" / "source"),
+            enable_payload_mutation=False,
+        )
+        self.assertTrue(attacker.normal_sqls)
+        self.assertTrue(all(item["set"] == "train" for item in attacker.normal_sqls))
+
+    def test_verifier_uses_smoothed_fnr_and_centered_full_information_weight(self) -> None:
         verifier = Verifier([ATTACK_CLUSTER_A, ATTACK_CLUSTER_B])
         verifier.update_reward(
             [
@@ -145,12 +169,21 @@ class TaxonomyAndMABTests(unittest.TestCase):
         )
         self.assertAlmostEqual(verifier.cluster_rewards[ATTACK_CLUSTER_A], 3 / 5)
         self.assertAlmostEqual(verifier.cluster_rewards[ATTACK_CLUSTER_B], 1 / 4)
-        verifier.update_weight(
-            gamma=0.3,
-            cluster_probability_distribution={ATTACK_CLUSTER_A: 0.4, ATTACK_CLUSTER_B: 0.6},
-        )
-        self.assertAlmostEqual(verifier.get_weights()[ATTACK_CLUSTER_A], math.exp(0.225))
-        self.assertAlmostEqual(verifier.get_weights()[ATTACK_CLUSTER_B], math.exp(0.0625))
+        verifier.update_weight(learning_rate=0.3)
+        self.assertAlmostEqual(verifier.get_last_reward_baseline(), 0.425)
+        self.assertAlmostEqual(verifier.get_weights()[ATTACK_CLUSTER_A], math.exp(0.0525))
+        self.assertAlmostEqual(verifier.get_weights()[ATTACK_CLUSTER_B], math.exp(-0.0525))
+
+    def test_verifier_full_information_weight_is_probability_independent(self) -> None:
+        verifier = Verifier([ATTACK_CLUSTER_A, ATTACK_CLUSTER_B])
+        verifier.cluster_rewards = {
+            ATTACK_CLUSTER_A: 0.25,
+            ATTACK_CLUSTER_B: 0.25,
+        }
+        verifier.update_weight(learning_rate=0.3)
+        self.assertAlmostEqual(verifier.get_last_reward_baseline(), 0.25)
+        self.assertEqual(verifier.get_weights()[ATTACK_CLUSTER_A], 1.0)
+        self.assertEqual(verifier.get_weights()[ATTACK_CLUSTER_B], 1.0)
 
     def test_verifier_rejects_missing_declared_feedback(self) -> None:
         verifier = Verifier([ATTACK_CLUSTER_A, ATTACK_CLUSTER_B])
@@ -165,15 +198,28 @@ class TaxonomyAndMABTests(unittest.TestCase):
             def generate_training_sqls(self, **_kwargs):
                 return [], {ATTACK_CLUSTER_A: 1.0}
 
+            def get_generation_stats(self):
+                return {}
+
             def set_benign_ratio(self, _value: float) -> None:
                 pass
 
         class FakeDefender:
             def run_all(self, **_kwargs):
-                return [
+                validation_results = [
                     attack_result(ATTACK_CLUSTER_A, "malicious", True),
                     {"label": True, "predicted_answer": "benign", "is_correct": True},
                 ]
+                test_results = [
+                    attack_result(ATTACK_CLUSTER_A, "benign", False),
+                    {"label": True, "predicted_answer": "malicious", "is_correct": False},
+                ]
+                return DefenderOutput(
+                    validation=EvaluationOutput("validation", validation_results, {}, 0.0),
+                    test=EvaluationOutput("test", test_results, {}, 0.0),
+                    stages={},
+                    training_metrics={},
+                )
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
@@ -184,19 +230,22 @@ class TaxonomyAndMABTests(unittest.TestCase):
             metadata = read_json_file(str(root / "round_0" / "round_metadata.json"))
             self.assertEqual(metadata["taxonomy_version"], TAXONOMY_VERSION)
             self.assertEqual(metadata["attack_clusters"], [ATTACK_CLUSTER_A])
+            self.assertEqual(metadata["verifier_update"], "centered_full_information_exponential")
+            self.assertEqual(metadata["verifier_learning_rate"], 1.0)
+            self.assertAlmostEqual(metadata["verifier_reward_baseline"], 1 / 3)
+            self.assertAlmostEqual(verifier.cluster_rewards[ATTACK_CLUSTER_A], 1 / 3)
 
-    def test_breakpoint_rejects_pre_taxonomy_checkpoint(self) -> None:
+    def test_breakpoint_rejects_missing_checkpoint_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
             paths = ProjectPaths(root, root, root, root, root, root)
             verifier = Verifier([ATTACK_CLUSTER_A])
             attacker = type("FakeAttacker", (), {"mutation_memory": None, "set_benign_ratio": lambda *_: None})()
-            with (
-                patch("cosqli.main.ProjectPaths.create", return_value=paths),
-                patch("cosqli.main.initialize_components", return_value=(attacker, object(), verifier)),
-                patch("cosqli.main.os.chdir"),
-            ):
-                with self.assertRaisesRegex(ValueError, "pre-taxonomy-v3"):
+            with patch("cosqli.main.ProjectPaths.create", return_value=paths), \
+                 patch("cosqli.main.initialize_components", return_value=(attacker, object(), verifier)), \
+                 patch("cosqli.main._sha256", return_value="test-checksum"), \
+                 patch("cosqli.main.os.chdir"):
+                with self.assertRaisesRegex(ValueError, "metadata is missing"):
                     run_training_loop(start_round=0, breakpoint_round=0)
 
     def test_breakpoint_restores_matching_taxonomy_checkpoint(self) -> None:
@@ -212,12 +261,11 @@ class TaxonomyAndMABTests(unittest.TestCase):
             paths = ProjectPaths(root, root, root, root, root, root)
             verifier = Verifier([ATTACK_CLUSTER_A])
             attacker = type("FakeAttacker", (), {"mutation_memory": None, "set_benign_ratio": lambda *_: None})()
-            with (
-                patch("cosqli.main.ProjectPaths.create", return_value=paths),
-                patch("cosqli.main.initialize_components", return_value=(attacker, object(), verifier)),
-                patch("cosqli.main.os.chdir"),
-                patch("cosqli.main.run_training_round") as run_round,
-            ):
+            with patch("cosqli.main.ProjectPaths.create", return_value=paths), \
+                 patch("cosqli.main.initialize_components", return_value=(attacker, object(), verifier)), \
+                 patch("cosqli.main._sha256", return_value="test-checksum"), \
+                 patch("cosqli.main.os.chdir"), \
+                 patch("cosqli.main.run_training_round") as run_round:
                 run_training_loop(start_round=8, breakpoint_round=0)
             run_round.assert_not_called()
             self.assertEqual(verifier.get_weights(), {ATTACK_CLUSTER_A: 1.75})

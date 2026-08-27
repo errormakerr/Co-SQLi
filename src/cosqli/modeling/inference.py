@@ -17,12 +17,21 @@ Usage:
 import argparse
 import json
 import os
+import random
+import time
 from typing import Dict, List, Optional
 
 import torch
+import numpy as np
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
+from cosqli.evaluation import compute_classification_metrics, compute_cluster_metrics
+from cosqli.modeling.chat import (
+    collect_message_tokenization_stats,
+    render_inference_chat,
+    tokenize_rendered_chat,
+)
 from cosqli.paths import require_external_path
 
 
@@ -67,6 +76,7 @@ def parse_args() -> argparse.Namespace:
         help="Sampling temperature (lower = more deterministic).",
     )
     parser.add_argument("--top_p", type=float, default=0.9, help="Nucleus sampling parameter.")
+    parser.add_argument("--seed", type=int, required=True, help="Random seed for generation.")
     parser.add_argument(
         "--device",
         type=str,
@@ -117,36 +127,22 @@ def load_test_data(file_path: str, max_samples: Optional[int] = None) -> List[Di
 # Prompt construction (must match the format used during fine-tuning)
 # ---------------------------------------------------------------------------
 
-def build_prompt_from_messages(messages: List[Dict]) -> str:
+def build_prompt_from_messages(tokenizer, messages: List[Dict]) -> str:
     """
     Build an inference prompt from an OpenAI-style ``messages`` list.
 
-    The format matches the chat template set in ``finetune.py``::
-
-        <|system|>\\n{system_content}
-        <|user|>\\n{user_content}
-        <|assistant|>
-
-    The assistant turn is intentionally left open — the model generates the
-    completion.
+    Qwen's native tokenizer chat template renders the prompt and opens the
+    assistant turn. The rendered result must later be tokenized with
+    ``add_special_tokens=False``.
 
     Args:
+        tokenizer: Qwen tokenizer supplying ``apply_chat_template``.
         messages: List of ``{"role": ..., "content": ...}`` dicts.
 
     Returns:
         Formatted prompt string.
     """
-    prompt_text = ""
-    for message in messages:
-        if message["role"] == "system":
-            prompt_text += "<|system|>\n" + message["content"].strip() + "\n"
-        elif message["role"] == "user":
-            prompt_text += "<|user|>\n" + message["content"].strip() + "\n"
-        elif message["role"] == "assistant":
-            # Only emit the role tag; the model fills in the content.
-            prompt_text += "<|assistant|>\n"
-            break
-    return prompt_text.strip()
+    return render_inference_chat(tokenizer, messages)
 
 
 # ---------------------------------------------------------------------------
@@ -232,7 +228,15 @@ def run_inference(args: argparse.Namespace) -> None:
     print("Starting model inference and evaluation")
     print("=" * 80)
 
+    started_at = time.perf_counter()
+    random.seed(args.seed)
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(args.seed)
+
     # 1. Load tokenizer and model
+    model_load_started_at = time.perf_counter()
     print(f"\nLoading model: {args.model_path}")
     tokenizer = AutoTokenizer.from_pretrained(
         args.model_path,
@@ -251,10 +255,17 @@ def run_inference(args: argparse.Namespace) -> None:
     if args.device == "cpu":
         model = model.to(args.device)
     model.eval()
+    model_load_seconds = time.perf_counter() - model_load_started_at
     print("Model loaded successfully.")
 
     # 2. Load test data
     test_data = load_test_data(args.test_file, args.max_samples)
+    tokenization_stats = collect_message_tokenization_stats(
+        test_data,
+        tokenizer,
+        args.max_seq_length,
+        purpose="inference",
+    )
 
     # 3. Inference loop
     results: List[Dict] = []
@@ -264,6 +275,7 @@ def run_inference(args: argparse.Namespace) -> None:
     os.makedirs(os.path.dirname(args.output_file), exist_ok=True)
 
     print(f"\nRunning inference (batch_size={args.batch_size}) ...")
+    inference_started_at = time.perf_counter()
     with torch.no_grad():
         for i in tqdm(range(0, len(test_data), args.batch_size)):
             batch = test_data[i : i + args.batch_size]
@@ -272,10 +284,11 @@ def run_inference(args: argparse.Namespace) -> None:
             ground_truths: List[str] = []
             for example in batch:
                 messages = example["messages"]
-                prompts.append(build_prompt_from_messages(messages))
+                prompts.append(build_prompt_from_messages(tokenizer, messages))
                 ground_truths.append(get_ground_truth(messages))
 
-            inputs = tokenizer(
+            inputs = tokenize_rendered_chat(
+                tokenizer,
                 prompts,
                 return_tensors="pt",
                 padding=True,
@@ -329,8 +342,20 @@ def run_inference(args: argparse.Namespace) -> None:
                         result[key] = batch[j][key]
                 results.append(result)
 
-    # 4. Compute overall accuracy
-    accuracy = correct / total if total > 0 else 0.0
+    inference_seconds = time.perf_counter() - inference_started_at
+
+    # 4. Compute aggregate and taxonomy-aware metrics.
+    metrics = compute_classification_metrics(results)
+    metrics["timing"] = {
+        "model_load_seconds": model_load_seconds,
+        "inference_seconds": inference_seconds,
+        "total_seconds": time.perf_counter() - started_at,
+        "samples_per_second": total / inference_seconds if inference_seconds else 0.0,
+        "milliseconds_per_sample": 1000 * inference_seconds / total if total else 0.0,
+    }
+    metrics["tokenization"] = tokenization_stats
+    cluster_metrics = compute_cluster_metrics(results)
+    accuracy = metrics["accuracy"]
     print(f"\nOverall accuracy: {accuracy:.4f}  ({correct}/{total})")
 
     # 5. Write results
@@ -341,13 +366,12 @@ def run_inference(args: argparse.Namespace) -> None:
 
     metrics_path = os.path.join(os.path.dirname(args.output_file), "metrics.json")
     with open(metrics_path, "w", encoding="utf-8") as f:
-        json.dump(
-            {"accuracy": accuracy, "total": total, "correct": correct},
-            f,
-            ensure_ascii=False,
-            indent=2,
-        )
+        json.dump(metrics, f, ensure_ascii=False, indent=2)
+    cluster_metrics_path = os.path.join(os.path.dirname(args.output_file), "cluster_metrics.json")
+    with open(cluster_metrics_path, "w", encoding="utf-8") as f:
+        json.dump(cluster_metrics, f, ensure_ascii=False, indent=2)
     print(f"Metrics saved to: {metrics_path}")
+    print(f"Cluster metrics saved to: {cluster_metrics_path}")
     print("\nDone!")
 
 
@@ -369,6 +393,7 @@ def main() -> None:
     print(f"  Max new tokens:   {args.max_new_tokens}")
     print(f"  Temperature:      {args.temperature}")
     print(f"  Top-p:            {args.top_p}")
+    print(f"  Seed:             {args.seed}")
     if args.max_samples is not None:
         print(f"  Max samples:      {args.max_samples}")
     print()

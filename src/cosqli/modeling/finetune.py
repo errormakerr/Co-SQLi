@@ -15,10 +15,12 @@ Supported training data formats:
 """
 import sys
 import argparse
+import json
 import logging
 import math
 import os
 import random
+import time
 import datasets
 from datetime import timedelta
 import torch
@@ -46,6 +48,15 @@ from transformers import (
     GPT2Tokenizer,
     OPTForCausalLM,
     BitsAndBytesConfig
+)
+
+from cosqli.modeling.chat import (
+    assistant_only_labels,
+    collect_message_tokenization_stats,
+    render_inference_chat,
+    render_training_chat,
+    token_ids_from_rendered_chat,
+    tokenize_rendered_chat,
 )
 from peft import LoraConfig, TaskType, get_peft_model, prepare_model_for_kbit_training
 
@@ -156,72 +167,30 @@ def encode_with_messages_format(example, tokenizer, max_seq_length, with_prompt_
     """
     Tokenise an OpenAI-style ``messages`` example.
 
-    All messages are concatenated with role delimiters and tokenised together.
-    Non-assistant turn tokens are masked in the labels (set to -100) unless
-    *with_prompt_token* is True.
+    The Qwen tokenizer owns role rendering through ``apply_chat_template``.
+    Its rendered control tokens are encoded exactly once, and only the
+    assistant response tokens receive supervision.
     """
     messages = example["messages"]
-    if len(messages) == 0:
-        raise ValueError("messages field is empty.")
-
-    def _concat_messages(msgs):
-        text = ""
-        for msg in msgs:
-            if msg["role"] == "system":
-                text += "<|system|>\n" + msg["content"].strip() + "\n"
-            elif msg["role"] == "user":
-                text += "<|user|>\n" + msg["content"].strip() + "\n"
-            elif msg["role"] == "assistant":
-                text += "<|assistant|>\n" + msg["content"].strip() + tokenizer.eos_token + "\n"
-            else:
-                raise ValueError(f"Invalid role: {msg['role']!r}")
-        return text
-
-    example_text = _concat_messages(messages).strip()
+    if with_prompt_token:
+        raise ValueError("messages training must use assistant-only labels")
     if add_bos:
-        example_text = tokenizer.bos_token + example_text
+        raise ValueError("Qwen chat templates manage their own control tokens; do not add BOS")
 
-    tokenized_example = tokenizer(
-        example_text, return_tensors="pt", max_length=max_seq_length, truncation=True
+    example_text = render_training_chat(tokenizer, messages)
+    prompt_text = render_inference_chat(tokenizer, messages)
+    prompt_token_ids = token_ids_from_rendered_chat(tokenizer, prompt_text)
+    tokenized_example = tokenize_rendered_chat(
+        tokenizer,
+        example_text,
+        return_tensors="pt",
+        max_length=max_seq_length,
+        truncation=True,
     )
     input_ids = tokenized_example.input_ids
     labels = input_ids.clone()
-
-    # Mask non-assistant turns so the loss is only computed on assistant tokens
-    for message_idx, message in enumerate(messages):
-        if message["role"] != "assistant":
-            message_start_idx = (
-                0
-                if message_idx == 0
-                else tokenizer(
-                    _concat_messages(messages[:message_idx]),
-                    return_tensors="pt",
-                    max_length=max_seq_length,
-                    truncation=True,
-                ).input_ids.shape[1]
-            )
-            # Include the assistant role tag in the masked region so it is
-            # not used for loss computation either.
-            if (
-                message_idx < len(messages) - 1
-                and messages[message_idx + 1]["role"] == "assistant"
-            ):
-                messages_so_far = _concat_messages(messages[: message_idx + 1]) + "<|assistant|>\n"
-            else:
-                messages_so_far = _concat_messages(messages[: message_idx + 1])
-
-            message_end_idx = tokenizer(
-                messages_so_far,
-                return_tensors="pt",
-                max_length=max_seq_length,
-                truncation=True,
-            ).input_ids.shape[1]
-
-            if not with_prompt_token:
-                labels[:, message_start_idx:message_end_idx] = -100
-
-            if message_end_idx >= max_seq_length:
-                break
+    label_ids = assistant_only_labels(input_ids[0].tolist(), prompt_token_ids)
+    labels[0] = torch.tensor(label_ids, dtype=labels.dtype)
 
     attention_mask = torch.ones_like(input_ids)
     return {
@@ -458,22 +427,10 @@ def _load_model_and_tokenizer(args, accelerator):
     with deepspeed.zero.GatheredParameters(embeddings.weight, modifier_rank=None):
         embedding_size = embeddings.weight.shape[0]
 
-    # Set the tokenizer chat template (Tulu / Open-Instruct format).
-    # This ensures consistent prompt formatting during both training and evaluation.
-    tokenizer.chat_template = (  # noqa: E501
-        "{% for message in messages %}\n"
-        "{% if message['role'] == 'user' %}\n"
-        "{{ '<|user|>\n' + message['content'] }}\n"
-        "{% elif message['role'] == 'assistant' %}\n"
-        "{{ '<|assistant|>\n'  + message['content'] + eos_token }}\n"
-        "{% endif %}\n"
-        "{% if loop.last and add_generation_prompt %}\n"
-        "{{ '<|assistant|>' }}\n"
-        "{% endif %}\n"
-        "{% endfor %}"
-    )
-    if args.add_bos:
-        tokenizer.chat_template = "{{ bos_token }}" + tokenizer.chat_template
+    if not getattr(tokenizer, "chat_template", None):
+        raise ValueError(
+            "The configured Qwen tokenizer must provide its native chat template."
+        )
 
 
     # --- LoRA / QLoRA setup ---
@@ -517,6 +474,7 @@ def _load_model_and_tokenizer(args, accelerator):
 def _encode_and_prepare_dataset(args, raw_datasets, model, tokenizer, accelerator):
     """Encode raw datasets into tokenised training tensors and apply token selection."""
     # --- Dataset encoding ---
+    tokenization_stats = {}
     if "prompt" in raw_datasets["train"].column_names and "completion" in raw_datasets["train"].column_names:
         encode_function = partial(
             encode_with_prompt_completion_format,
@@ -527,6 +485,12 @@ def _encode_and_prepare_dataset(args, raw_datasets, model, tokenizer, accelerato
         )
 
     elif "messages" in raw_datasets["train"].column_names:
+        tokenization_stats = collect_message_tokenization_stats(
+            raw_datasets["train"],
+            tokenizer,
+            args.max_seq_length,
+            purpose="training",
+        )
         encode_function = partial(
             encode_with_messages_format,
             tokenizer=tokenizer,
@@ -565,6 +529,21 @@ def _encode_and_prepare_dataset(args, raw_datasets, model, tokenizer, accelerato
 
     train_dataset = lm_datasets["train"]
     orig_labels = train_dataset["labels"]
+    retained_indices = [
+        index
+        for index, labels in enumerate(orig_labels)
+        if torch.any(labels != -100).item()
+    ]
+    if len(retained_indices) != len(train_dataset):
+        if not retained_indices:
+            raise ValueError("All training examples lost their assistant labels after truncation")
+        train_dataset = train_dataset.select(retained_indices)
+        orig_labels = train_dataset["labels"]
+    if tokenization_stats:
+        tokenization_stats["retained_training_examples"] = len(train_dataset)
+        tokenization_stats["dropped_fully_masked_examples"] = (
+            tokenization_stats["total_examples"] - len(train_dataset)
+        )
 
     # --- Token selection strategy ---
     if args.token_select_pattern == "token_cleaning":
@@ -596,7 +575,7 @@ def _encode_and_prepare_dataset(args, raw_datasets, model, tokenizer, accelerato
         with_indices=True,
     )
 
-    return train_dataset
+    return train_dataset, tokenization_stats
 
 
 def _build_optimizer_and_scheduler(args, model, tokenizer, train_dataset, accelerator):
@@ -700,6 +679,7 @@ def _training_loop(args, model, tokenizer, train_dataset, train_dataloader,
                    embedding_size):
     """Execute the main training loop with checkpointing and optional tracking."""
     # --- Training loop ---
+    optimization_started_at = time.perf_counter()
     total_batch_size = (
         args.per_device_train_batch_size
         * accelerator.num_processes
@@ -752,6 +732,7 @@ def _training_loop(args, model, tokenizer, train_dataset, train_dataloader,
             resume_step -= starting_epoch * len(train_dataloader)
 
     progress_bar.update(completed_steps)
+    last_logged_loss = None
     
     for epoch in range(starting_epoch, args.num_train_epochs):
         model.train()
@@ -815,6 +796,7 @@ def _training_loop(args, model, tokenizer, train_dataset, train_dataloader,
                 completed_steps += 1
                 if args.logging_steps and completed_steps % args.logging_steps == 0:
                     avg_loss = accelerator.gather(total_loss).mean().item() / args.gradient_accumulation_steps / args.logging_steps
+                    last_logged_loss = avg_loss
                     logger.info(f"  Step: {completed_steps}, LR: {lr_scheduler.get_last_lr()[0]}, Loss: {avg_loss}")
                     if args.with_tracking:
                         accelerator.log(
@@ -853,6 +835,27 @@ def _training_loop(args, model, tokenizer, train_dataset, train_dataloader,
     if args.with_tracking:
         accelerator.end_training()
 
+    optimization_seconds = time.perf_counter() - optimization_started_at
+    training_examples = len(train_dataset) * args.num_train_epochs
+    supervised_tokens_per_epoch = 0
+    for item in train_dataset:
+        labels = item["labels"]
+        supervised_tokens_per_epoch += int((labels != -100).sum().item())
+    training_tokens = supervised_tokens_per_epoch * args.num_train_epochs
+    return {
+        "optimization_seconds": optimization_seconds,
+        "training_examples": training_examples,
+        "training_tokens": training_tokens,
+        "completed_steps": completed_steps,
+        "planned_steps": args.max_train_steps,
+        "epochs": args.num_train_epochs,
+        "global_batch_size": total_batch_size,
+        "train_examples_per_second": training_examples / optimization_seconds if optimization_seconds else 0.0,
+        "train_tokens_per_second": training_tokens / optimization_seconds if optimization_seconds else 0.0,
+        "train_steps_per_second": completed_steps / optimization_seconds if optimization_seconds else 0.0,
+        "last_logged_loss": last_logged_loss,
+    }
+
 
 def run_finetune(args):
     """
@@ -869,18 +872,29 @@ def run_finetune(args):
     Args:
         args: Parsed command-line arguments from :func:`parse_args`.
     """
+    started_at = time.perf_counter()
     accelerator = _setup_accelerator(args)
     raw_datasets = _load_raw_datasets(args)
     model, tokenizer, embedding_size = _load_model_and_tokenizer(args, accelerator)
-    train_dataset = _encode_and_prepare_dataset(args, raw_datasets, model, tokenizer, accelerator)
+    train_dataset, tokenization_stats = _encode_and_prepare_dataset(
+        args, raw_datasets, model, tokenizer, accelerator
+    )
     model, optimizer, train_dataloader, lr_scheduler, checkpointing_steps = (
         _build_optimizer_and_scheduler(args, model, tokenizer, train_dataset, accelerator)
     )
-    _training_loop(
+    training_metrics = _training_loop(
         args, model, tokenizer, train_dataset, train_dataloader,
         optimizer, lr_scheduler, accelerator, checkpointing_steps,
         embedding_size,
     )
+    training_metrics["process_wall_seconds"] = time.perf_counter() - started_at
+    training_metrics["num_processes"] = accelerator.num_processes
+    if tokenization_stats:
+        training_metrics["tokenization"] = tokenization_stats
+    if args.metrics_file and accelerator.is_main_process:
+        os.makedirs(os.path.dirname(args.metrics_file), exist_ok=True)
+        with open(args.metrics_file, "w", encoding="utf-8") as handle:
+            json.dump(training_metrics, handle, ensure_ascii=False, indent=2)
 
 
 def parse_args() -> argparse.Namespace:
@@ -908,6 +922,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--weight_decay", type=float, default=0.0)
     parser.add_argument("--num_train_epochs", type=int, default=1)
     parser.add_argument("--output_dir", type=str, required=True)
+    parser.add_argument(
+        "--metrics_file",
+        type=str,
+        default=None,
+        help="Optional external JSON destination for structured training metrics.",
+    )
     parser.add_argument("--logging_steps", type=int, default=50)
 
     # Additional arguments passed from run_pipeline
@@ -958,6 +978,8 @@ def parse_args() -> argparse.Namespace:
 
     args = parser.parse_args()
     args.output_dir = str(require_external_path(args.output_dir, purpose="fine-tuning output"))
+    if args.metrics_file:
+        args.metrics_file = str(require_external_path(args.metrics_file, purpose="training metrics output"))
     return args
 
 def main():
