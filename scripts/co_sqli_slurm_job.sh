@@ -14,6 +14,10 @@ RUNTIME_ROOT="${COSQLI_RUNTIME_ROOT:?Set COSQLI_RUNTIME_ROOT to the external run
 MYSQL_ROOT="$RUNTIME_ROOT/mysql"
 MYSQL_CNF="${COSQLI_MYSQL_CNF:-$MYSQL_ROOT/my.cnf}"
 MYSQLD="${COSQLI_MYSQLD:-}"
+MYSQL_DATA_SOURCE="$MYSQL_ROOT/data"
+MYSQL_INSTANCE_DIR="${SLURM_TMPDIR:-/tmp}/cosqli-mysql-${SLURM_JOB_ID:-$$}"
+MYSQL_DATA_DIR="$MYSQL_INSTANCE_DIR/data"
+MYSQL_PORT="${COSQLI_MYSQL_PORT:-$((20000 + (${SLURM_JOB_ID:-$$} % 20000)))}"
 LOG_DIR="$RUN_DIR/logs"
 TELEMETRY_DIR="$RUN_DIR/telemetry"
 MYSQL_PID_FILE="$LOG_DIR/mysql.pid"
@@ -43,6 +47,7 @@ cleanup() {
         fi
     fi
     rm -f "$MYSQL_SOCKET"
+    rm -rf "$MYSQL_INSTANCE_DIR"
     "$PYTHON_BIN" "$PROJECT_ROOT/scripts/resource_monitor.py" \
         --output "$TELEMETRY_DIR/resource_samples.csv" \
         --summarize \
@@ -55,7 +60,7 @@ trap cleanup EXIT INT TERM
 if [[ -z "$MYSQLD" && -d "$MYSQL_ROOT" ]]; then
     MYSQLD="$(find "$MYSQL_ROOT" -type f -name mysqld -perm -u+x -print -quit)"
 fi
-if [[ ! -x "$MYSQLD" || ! -f "$MYSQL_CNF" ]]; then
+if [[ ! -x "$MYSQLD" || ! -f "$MYSQL_CNF" || ! -d "$MYSQL_DATA_SOURCE" ]]; then
     echo "MySQL runtime is incomplete under $MYSQL_ROOT" >&2
     exit 1
 fi
@@ -71,7 +76,14 @@ fi
 export PYTHONPATH="$PROJECT_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
 export PATH="$ENV_PREFIX/bin:$PATH"
 export PYTHONDONTWRITEBYTECODE=1
+export COSQLI_MYSQL_PORT="$MYSQL_PORT"
 mkdir -p "$LOG_DIR" "$TELEMETRY_DIR"
+if [[ -e "$MYSQL_INSTANCE_DIR" ]]; then
+    echo "Refusing to reuse MySQL instance directory: $MYSQL_INSTANCE_DIR" >&2
+    exit 1
+fi
+mkdir -p "$MYSQL_INSTANCE_DIR"
+cp -a "$MYSQL_DATA_SOURCE" "$MYSQL_DATA_DIR"
 
 "$PYTHON_BIN" "$PROJECT_ROOT/scripts/resource_monitor.py" \
     --output "$TELEMETRY_DIR/resource_samples.csv" \
@@ -79,8 +91,9 @@ mkdir -p "$LOG_DIR" "$TELEMETRY_DIR"
     --job-id "${SLURM_JOB_ID:-}" &
 RESOURCE_MONITOR_PID=$!
 
-(cd "$MYSQL_ROOT" && "$MYSQLD" --defaults-file="$MYSQL_CNF" --socket="$MYSQL_SOCKET" \
-    --pid-file="$MYSQL_PID_FILE" --log-error="$MYSQL_ERROR_LOG" --daemonize)
+(cd "$MYSQL_ROOT" && "$MYSQLD" --defaults-file="$MYSQL_CNF" --datadir="$MYSQL_DATA_DIR" \
+    --port="$MYSQL_PORT" --socket="$MYSQL_SOCKET" --pid-file="$MYSQL_PID_FILE" \
+    --log-error="$MYSQL_ERROR_LOG" --daemonize)
 MYSQL_STARTED=1
 for _ in {1..30}; do
     if "$PYTHON_BIN" "$PROJECT_ROOT/scripts/check_mysql_connection.py" --quiet; then

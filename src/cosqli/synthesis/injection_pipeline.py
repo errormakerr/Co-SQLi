@@ -15,6 +15,7 @@ Extracted components (imported from sub-modules):
 
 from __future__ import annotations
 
+import os
 import re
 import random
 from pathlib import Path
@@ -64,6 +65,15 @@ def get_mysql_config(
 
     _MYSQL_CONFIG_CACHE = load_yaml_to_dict(str(config_path))
     _MYSQL_CONFIG_CACHE["password"] = require_secret(_MYSQL_CONFIG_CACHE, "password")
+    port_override = os.environ.get("COSQLI_MYSQL_PORT")
+    if port_override:
+        try:
+            port = int(port_override)
+        except ValueError as error:
+            raise ValueError("COSQLI_MYSQL_PORT must be an integer") from error
+        if not 1 <= port <= 65535:
+            raise ValueError("COSQLI_MYSQL_PORT must be in [1, 65535]")
+        _MYSQL_CONFIG_CACHE["port"] = port
     return _MYSQL_CONFIG_CACHE
 
 
