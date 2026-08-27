@@ -27,10 +27,12 @@ from cosqli.utils.json_operation import read_json_file, write_json_file, write_j
 SOURCE_DIR = PROJECT_ROOT / "data" / "source"
 
 BENCHMARK_SPECS = {
+    "train_sqls.json": ("train", 2560, 640),
     "valid_sqls.json": ("train", 1920, 40),
-    "test_sqls.json": ("test", 1738, 875),
+    "test_sqls.json": ("test", 3200, 800),
 }
 SFT_FILENAMES = {
+    "train_sqls.json": "train_datas_openai_format.jsonl",
     "valid_sqls.json": "valid_datas_openai_format.jsonl",
     "test_sqls.json": "test_datas_openai_format.jsonl",
 }

@@ -55,8 +55,10 @@ BENCHMARK_SOURCE_FILENAMES = (
     "normal_sqls.json",
 )
 BENCHMARK_ARTIFACT_FILENAMES = {
+    "train_sqls.json",
     "valid_sqls.json",
     "test_sqls.json",
+    "train_datas_openai_format.jsonl",
     "valid_datas_openai_format.jsonl",
     "test_datas_openai_format.jsonl",
 }
@@ -221,6 +223,11 @@ def _validate_benchmark_contract(benchmark_dir: Path) -> None:
         raise ValueError(f"Unsupported benchmark manifest schema: {manifest_path}")
     datasets = manifest.get("datasets")
     expected: Dict[str, Dict[str, Any]] = {
+        "train_sqls.json": {
+            "source_split": "train",
+            "attack_count": 2560,
+            "benign_count": 640,
+        },
         "valid_sqls.json": {
             "source_split": "train",
             "attack_count": 1920,
@@ -228,8 +235,8 @@ def _validate_benchmark_contract(benchmark_dir: Path) -> None:
         },
         "test_sqls.json": {
             "source_split": "test",
-            "attack_count": 1738,
-            "benign_count": 875,
+            "attack_count": 3200,
+            "benign_count": 800,
         },
     }
     if not isinstance(datasets, dict):
@@ -296,6 +303,7 @@ def initialize_components(paths: ProjectPaths) -> Tuple[Attacker, Defender, Veri
     # MAB arms are fixed by taxonomy, never inferred from a dataset's contents.
     cluster_list = all_attack_cluster_keys()
     _validate_benchmark_contract(paths.benchmark_dir)
+    _validate_benchmark_coverage(paths.benchmark_dir / "train_sqls.json", cluster_list)
     _validate_benchmark_coverage(paths.benchmark_dir / "valid_sqls.json", cluster_list)
     _validate_benchmark_coverage(paths.benchmark_dir / "test_sqls.json", cluster_list)
 

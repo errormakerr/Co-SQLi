@@ -9,9 +9,10 @@ accepts only an external benchmark that matches this manifest contract.
 
 | Dataset | Attack source | Attacks | Benign SQL |
 | --- | --- | ---: | ---: |
-| Training | train | generated each round | controlled by verifier |
+| Static training corpus | train | 2,560 | 640 |
+| Round training | train | generated each round | controlled by verifier |
 | Validation | train | 1,920 | 40 |
-| Test | test | 1,738 | 875 |
+| Test | test | 3,200 | 800 |
 
 Validation drives the verifier. The test set is held out from policy updates
 and is recorded for evaluation only.

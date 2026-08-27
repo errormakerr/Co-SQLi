@@ -15,9 +15,9 @@ standard experiment:
 - eight clusters sampled without replacement each round from a squared-weight
   distribution mixed with an exploration schedule from 0.70 to 0.20;
 - centered full-information exponential verifier updates with learning rate 1.0;
-- a validation set built from train-source attacks (1,920) and benign SQL
-  (40), plus a held-out test set built from test-source attacks (1,738) and
-  benign SQL (875).
+- a static training corpus built from 2,560 train-source attacks and 640 benign
+  SQL, a validation set with 1,920 train-source attacks and 40 benign SQL, and
+  a held-out test set with 3,200 test-source attacks and 800 benign SQL.
 
 Training and inference use the tokenizer's native Qwen chat template. Rendered
 chat text is then tokenized with `add_special_tokens=False`, so template control
@@ -77,9 +77,9 @@ SHA-256 checksums for every source input and generated artifact. It requires the
 same MySQL-backed synthesis environment as a full run.
 
 The standard benchmark artifact for this deployment is
-`/hpc2hdd/home/hpan285/data/co-sqli/benchmarks/v1-seed-20260827`. Keep this
-directory immutable after it is built. A changed corpus must use a new versioned
-directory rather than replacing this artifact.
+`/hpc2hdd/home/hpan285/data/co-sqli/benchmarks/v1-seed-20260827`. Build a fresh
+staging directory and validate its manifest before deliberately refreshing this
+canonical artifact.
 
 ```bash
 export COSQLI_BENCHMARK_DIR=/hpc2hdd/home/hpan285/data/co-sqli/benchmarks/v1-seed-20260827

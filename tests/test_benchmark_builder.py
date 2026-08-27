@@ -32,6 +32,17 @@ def _builder_module():
 
 
 class BenchmarkBuilderTests(unittest.TestCase):
+    def test_standard_dataset_sizes_are_stable(self) -> None:
+        builder = _builder_module()
+        self.assertEqual(
+            builder.BENCHMARK_SPECS,
+            {
+                "train_sqls.json": ("train", 2560, 640),
+                "valid_sqls.json": ("train", 1920, 40),
+                "test_sqls.json": ("test", 3200, 800),
+            },
+        )
+
     def test_builder_refuses_to_replace_existing_artifacts(self) -> None:
         builder = _builder_module()
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -80,6 +91,11 @@ class BenchmarkBuilderTests(unittest.TestCase):
                 "source_files_sha256": source_hashes,
                 "artifact_files_sha256": artifact_hashes,
                 "datasets": {
+                    "train_sqls.json": {
+                        "source_split": "train",
+                        "attack_count": 2560,
+                        "benign_count": 640,
+                    },
                     "valid_sqls.json": {
                         "source_split": "train",
                         "attack_count": 1920,
@@ -87,8 +103,8 @@ class BenchmarkBuilderTests(unittest.TestCase):
                     },
                     "test_sqls.json": {
                         "source_split": "test",
-                        "attack_count": 1738,
-                        "benign_count": 875,
+                        "attack_count": 3200,
+                        "benign_count": 800,
                     },
                 },
             }
