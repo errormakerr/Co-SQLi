@@ -23,11 +23,13 @@ class SecretConfigurationTests(unittest.TestCase):
                 "from-env",
             )
 
-    def test_inline_secret_is_rejected(self) -> None:
+    def test_inline_secret_requires_explicit_opt_in(self) -> None:
         config = {"api_key": "inline-value"}
         with patch.dict(os.environ, {}, clear=True):
-            with self.assertRaisesRegex(ValueError, "api_key_env"):
+            with self.assertRaisesRegex(ValueError, "COSQLI_ALLOW_INLINE_SECRETS"):
                 require_secret(config, "api_key")
+        with patch.dict(os.environ, {"COSQLI_ALLOW_INLINE_SECRETS": "1"}, clear=True):
+            self.assertEqual(require_secret(config, "api_key"), "inline-value")
 
     def test_runtime_paths_are_provided_by_environment_variables(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:

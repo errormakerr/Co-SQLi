@@ -66,15 +66,26 @@ export COSQLI_LLM_API_KEY=...
 export COSQLI_MYSQL_PASSWORD=...
 ```
 
+For an external legacy configuration that contains a secret value, set
+`COSQLI_ALLOW_INLINE_SECRETS=1` explicitly. Repository configuration templates
+never contain secret values.
+
 ## Build A Benchmark
 
 The benchmark builder writes to a new, empty external directory and records
 SHA-256 checksums for every source input and generated artifact. It requires the
 same MySQL-backed synthesis environment as a full run.
 
+The standard benchmark artifact for this deployment is
+`/hpc2hdd/home/hpan285/data/co-sqli/benchmarks/v1-seed-20260827`. Keep this
+directory immutable after it is built. A changed corpus must use a new versioned
+directory rather than replacing this artifact.
+
 ```bash
+export COSQLI_BENCHMARK_DIR=/hpc2hdd/home/hpan285/data/co-sqli/benchmarks/v1-seed-20260827
+
 python scripts/build_benchmarks.py \
-  --output-dir /path/to/benchmarks/current \
+  --output-dir "$COSQLI_BENCHMARK_DIR" \
   --seed 20260827
 ```
 
@@ -95,7 +106,7 @@ export COSQLI_RUNTIME_ROOT=/path/to/mysql-runtime
 
 co-sqli-submit \
   --run-id experiment-001 \
-  --benchmark-dir /path/to/benchmarks/current \
+  --benchmark-dir "$COSQLI_BENCHMARK_DIR" \
   --partition <partition> \
   --gres gpu:1 \
   --cpus-per-task 8 \
@@ -107,7 +118,7 @@ The default values come from `config/experiment_config.yaml`. The two execution
 size overrides are available for short validation runs:
 
 ```bash
-co-sqli --run-id smoke-001 --benchmark-dir /path/to/benchmarks/current \
+co-sqli --run-id smoke-001 --benchmark-dir "$COSQLI_BENCHMARK_DIR" \
   --num-rounds 1 --num-training-sqls 16
 ```
 

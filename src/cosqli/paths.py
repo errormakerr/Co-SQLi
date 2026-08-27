@@ -80,7 +80,7 @@ def validate_run_id(run_id: str) -> str:
 
 
 def require_secret(config: dict, key: str) -> str:
-    """Read a secret from the configured environment variable."""
+    """Read a configured secret, requiring explicit opt-in for inline values."""
     environment_key = config.get(f"{key}_env")
     if isinstance(environment_key, str) and environment_key:
         value = os.environ.get(environment_key)
@@ -88,6 +88,12 @@ def require_secret(config: dict, key: str) -> str:
             raise EnvironmentError(f"Set {environment_key} before running Co-SQLi.")
         return value
 
+    if os.environ.get("COSQLI_ALLOW_INLINE_SECRETS") == "1":
+        value = config.get(key)
+        if isinstance(value, str) and value:
+            return value
+
     raise ValueError(
-        f"Configuration must provide a non-empty {key}_env."
+        f"Configuration must provide a non-empty {key}_env; set "
+        "COSQLI_ALLOW_INLINE_SECRETS=1 to use an inline value from an external config."
     )
