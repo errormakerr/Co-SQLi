@@ -11,6 +11,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from cosqli.paths import PROJECT_ROOT
+from cosqli.prompting import PROMPT_MODES, SFT_FILENAMES_BY_PROMPT_MODE, sft_filename
 from cosqli.main import (
     BENCHMARK_ARTIFACT_FILENAMES,
     BENCHMARK_SOURCE_FILENAMES,
@@ -42,6 +43,7 @@ class BenchmarkBuilderTests(unittest.TestCase):
                 "test_sqls.json": ("test", 3200, 800),
             },
         )
+        self.assertEqual(set(builder.SFT_FILENAMES), set(PROMPT_MODES))
 
     def test_builder_refuses_to_replace_existing_artifacts(self) -> None:
         builder = _builder_module()
@@ -87,9 +89,14 @@ class BenchmarkBuilderTests(unittest.TestCase):
                 for filename in BENCHMARK_ARTIFACT_FILENAMES
             }
             manifest = {
-                "schema_version": 1,
+                "schema_version": 2,
                 "source_files_sha256": source_hashes,
                 "artifact_files_sha256": artifact_hashes,
+                "prompt_modes": [mode.value for mode in PROMPT_MODES],
+                "sft_files": {
+                    mode.value: dict(SFT_FILENAMES_BY_PROMPT_MODE[mode])
+                    for mode in PROMPT_MODES
+                },
                 "datasets": {
                     "train_sqls.json": {
                         "source_split": "train",
@@ -112,7 +119,7 @@ class BenchmarkBuilderTests(unittest.TestCase):
                 json.dumps(manifest), encoding="utf-8"
             )
             _validate_benchmark_contract(benchmark_dir)
-            (benchmark_dir / "test_datas_openai_format.jsonl").write_text(
+            (benchmark_dir / sft_filename("test_sqls.json", "query_only")).write_text(
                 "modified\n", encoding="utf-8"
             )
             with self.assertRaisesRegex(ValueError, "checksum mismatch"):

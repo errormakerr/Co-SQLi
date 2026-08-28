@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from cosqli.experiment_config import load_experiment_config
+from cosqli.experiment_config import load_experiment_config, resolved_experiment_config_sha256
 
 
 class ExperimentConfigTests(unittest.TestCase):
@@ -14,6 +14,7 @@ class ExperimentConfigTests(unittest.TestCase):
         config = load_experiment_config()
         self.assertEqual(config.num_rounds, 8)
         self.assertEqual(config.num_training_sqls, 400)
+        self.assertEqual(config.prompt_mode, "query_only")
         self.assertEqual(config.attacker_clusters_per_round, 8)
         self.assertEqual(config.attacker_weight_exponent, 2.0)
         self.assertEqual(config.verifier_learning_rate, 1.0)
@@ -23,18 +24,26 @@ class ExperimentConfigTests(unittest.TestCase):
         )
 
     def test_execution_size_overrides_preserve_other_parameters(self) -> None:
-        config = load_experiment_config().with_cli_overrides(
+        default_config = load_experiment_config()
+        config = default_config.with_cli_overrides(
             num_rounds=2,
             num_training_sqls=16,
+            prompt_mode="schema_aware",
         )
         self.assertEqual(config.num_rounds, 2)
         self.assertEqual(config.num_training_sqls, 16)
+        self.assertEqual(config.prompt_mode, "schema_aware")
         self.assertEqual(config.attacker_clusters_per_round, 8)
+        self.assertNotEqual(
+            resolved_experiment_config_sha256(config),
+            resolved_experiment_config_sha256(default_config),
+        )
 
     def test_unknown_verifier_update_is_rejected(self) -> None:
         contents = """\
-schema_version: 1
+schema_version: 2
 random_seed: 1
+prompt_mode: query_only
 num_rounds: 8
 num_training_sqls: 400
 initial_benign_ratio: 0.25

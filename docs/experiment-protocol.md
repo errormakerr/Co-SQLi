@@ -7,6 +7,12 @@
 `build_manifest.json` containing source and artifact SHA-256 checksums. A run
 accepts only an external benchmark that matches this manifest contract.
 
+Every benchmark contains two SFT renderings of each static SQL split:
+`query_only` and `schema_aware`. Query-only user messages contain only the SQL
+query, while schema-aware messages append DDL for the SQL record's database.
+The raw SQL and labels are shared, and the selected `prompt_mode` applies to
+both round-generated training data and static validation/test data.
+
 | Dataset | Attack source | Attacks | Benign SQL |
 | --- | --- | ---: | ---: |
 | Static training corpus | train | 2,560 | 640 |
@@ -61,7 +67,10 @@ statistics and rejects a template that cannot produce the required chat format.
 ## Recorded Artifacts
 
 Each run writes an external `run_manifest.json` containing the code revision,
-resolved experiment configuration, configuration checksum, benchmark-manifest
-checksum, taxonomy, and scheduler identifier. Every round records sampling
+resolved experiment configuration, source and resolved configuration checksums,
+benchmark-manifest checksum, taxonomy, and scheduler identifier. Every round records sampling
 probabilities, selected clusters, generated examples, verifier weights, reward
 baseline, model metrics, stage timing, and resource telemetry.
+
+`prompt_mode` is included in run and round metadata and is part of checkpoint
+compatibility. Cross-mode resume is rejected.

@@ -1,5 +1,6 @@
-schema_version: 1
+schema_version: 2
 random_seed: 42
+prompt_mode: query_only
 num_rounds: 8
 num_training_sqls: 400
 initial_benign_ratio: 0.25

@@ -19,6 +19,7 @@ from cosqli.experiment_config import (
     ExperimentConfig,
     experiment_config_sha256,
     load_experiment_config,
+    resolved_experiment_config_sha256,
 )
 from cosqli.paths import (
     PROJECT_ROOT,
@@ -27,6 +28,12 @@ from cosqli.paths import (
     resolve_runtime_artifacts_root,
     resolve_runtime_base_model_path,
     validate_run_id,
+)
+from cosqli.prompting import (
+    PROMPT_MODES,
+    SFT_FILENAMES_BY_PROMPT_MODE,
+    all_sft_filenames,
+    sft_filename,
 )
 from cosqli.reporting import write_experiment_reports
 from cosqli.telemetry import measure_stage, utc_timestamp
@@ -58,10 +65,7 @@ BENCHMARK_ARTIFACT_FILENAMES = {
     "train_sqls.json",
     "valid_sqls.json",
     "test_sqls.json",
-    "train_datas_openai_format.jsonl",
-    "valid_datas_openai_format.jsonl",
-    "test_datas_openai_format.jsonl",
-}
+} | all_sft_filenames()
 
 @dataclass
 class ProjectPaths:
@@ -154,6 +158,7 @@ ENABLE_PAYLOAD_MUTATION = ACTIVE_EXPERIMENT_CONFIG.payload_mutation_enabled
 MODIFY_PAYLOAD_PROB_START = ACTIVE_EXPERIMENT_CONFIG.payload_mutation_probability_start
 MODIFY_PAYLOAD_PROB_END = ACTIVE_EXPERIMENT_CONFIG.payload_mutation_probability_end
 MUTATION_MODEL = ACTIVE_EXPERIMENT_CONFIG.payload_mutation_model
+PROMPT_MODE = ACTIVE_EXPERIMENT_CONFIG.prompt_mode
 
 
 def configure_experiment(
@@ -165,7 +170,7 @@ def configure_experiment(
     global NUM_ROUNDS, NUM_TRAINING_SQLS, ATTACKER_GAMMA_START, ATTACKER_GAMMA_END
     global VERIFIER_LEARNING_RATE, ATTACKER_STRATEGY, ATTACKER_K, INITIAL_BENIGN_RATIO
     global ENABLE_PAYLOAD_MUTATION, MODIFY_PAYLOAD_PROB_START, MODIFY_PAYLOAD_PROB_END
-    global MUTATION_MODEL
+    global MUTATION_MODEL, PROMPT_MODE
 
     ACTIVE_EXPERIMENT_CONFIG = config
     ACTIVE_EXPERIMENT_CONFIG_PATH = Path(config_path).expanduser().resolve()
@@ -181,6 +186,7 @@ def configure_experiment(
     MODIFY_PAYLOAD_PROB_START = config.payload_mutation_probability_start
     MODIFY_PAYLOAD_PROB_END = config.payload_mutation_probability_end
     MUTATION_MODEL = config.payload_mutation_model
+    PROMPT_MODE = config.prompt_mode
     random.seed(config.random_seed)
     np.random.seed(config.random_seed)
 
@@ -219,8 +225,17 @@ def _validate_benchmark_contract(benchmark_dir: Path) -> None:
     manifest = read_json_file(str(manifest_path))
     if not isinstance(manifest, dict):
         raise ValueError(f"Benchmark manifest must be a JSON object: {manifest_path}")
-    if manifest.get("schema_version") != 1:
+    if manifest.get("schema_version") != 2:
         raise ValueError(f"Unsupported benchmark manifest schema: {manifest_path}")
+    expected_prompt_modes = [mode.value for mode in PROMPT_MODES]
+    if manifest.get("prompt_modes") != expected_prompt_modes:
+        raise ValueError(f"Invalid benchmark prompt modes: {manifest_path}")
+    expected_sft_files = {
+        mode.value: dict(SFT_FILENAMES_BY_PROMPT_MODE[mode])
+        for mode in PROMPT_MODES
+    }
+    if manifest.get("sft_files") != expected_sft_files:
+        raise ValueError(f"Invalid benchmark SFT file mapping: {manifest_path}")
     datasets = manifest.get("datasets")
     expected: Dict[str, Dict[str, Any]] = {
         "train_sqls.json": {
@@ -295,8 +310,8 @@ def initialize_components(paths: ProjectPaths) -> Tuple[Attacker, Defender, Veri
     """
     # Load paths
     normal_sqls_path = paths.source_data_dir / "normal_sqls.json"
-    validation_datas_path = paths.benchmark_dir / "valid_datas_openai_format.jsonl"
-    test_datas_path = paths.benchmark_dir / "test_datas_openai_format.jsonl"
+    validation_datas_path = paths.benchmark_dir / sft_filename("valid_sqls.json", PROMPT_MODE)
+    test_datas_path = paths.benchmark_dir / sft_filename("test_sqls.json", PROMPT_MODE)
     training_config_path = paths.config_dir / "training_config.yaml"
     inference_config_path = paths.config_dir / "inference_config.yaml"
 
@@ -318,6 +333,7 @@ def initialize_components(paths: ProjectPaths) -> Tuple[Attacker, Defender, Veri
         mutation_model=MUTATION_MODEL,
         weight_exponent=ACTIVE_EXPERIMENT_CONFIG.attacker_weight_exponent,
         random_seed=ACTIVE_EXPERIMENT_CONFIG.random_seed,
+        prompt_mode=PROMPT_MODE,
     )
 
     defender = Defender(
@@ -412,6 +428,7 @@ def run_training_round(
         "attacker_gamma": attacker_gamma,
         "attacker_k": ATTACKER_K,
         "num_training_sqls": NUM_TRAINING_SQLS,
+        "prompt_mode": PROMPT_MODE.value,
         "verifier_update": ACTIVE_EXPERIMENT_CONFIG.verifier_update,
         "verifier_learning_rate": VERIFIER_LEARNING_RATE,
     }
@@ -552,28 +569,6 @@ def run_training_loop(
 
     # Validate runtime inputs before recording a manifest for this run.
     attacker, defender, verifier = initialize_components(paths)
-    write_json_file(
-        str(paths.run_dir / "run_manifest.json"),
-        {
-            "project": "Co-SQLi",
-            "run_id": paths.run_dir.name,
-            "taxonomy_version": TAXONOMY_VERSION,
-            "attack_clusters": all_attack_cluster_keys(),
-            "code_revision": _git_revision(),
-            "experiment_config": ACTIVE_EXPERIMENT_CONFIG.as_dict(),
-            "experiment_config_sha256": experiment_config_sha256(
-                ACTIVE_EXPERIMENT_CONFIG_PATH
-            ),
-            "verifier_update": ACTIVE_EXPERIMENT_CONFIG.verifier_update,
-            "verifier_learning_rate": VERIFIER_LEARNING_RATE,
-            "benchmark_dir": str(paths.benchmark_dir),
-            "benchmark_manifest_sha256": _sha256(
-                paths.benchmark_dir / "build_manifest.json"
-            ),
-            "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
-            "started_at": utc_timestamp(),
-        },
-    )
 
     # If resuming from a breakpoint, load saved Verifier state and MutationMemory.
     if breakpoint_round >= 0:
@@ -586,9 +581,10 @@ def run_training_loop(
         if (
             round_metadata.get("taxonomy_version") != TAXONOMY_VERSION
             or round_metadata.get("attack_clusters") != verifier.cluster_list
+            or round_metadata.get("prompt_mode") != PROMPT_MODE.value
         ):
             raise ValueError(
-                "Checkpoint metadata does not match the current taxonomy."
+                "Checkpoint metadata does not match the current taxonomy or prompt mode."
             )
 
         weights_file = paths.run_dir / f"round_{breakpoint_round}" / "cluster_weights.jsonl"
@@ -644,6 +640,33 @@ def run_training_loop(
             else:
                 print(f"Warning: breakpoint MutationMemory file not found: {memory_file} — using empty memory")
 
+    write_json_file(
+        str(paths.run_dir / "run_manifest.json"),
+        {
+            "project": "Co-SQLi",
+            "run_id": paths.run_dir.name,
+            "taxonomy_version": TAXONOMY_VERSION,
+            "attack_clusters": all_attack_cluster_keys(),
+            "code_revision": _git_revision(),
+            "experiment_config": ACTIVE_EXPERIMENT_CONFIG.as_dict(),
+            "prompt_mode": PROMPT_MODE.value,
+            "experiment_config_source_sha256": experiment_config_sha256(
+                ACTIVE_EXPERIMENT_CONFIG_PATH
+            ),
+            "resolved_experiment_config_sha256": resolved_experiment_config_sha256(
+                ACTIVE_EXPERIMENT_CONFIG
+            ),
+            "verifier_update": ACTIVE_EXPERIMENT_CONFIG.verifier_update,
+            "verifier_learning_rate": VERIFIER_LEARNING_RATE,
+            "benchmark_dir": str(paths.benchmark_dir),
+            "benchmark_manifest_sha256": _sha256(
+                paths.benchmark_dir / "build_manifest.json"
+            ),
+            "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
+            "started_at": utc_timestamp(),
+        },
+    )
+
     # Run training rounds
     for round_idx in range(start_round, NUM_ROUNDS):
         if breakpoint_round >= 0 and round_idx <= breakpoint_round:
@@ -695,6 +718,12 @@ def parse_args() -> argparse.Namespace:
         help="Override num_training_sqls in the experiment configuration.",
     )
     parser.add_argument(
+        "--prompt-mode",
+        choices=[mode.value for mode in PROMPT_MODES],
+        default=None,
+        help="Override the model-visible SQL prompt context for this run.",
+    )
+    parser.add_argument(
         "--benchmark-dir",
         type=str,
         default=os.environ.get("COSQLI_BENCHMARK_DIR"),
@@ -710,6 +739,7 @@ def main() -> None:
     config = load_experiment_config(config_path).with_cli_overrides(
         num_rounds=args.num_rounds,
         num_training_sqls=args.num_training_sqls,
+        prompt_mode=args.prompt_mode,
     )
     if config.num_rounds <= 0 or config.num_training_sqls <= 0:
         raise ValueError("--num-rounds and --num-training-sqls must be positive")

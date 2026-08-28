@@ -248,6 +248,7 @@ class TaxonomyAndMABTests(unittest.TestCase):
             self.assertEqual(metadata["attack_clusters"], [ATTACK_CLUSTER_A])
             self.assertEqual(metadata["verifier_update"], "centered_full_information_exponential")
             self.assertEqual(metadata["verifier_learning_rate"], 1.0)
+            self.assertEqual(metadata["prompt_mode"], "query_only")
             self.assertAlmostEqual(metadata["verifier_reward_baseline"], 1 / 3)
             self.assertAlmostEqual(verifier.cluster_rewards[ATTACK_CLUSTER_A], 1 / 3)
 
@@ -270,7 +271,11 @@ class TaxonomyAndMABTests(unittest.TestCase):
             round_dir = root / "round_0"
             write_json_file(
                 str(round_dir / "round_metadata.json"),
-                {"taxonomy_version": TAXONOMY_VERSION, "attack_clusters": [ATTACK_CLUSTER_A]},
+                {
+                    "taxonomy_version": TAXONOMY_VERSION,
+                    "attack_clusters": [ATTACK_CLUSTER_A],
+                    "prompt_mode": "query_only",
+                },
             )
             write_jsonl_file(str(round_dir / "cluster_weights.jsonl"), [{"cluster": ATTACK_CLUSTER_A, "weight": 1.75}])
             write_json_file(str(round_dir / "verifier_state.json"), {"benign_ratio": 0.31, "benign_error_ema": 0.19})
@@ -285,6 +290,38 @@ class TaxonomyAndMABTests(unittest.TestCase):
                 run_training_loop(start_round=8, breakpoint_round=0)
             run_round.assert_not_called()
             self.assertEqual(verifier.get_weights(), {ATTACK_CLUSTER_A: 1.75})
+
+    def test_breakpoint_rejects_different_prompt_mode(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            round_dir = root / "round_0"
+            write_json_file(
+                str(round_dir / "round_metadata.json"),
+                {
+                    "taxonomy_version": TAXONOMY_VERSION,
+                    "attack_clusters": [ATTACK_CLUSTER_A],
+                    "prompt_mode": "schema_aware",
+                },
+            )
+            original_manifest = {"prompt_mode": "query_only", "preserved": True}
+            write_json_file(str(root / "run_manifest.json"), original_manifest)
+            paths = ProjectPaths(root, root, root, root, root, root)
+            verifier = Verifier([ATTACK_CLUSTER_A])
+            attacker = type(
+                "FakeAttacker",
+                (),
+                {"mutation_memory": None, "set_benign_ratio": lambda *_: None},
+            )()
+            with patch("cosqli.main.ProjectPaths.create", return_value=paths), \
+                 patch("cosqli.main.initialize_components", return_value=(attacker, object(), verifier)), \
+                 patch("cosqli.main._sha256", return_value="test-checksum"), \
+                 patch("cosqli.main.os.chdir"):
+                with self.assertRaisesRegex(ValueError, "prompt mode"):
+                    run_training_loop(start_round=8, breakpoint_round=0)
+            self.assertEqual(
+                read_json_file(str(root / "run_manifest.json")),
+                original_manifest,
+            )
 
 
 if __name__ == "__main__":

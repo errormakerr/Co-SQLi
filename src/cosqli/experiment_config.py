@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from typing import Any, Dict
 
 from cosqli.paths import PROJECT_ROOT
+from cosqli.prompting import PromptMode, parse_prompt_mode
 from cosqli.utils.yaml_operation import load_yaml_to_dict
 
 
@@ -17,6 +19,7 @@ class ExperimentConfig:
 
     schema_version: int
     random_seed: int
+    prompt_mode: PromptMode
     num_rounds: int
     num_training_sqls: int
     initial_benign_ratio: float
@@ -41,13 +44,16 @@ class ExperimentConfig:
         *,
         num_rounds: int | None,
         num_training_sqls: int | None,
+        prompt_mode: PromptMode | str | None = None,
     ) -> "ExperimentConfig":
-        """Apply the two supported execution-size overrides."""
-        updates: Dict[str, int] = {}
+        """Apply supported execution overrides to one complete configuration."""
+        updates: Dict[str, Any] = {}
         if num_rounds is not None:
             updates["num_rounds"] = num_rounds
         if num_training_sqls is not None:
             updates["num_training_sqls"] = num_training_sqls
+        if prompt_mode is not None:
+            updates["prompt_mode"] = parse_prompt_mode(prompt_mode)
         return replace(self, **updates)
 
 
@@ -55,8 +61,20 @@ DEFAULT_EXPERIMENT_CONFIG_PATH = PROJECT_ROOT / "config" / "experiment_config.ya
 
 
 def experiment_config_sha256(path: Path) -> str:
-    """Return the SHA-256 fingerprint for a versioned experiment config."""
+    """Return the SHA-256 fingerprint for a source experiment YAML file."""
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def resolved_experiment_config_sha256(config: ExperimentConfig) -> str:
+    """Return a stable fingerprint of the complete effective experiment config."""
+    serialized = json.dumps(
+        config.as_dict(),
+        ensure_ascii=True,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    )
+    return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
 
 def _mapping(value: Any, key: str) -> Dict[str, Any]:
@@ -76,6 +94,7 @@ def load_experiment_config(path: str | Path | None = None) -> ExperimentConfig:
         config = ExperimentConfig(
             schema_version=int(raw["schema_version"]),
             random_seed=int(raw["random_seed"]),
+            prompt_mode=parse_prompt_mode(raw["prompt_mode"]),
             num_rounds=int(raw["num_rounds"]),
             num_training_sqls=int(raw["num_training_sqls"]),
             initial_benign_ratio=float(raw["initial_benign_ratio"]),
@@ -94,7 +113,7 @@ def load_experiment_config(path: str | Path | None = None) -> ExperimentConfig:
     except (KeyError, TypeError, ValueError) as error:
         raise ValueError(f"Invalid experiment config: {config_path}") from error
 
-    if config.schema_version != 1:
+    if config.schema_version != 2:
         raise ValueError(f"Unsupported experiment config schema: {config.schema_version}")
     if config.num_rounds <= 0 or config.num_training_sqls <= 0:
         raise ValueError("num_rounds and num_training_sqls must be positive")

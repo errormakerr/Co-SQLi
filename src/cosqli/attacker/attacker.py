@@ -23,6 +23,7 @@ import numpy as np
 from cosqli.utils.cluster import NORMAL_CLUSTER_KEY, ClusterKey, cluster_payload_templates
 from cosqli.utils.json_operation import read_json_file
 from cosqli.utils.llm import LLM
+from cosqli.prompting import PromptMode, parse_prompt_mode
 from cosqli.synthesis.sft_formatter import batch_process_to_sft
 
 from cosqli.synthesis.injection_pipeline import get_gpt_config, pipeline
@@ -81,6 +82,7 @@ class Attacker:
         mutation_model: Optional[str] = None,
         weight_exponent: float = 2.0,
         random_seed: Optional[int] = None,
+        prompt_mode: PromptMode | str = PromptMode.QUERY_ONLY,
     ) -> None:
         if not cluster_list:
             raise ValueError("cluster_list must not be empty")
@@ -105,6 +107,7 @@ class Attacker:
         self.benign_ratio = benign_ratio
         self.weight_exponent = float(weight_exponent)
         self.random_seed = random_seed
+        self.prompt_mode = parse_prompt_mode(prompt_mode)
         self._random = random.Random(random_seed)
         self._rng = np.random.default_rng(random_seed)
 
@@ -614,13 +617,19 @@ class Attacker:
         self._random.shuffle(training_sqls)
         
         # Format to SFT format
-        formatted_training_sqls = batch_process_to_sft(training_sqls, self.db_schemas, format_type="openai")
+        formatted_training_sqls = batch_process_to_sft(
+            training_sqls,
+            self.db_schemas,
+            format_type="openai",
+            prompt_mode=self.prompt_mode,
+        )
 
         all_sqls = [record["sql"] for record in training_sqls]
         mutation_stats = self.payload_mutator.get_stats() if self.payload_mutator else None
         self.last_generation_stats = {
             "requested_examples": expected_example_num,
             "random_seed": self.random_seed,
+            "prompt_mode": self.prompt_mode.value,
             "weight_exponent": self.weight_exponent,
             "generated_examples": len(formatted_training_sqls),
             "requested_attack_examples": expected_injection_num,

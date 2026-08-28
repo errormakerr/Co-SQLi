@@ -18,6 +18,7 @@ from typing import Any, Dict, List, Tuple
 from cosqli.attacker.attacker import Attacker
 from cosqli.defender.defender import Defender, FINETUNE_PY, INFER_PY, MERGE_PY
 from cosqli.paths import PROJECT_ROOT
+from cosqli.prompting import PROMPT_MODES
 from cosqli.verifier.verifier import Verifier
 from cosqli.synthesis.injection_pipeline import get_mysql_config, pipeline
 from cosqli.synthesis.sft_formatter import create_sft_format
@@ -35,6 +36,11 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=32,
         help="Maximum compatible raw-SQL/payload pairs to try (default: 32).",
+    )
+    parser.add_argument(
+        "--prompt-mode",
+        choices=[mode.value for mode in PROMPT_MODES],
+        default="query_only",
     )
     return parser.parse_args()
 
@@ -184,10 +190,14 @@ def main() -> None:
     if re.search(r"\$(?:table|column|sample)_", record.get("payload", "")):
         raise RuntimeError("Database-specific placeholders remain after synthesis")
 
-    sft_record = create_sft_format(record, schemas)
+    sft_record = create_sft_format(record, schemas, prompt_mode=args.prompt_mode)
     messages = sft_record.get("messages")
     if not isinstance(messages, list) or len(messages) != 3:
         raise RuntimeError("SFT formatter did not produce the expected three-message record")
+    if sft_record.get("prompt_mode") != args.prompt_mode:
+        raise RuntimeError("SFT formatter did not preserve the requested prompt mode")
+    if args.prompt_mode == "query_only" and "Database Schema:" in messages[1]["content"]:
+        raise RuntimeError("Query-only SFT prompt unexpectedly contains schema context")
 
     print(
         "Synthesis smoke test passed; "

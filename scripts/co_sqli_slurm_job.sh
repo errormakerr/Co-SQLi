@@ -135,6 +135,9 @@ case "${COSQLI_MODE:-db-check}" in
         if [[ "${COSQLI_BREAKPOINT_ROUND:--1}" != "-1" ]]; then
             main_args+=(--breakpoint-round "$COSQLI_BREAKPOINT_ROUND")
         fi
+        if [[ -n "${COSQLI_PROMPT_MODE:-}" ]]; then
+            main_args+=(--prompt-mode "$COSQLI_PROMPT_MODE")
+        fi
         "$PYTHON_BIN" -m cosqli "${main_args[@]}"
         ;;
     *)

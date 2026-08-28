@@ -7,9 +7,12 @@ Use a clean external benchmark directory created by
 binds the benchmark to exact versioned source inputs and generated files through
 SHA-256 checksums. Co-SQLi validates those checksums before a training run.
 
-The run configuration is `config/experiment_config.yaml`. Its full resolved
-content and checksum are stored in each run manifest. The configured random seed
-is applied to attacker sampling, payload generation, fine-tuning, and inference.
+Each run records the complete effective configuration together with separate
+SHA-256 fingerprints for the source YAML and the resolved configuration after
+any command-line overrides. The configured random seed is applied to attacker
+sampling, payload generation, fine-tuning, and inference. The resolved
+`prompt_mode` is also stored in the run manifest; do not compare or resume runs
+across `query_only` and `schema_aware` modes.
 
 ## Runtime
 

@@ -6,7 +6,9 @@ Provides utilities to:
 - Format SQL examples into SFT training records (OpenAI messages format).
 """
 
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Mapping, Sequence
+
+from cosqli.prompting import PromptMode, parse_prompt_mode
 
 # ---------------------------------------------------------------------------
 # Type normalisation
@@ -84,34 +86,66 @@ def schema_to_create_statements(schema: Dict) -> str:
 # SFT record formatting
 # ---------------------------------------------------------------------------
 
+def _database_name(sql_entry: Mapping[str, Any]) -> str | None:
+    """Extract the database name from a raw or synthesized SQL record."""
+    db_name = sql_entry.get("db")
+    if db_name is None and isinstance(sql_entry.get("original_sql"), Mapping):
+        db_name = sql_entry["original_sql"].get("db")
+    return str(db_name) if db_name is not None else None
+
+
+def _schema_by_database(
+    schemas: Mapping[str, Dict[str, Any]] | Sequence[Dict[str, Any]] | None,
+) -> Dict[str, Dict[str, Any]]:
+    """Return a database-indexed view of supported schema input forms."""
+    if schemas is None:
+        return {}
+    if isinstance(schemas, Mapping):
+        return dict(schemas)
+    return {
+        str(schema["database_name"]): schema
+        for schema in schemas
+        if schema.get("database_name")
+    }
+
+
+def _schema_text_for_entry(
+    sql_entry: Mapping[str, Any],
+    schemas: Mapping[str, Dict[str, Any]] | Sequence[Dict[str, Any]] | None,
+) -> str:
+    """Resolve schema DDL, rejecting incomplete schema-aware examples."""
+    db_name = _database_name(sql_entry)
+    if not db_name:
+        raise ValueError("schema_aware prompt requires a database name")
+    schema = _schema_by_database(schemas).get(db_name)
+    if schema is None:
+        raise ValueError(f"schema_aware prompt has no schema for database: {db_name}")
+    return schema_to_create_statements(schema)
+
+
+def render_user_prompt(
+    sql_entry: Mapping[str, Any],
+    schemas: Mapping[str, Dict[str, Any]] | Sequence[Dict[str, Any]] | None,
+    prompt_mode: PromptMode | str,
+) -> str:
+    """Render the only model-visible SQL context for one SFT record."""
+    mode = parse_prompt_mode(prompt_mode)
+    sql = str(sql_entry.get("sql", ""))
+    if mode is PromptMode.QUERY_ONLY:
+        return f"SQL Query:\n{sql}"
+    schema_text = _schema_text_for_entry(sql_entry, schemas)
+    return f"SQL Query:\n{sql}\n\nDatabase Schema:\n{schema_text}"
+
+
 def create_sft_format(
     sql_entry: Dict[str, Any],
-    schemas: Union[Dict[str, Dict], List[Dict]],
+    schemas: Mapping[str, Dict[str, Any]] | Sequence[Dict[str, Any]] | None,
     format_type: str = "openai",
+    prompt_mode: PromptMode | str = PromptMode.QUERY_ONLY,
 ) -> Dict[str, Any]:
-    """
-    Convert a single SQL example into an SFT training record using schema dicts directly.
-    """
-    db_name = sql_entry.get("db")
-    if db_name is None and "original_sql" in sql_entry:
-        db_name = sql_entry["original_sql"].get("db")
-    
-    # If the schema cannot be found, fallback to no schema text
-    schema_text = ""
-    if db_name:
-        if isinstance(schemas, dict) and db_name in schemas:
-            schema_text = schema_to_create_statements(schemas[db_name])
-        elif isinstance(schemas, list):
-            for schema_dict in schemas:
-                if schema_dict.get("database_name") == db_name:
-                    schema_text = schema_to_create_statements(schema_dict)
-                    break
-                     
-    if not schema_text:
-        # Fallback to empty string or a dummy statement to prevent crash
-        schema_text = f"-- No schema found for database: {db_name}"
+    """Convert one SQL example into an SFT record for the selected prompt mode."""
+    mode = parse_prompt_mode(prompt_mode)
 
-    sql = sql_entry.get("sql", "")
     label = sql_entry.get("label", True)
 
     metadata: Dict[str, Any] = {}
@@ -137,43 +171,31 @@ def create_sft_format(
                 },
                 {
                     "role": "user",
-                    "content": (
-                        f"SQL Query:\n{sql}\n\nDatabase Schema:\n{schema_text}\n\n"
-                        "Is this SQL query malicious or benign?"
-                    ),
+                    "content": render_user_prompt(sql_entry, schemas, mode),
                 },
                 {
                     "role": "assistant",
                     "content": "malicious" if not label else "benign",
                 },
             ],
-            "sql": sql,
+            "sql": sql_entry.get("sql", ""),
             "label": label,
+            "prompt_mode": mode.value,
             **metadata,
         }
     else:
         raise ValueError(f"SFTFormatter currently only supports format_type='openai'")
 
-def batch_process_to_sft(sql_data: List[Dict], schemas: Dict[str, Dict], format_type: str = "openai") -> List[Dict]:
-    """Batch convert SQL examples to SFT format."""
-    output_data = []
-    
-    # Check if schemas is a list and convert to DB indexed dict
-    schema_dict = {}
-    if isinstance(schemas, list):
-        for s in schemas:
-            if s.get("database_name"):
-                schema_dict[s["database_name"]] = s
-    else:
-        schema_dict = schemas
-        
-    for entry in sql_data:
-        db_name = entry.get("db")
-        if db_name is None and "original_sql" in entry:
-            db_name = entry["original_sql"].get("db")
-            
-        if db_name and db_name in schema_dict:
-            sft_entry = create_sft_format(entry, schema_dict, format_type)
-            output_data.append(sft_entry)
-            
-    return output_data
+def batch_process_to_sft(
+    sql_data: Sequence[Dict[str, Any]],
+    schemas: Mapping[str, Dict[str, Any]] | Sequence[Dict[str, Any]] | None,
+    format_type: str = "openai",
+    prompt_mode: PromptMode | str = PromptMode.QUERY_ONLY,
+) -> List[Dict[str, Any]]:
+    """Batch convert every SQL example to SFT format without silent drops."""
+    mode = parse_prompt_mode(prompt_mode)
+    schema_index = _schema_by_database(schemas) if mode is PromptMode.SCHEMA_AWARE else None
+    return [
+        create_sft_format(entry, schema_index, format_type, mode)
+        for entry in sql_data
+    ]

@@ -11,6 +11,11 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from cosqli.paths import PROJECT_ROOT, require_external_path
+from cosqli.prompting import (
+    PROMPT_MODES,
+    SFT_FILENAMES_BY_PROMPT_MODE,
+    all_sft_filenames,
+)
 from cosqli.synthesis.injection_pipeline import pipeline
 from cosqli.synthesis.sft_formatter import batch_process_to_sft
 from cosqli.utils.cluster import (
@@ -31,11 +36,7 @@ BENCHMARK_SPECS = {
     "valid_sqls.json": ("train", 1920, 40),
     "test_sqls.json": ("test", 3200, 800),
 }
-SFT_FILENAMES = {
-    "train_sqls.json": "train_datas_openai_format.jsonl",
-    "valid_sqls.json": "valid_datas_openai_format.jsonl",
-    "test_sqls.json": "test_datas_openai_format.jsonl",
-}
+SFT_FILENAMES = SFT_FILENAMES_BY_PROMPT_MODE
 SOURCE_FILENAMES = (
     "payload_template.json",
     "sql_data_with_injection_point.json",
@@ -186,9 +187,14 @@ def main() -> None:
     schema_by_database = {schema["database_name"]: schema for schema in db_schemas}
 
     build_manifest = {
-        "schema_version": 1,
+        "schema_version": 2,
         "taxonomy_version": TAXONOMY_VERSION,
         "seed": args.seed,
+        "prompt_modes": [mode.value for mode in PROMPT_MODES],
+        "sft_files": {
+            mode.value: dict(SFT_FILENAMES[mode])
+            for mode in PROMPT_MODES
+        },
         "source_files_sha256": {
             name: _sha256(path) for name, path in sorted(source_files.items())
         },
@@ -216,14 +222,24 @@ def main() -> None:
         random.shuffle(records)
         _validate_records(records, attack_count)
         write_json_file(str(output_dir / filename), records)
-        sft_records = batch_process_to_sft(records, schema_by_database)
-        if len(sft_records) != len(records):
-            raise RuntimeError(f"SFT conversion dropped records for {filename}")
-        write_jsonl_file(str(output_dir / SFT_FILENAMES[filename]), sft_records)
+        for prompt_mode in PROMPT_MODES:
+            sft_records = batch_process_to_sft(
+                records,
+                schema_by_database,
+                prompt_mode=prompt_mode,
+            )
+            if len(sft_records) != len(records):
+                raise RuntimeError(
+                    f"SFT conversion dropped records for {filename} ({prompt_mode.value})"
+                )
+            write_jsonl_file(
+                str(output_dir / SFT_FILENAMES[prompt_mode][filename]),
+                sft_records,
+            )
         print(f"Built {filename}: attacks={attack_count}, benign={benign_count}")
     build_manifest["artifact_files_sha256"] = {
         filename: _sha256(output_dir / filename)
-        for filename in sorted((*BENCHMARK_SPECS, *SFT_FILENAMES.values()))
+        for filename in sorted(set(BENCHMARK_SPECS) | all_sft_filenames())
     }
     write_json_file(str(output_dir / "build_manifest.json"), build_manifest)
 

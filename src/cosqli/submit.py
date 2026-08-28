@@ -13,6 +13,7 @@ from cosqli.experiment_config import (
     DEFAULT_EXPERIMENT_CONFIG_PATH,
     experiment_config_sha256,
     load_experiment_config,
+    resolved_experiment_config_sha256,
 )
 from cosqli.paths import (
     PROJECT_ROOT,
@@ -21,6 +22,7 @@ from cosqli.paths import (
     resolve_runtime_artifacts_root,
     validate_run_id,
 )
+from cosqli.prompting import PROMPT_MODES
 from cosqli.utils.yaml_operation import load_yaml_to_dict
 
 
@@ -75,6 +77,12 @@ def main() -> None:
     parser.add_argument("--num-rounds", type=int)
     parser.add_argument("--num-training-sqls", type=int)
     parser.add_argument(
+        "--prompt-mode",
+        choices=[mode.value for mode in PROMPT_MODES],
+        default=None,
+        help="Override the model-visible SQL prompt context for this run.",
+    )
+    parser.add_argument(
         "--benchmark-dir",
         required=True,
         help="External benchmark directory built by scripts/build_benchmarks.py.",
@@ -91,6 +99,7 @@ def main() -> None:
     experiment_config = load_experiment_config(experiment_config_path).with_cli_overrides(
         num_rounds=args.num_rounds,
         num_training_sqls=args.num_training_sqls,
+        prompt_mode=args.prompt_mode,
     )
 
     if experiment_config.num_rounds <= 0 or experiment_config.num_training_sqls <= 0:
@@ -123,6 +132,7 @@ def main() -> None:
             "COSQLI_EXPERIMENT_CONFIG": str(experiment_config_path),
             "COSQLI_NUM_ROUNDS": str(experiment_config.num_rounds),
             "COSQLI_NUM_TRAINING_SQLS": str(experiment_config.num_training_sqls),
+            "COSQLI_PROMPT_MODE": experiment_config.prompt_mode.value,
             "COSQLI_BREAKPOINT_ROUND": str(args.breakpoint_round),
             "COSQLI_BENCHMARK_DIR": str(benchmark_dir),
             "PYTHONDONTWRITEBYTECODE": "1",
@@ -151,8 +161,12 @@ def main() -> None:
                 "command": command,
                 "submitted_at": datetime.now(timezone.utc).isoformat(),
                 "benchmark_dir": str(benchmark_dir),
-                "experiment_config_sha256": experiment_config_sha256(
+                "prompt_mode": experiment_config.prompt_mode.value,
+                "experiment_config_source_sha256": experiment_config_sha256(
                     experiment_config_path
+                ),
+                "resolved_experiment_config_sha256": resolved_experiment_config_sha256(
+                    experiment_config
                 ),
             },
             ensure_ascii=True,

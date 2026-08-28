@@ -24,6 +24,29 @@ chat text is then tokenized with `add_special_tokens=False`, so template control
 tokens are encoded once. Training labels mask the system/user prompt and retain
 only assistant response tokens.
 
+## Prompt Modes
+
+`prompt_mode` is a run-defining experiment setting. The default, `query_only`,
+makes the model-visible user message exactly `SQL Query:` followed by the SQL
+text; no database name, DDL, or schema placeholder is included. `schema_aware`
+additionally supplies the database DDL.
+
+The benchmark builder writes both mode-specific SFT artifacts from the same raw
+SQL splits, so mode comparisons retain identical SQL, labels, ordering, and
+seed. Select a mode in an experiment YAML or override it for a run:
+
+```bash
+co-sqli --run-id query-only-001 --benchmark-dir "$COSQLI_BENCHMARK_DIR" \
+  --prompt-mode query_only
+
+co-sqli-submit --run-id schema-aware-001 --benchmark-dir "$COSQLI_BENCHMARK_DIR" \
+  --prompt-mode schema_aware --partition <partition> --gres gpu:1
+```
+
+Prompt mode is recorded in benchmark, run, round, and submission metadata. A
+checkpoint can be resumed only with the same mode. Rebuild benchmarks after this
+format change; previous benchmark manifests are intentionally rejected.
+
 ## Repository Boundary
 
 The repository contains source data, code, prompts, and non-secret examples.
@@ -77,12 +100,12 @@ SHA-256 checksums for every source input and generated artifact. It requires the
 same MySQL-backed synthesis environment as a full run.
 
 The standard benchmark artifact for this deployment is
-`/hpc2hdd/home/hpan285/data/co-sqli/benchmarks/v1-seed-20260827`. Build a fresh
+`/hpc2hdd/home/hpan285/data/co-sqli/benchmarks/v2-prompt-modes-seed-20260827`. Build a fresh
 staging directory and validate its manifest before deliberately refreshing this
 canonical artifact.
 
 ```bash
-export COSQLI_BENCHMARK_DIR=/hpc2hdd/home/hpan285/data/co-sqli/benchmarks/v1-seed-20260827
+export COSQLI_BENCHMARK_DIR=/hpc2hdd/home/hpan285/data/co-sqli/benchmarks/v2-prompt-modes-seed-20260827
 
 python scripts/build_benchmarks.py \
   --output-dir "$COSQLI_BENCHMARK_DIR" \

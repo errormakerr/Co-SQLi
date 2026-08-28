@@ -6,14 +6,16 @@ from __future__ import annotations
 import argparse
 
 from cosqli.attacker.attacker import Attacker
+from cosqli.prompting import PROMPT_MODES
 from cosqli.verifier.verifier import Verifier
 from cosqli.main import (
-    ATTACKER_GAMMA,
+    ATTACKER_GAMMA_START,
     ATTACKER_K,
     ATTACKER_STRATEGY,
     ENABLE_PAYLOAD_MUTATION,
     INITIAL_BENIGN_RATIO,
     MODIFY_PAYLOAD_PROB_START,
+    PROMPT_MODE,
     ProjectPaths,
 )
 from cosqli.utils.cluster import all_attack_cluster_keys
@@ -26,6 +28,11 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=12,
         help="Number of SFT records to generate (default: 12).",
+    )
+    parser.add_argument(
+        "--prompt-mode",
+        choices=[mode.value for mode in PROMPT_MODES],
+        default=PROMPT_MODE.value,
     )
     return parser.parse_args()
 
@@ -44,10 +51,11 @@ def main() -> None:
         source_data_dir=str(paths.source_data_dir),
         benign_ratio=INITIAL_BENIGN_RATIO,
         enable_payload_mutation=ENABLE_PAYLOAD_MUTATION,
+        prompt_mode=args.prompt_mode,
     )
     verifier = Verifier(cluster_list=cluster_list)
     records, _ = attacker.generate_training_sqls(
-        gamma=ATTACKER_GAMMA,
+        gamma=ATTACKER_GAMMA_START,
         clusters_weight_distribution=verifier.get_weights(),
         strategy=ATTACKER_STRATEGY,
         k=ATTACKER_K,
@@ -59,6 +67,12 @@ def main() -> None:
         raise RuntimeError(f"Expected {args.samples} SFT records, got {len(records)}")
     if not all("messages" in record and len(record["messages"]) == 3 for record in records):
         raise RuntimeError("Generated records do not match the expected SFT message format")
+    if not all(record.get("prompt_mode") == args.prompt_mode for record in records):
+        raise RuntimeError("Generated records do not match the requested prompt mode")
+    if args.prompt_mode == "query_only" and any(
+        "Database Schema:" in record["messages"][1]["content"] for record in records
+    ):
+        raise RuntimeError("Query-only records unexpectedly contain schema context")
 
     malicious = sum(not record["label"] for record in records)
     print(

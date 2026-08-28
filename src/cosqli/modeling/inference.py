@@ -337,6 +337,7 @@ def run_inference(args: argparse.Namespace) -> None:
                     "reference_scope",
                     "comment_state",
                     "difficulty",
+                    "prompt_mode",
                 ):
                     if key in batch[j]:
                         result[key] = batch[j][key]
