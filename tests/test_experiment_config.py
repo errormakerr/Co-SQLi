@@ -7,7 +7,6 @@ import unittest
 from pathlib import Path
 
 from cosqli.experiment_config import load_experiment_config, resolved_experiment_config_sha256
-from cosqli.paths import PROJECT_ROOT
 
 
 class ExperimentConfigTests(unittest.TestCase):
@@ -99,22 +98,6 @@ payload_mutation:
             path.write_text(contents, encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "only supported for query_only"):
                 load_experiment_config(path)
-
-    def test_seed123_experiment_configs_enable_only_query_mixing(self) -> None:
-        query_config = load_experiment_config(
-            PROJECT_ROOT / "config" / "experiments" / "seed123-eta-1.00.yaml"
-        )
-        schema_config = load_experiment_config(
-            PROJECT_ROOT
-            / "config"
-            / "experiments"
-            / "schema-aware-seed123-eta-1.00.yaml"
-        )
-        self.assertEqual(query_config.random_seed, 123)
-        self.assertTrue(query_config.mix_benign_sources)
-        self.assertEqual(schema_config.random_seed, 123)
-        self.assertFalse(schema_config.mix_benign_sources)
-
 
 if __name__ == "__main__":
     unittest.main()

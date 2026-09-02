@@ -110,15 +110,6 @@ case "${COSQLI_MODE:-db-check}" in
     db-check)
         echo "MySQL sidecar preflight completed successfully."
         ;;
-    generate-smoke)
-        "$PYTHON_BIN" "$PROJECT_ROOT/scripts/generate_smoke.py" --samples "${COSQLI_SMOKE_SAMPLES:-12}"
-        ;;
-    mutation-smoke)
-        "$PYTHON_BIN" "$PROJECT_ROOT/scripts/mutation_smoke.py"
-        ;;
-    synthesis-smoke)
-        "$PYTHON_BIN" "$PROJECT_ROOT/scripts/synthesis_smoke.py"
-        ;;
     build-benchmarks)
         benchmark_args=(
             "$PYTHON_BIN" "$PROJECT_ROOT/scripts/build_benchmarks.py"
