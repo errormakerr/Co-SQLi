@@ -29,6 +29,7 @@ class SystemInformationTemplateFiller:
     ):
         self.system_information_list = system_information_list
         self.mysql_config = mysql_config
+        self.synthesis_warnings: List[Dict[str, Any]] = []
 
         self.sysinfo_by_type: Dict[str, List[Dict]] = {
             "integer": [],
@@ -75,6 +76,13 @@ class SystemInformationTemplateFiller:
                     return str(result[0]) if result[0] is not None else ""
                 return str(result)
         except Exception as e:
+            warning: Dict[str, Any] = {
+                "kind": "system_information_query_failed",
+                "error_type": type(e).__name__,
+            }
+            if e.args and isinstance(e.args[0], int):
+                warning["mysql_error_code"] = e.args[0]
+            self.synthesis_warnings.append(warning)
             print(f"MySQL query failed [{sql}]: {e}")
             return ""
         finally:

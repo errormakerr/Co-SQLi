@@ -15,7 +15,11 @@ Responsibilities
 from __future__ import annotations
 
 import copy
+import csv
+import hashlib
 import random
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -46,6 +50,52 @@ MUTATION_PROB_UPPER_BOUND = 0.8
 """Absolute upper bound for the effective mutation probability."""
 
 
+@dataclass(frozen=True)
+class ExternalBenignSource:
+    """CSV layout and benign-label contract for one external SQL corpus."""
+
+    name: str
+    path: Path
+    sql_column: str
+    label_column: str
+    benign_label: str
+
+
+EXTERNAL_BENIGN_SOURCES: Tuple[ExternalBenignSource, ...] = (
+    ExternalBenignSource(
+        name="rbsqli",
+        path=Path(
+            "/hpc2hdd/home/hpan285/project/public_sqli_dataset/rbsqli/"
+            "rbsqli_final_train.csv"
+        ),
+        sql_column="sql_query",
+        label_column="vulnerability_status",
+        benign_label="No",
+    ),
+    ExternalBenignSource(
+        name="SQLiV3",
+        path=Path(
+            "/hpc2hdd/home/hpan285/project/public_sqli_dataset/SQLiV3/"
+            "SQLiV3_final_train.csv"
+        ),
+        sql_column="Sentence",
+        label_column="Label",
+        benign_label="0",
+    ),
+    ExternalBenignSource(
+        name="Superviz25",
+        path=Path(
+            "/hpc2hdd/home/hpan285/project/public_sqli_dataset/Superviz25/"
+            "Superviz25_final_train.csv"
+        ),
+        sql_column="full_query",
+        label_column="label",
+        benign_label="0",
+    ),
+)
+"""Fixed public benign corpora used only by the opt-in query-only sampler."""
+
+
 class Attacker:
     """
     Adversarial SQL injection sample generator with MAB-guided cluster sampling.
@@ -65,6 +115,8 @@ class Attacker:
         weight_exponent:         Exponent applied to weights when computing the
             sampling distribution.
         random_seed:             Seed for local sampling decisions.
+        mix_benign_sources:      In query-only mode, draw half of each round's
+            benign samples from the three external CSV corpora.
     """
 
     # ------------------------------------------------------------------
@@ -83,6 +135,7 @@ class Attacker:
         weight_exponent: float = 2.0,
         random_seed: Optional[int] = None,
         prompt_mode: PromptMode | str = PromptMode.QUERY_ONLY,
+        mix_benign_sources: bool = False,
     ) -> None:
         if not cluster_list:
             raise ValueError("cluster_list must not be empty")
@@ -101,6 +154,8 @@ class Attacker:
             raise ValueError("source_data_dir must be provided")
         if weight_exponent <= 0.0:
             raise ValueError(f"weight_exponent must be positive, got {weight_exponent}")
+        if not isinstance(mix_benign_sources, bool):
+            raise TypeError("mix_benign_sources must be a boolean")
 
         self.cluster_list = cluster_list
         self.number_of_training_sqls = number_of_training_sqls
@@ -108,6 +163,14 @@ class Attacker:
         self.weight_exponent = float(weight_exponent)
         self.random_seed = random_seed
         self.prompt_mode = parse_prompt_mode(prompt_mode)
+        self.mix_benign_sources = mix_benign_sources
+        if (
+            self.mix_benign_sources
+            and self.prompt_mode is not PromptMode.QUERY_ONLY
+        ):
+            raise ValueError(
+                "mix_benign_sources is only supported for query_only prompts"
+            )
         self._random = random.Random(random_seed)
         self._rng = np.random.default_rng(random_seed)
 
@@ -124,6 +187,12 @@ class Attacker:
         ]
         if not self.normal_sqls:
             raise ValueError("normal_sqls.json contains no set == 'train' records")
+        self.external_benign_pools: Dict[str, List[Dict[str, Any]]] = {}
+        self.external_benign_sources: Dict[str, Dict[str, Any]] = {}
+        self._mixed_benign_round_index = 0
+        self._last_benign_sampling_stats: Dict[str, Any] = {}
+        if self.mix_benign_sources:
+            self._load_external_benign_pools()
 
         raw_sqls = read_json_file(f"{source_data_dir}/sql_data_with_injection_point.json")
         self.train_raw_sqls: List[Dict[str, Any]] = [
@@ -188,6 +257,9 @@ class Attacker:
             ValueError:   If without-replacement sampling requests more than
                           available examples.
         """
+        if self.mix_benign_sources:
+            return self._sample_mixed_benign_sqls(k=k, replace=replace)
+
         total = len(self.normal_sqls)
         if total == 0:
             raise RuntimeError("normal_sqls is empty — cannot sample")
@@ -197,8 +269,114 @@ class Attacker:
                 f"but only {total} are available"
             )
         if replace and k > total:
-            return self._random.choices(self.normal_sqls, k=k)
-        return self._random.sample(self.normal_sqls, k=k)
+            normal_sqls = self._random.choices(self.normal_sqls, k=k)
+        else:
+            normal_sqls = self._random.sample(self.normal_sqls, k=k)
+        self._last_benign_sampling_stats = {
+            "mode": "normal_sqls_train_only",
+            "requested_examples": k,
+            "source_counts": {"normal_sqls_train": len(normal_sqls)},
+        }
+        return normal_sqls
+
+    def _sample_from_pool(
+        self,
+        pool: List[Dict[str, Any]],
+        *,
+        k: int,
+        replace: bool,
+        pool_name: str,
+    ) -> List[Dict[str, Any]]:
+        """Sample a pool with the legacy replacement semantics."""
+        total = len(pool)
+        if total == 0:
+            raise RuntimeError(f"{pool_name} is empty — cannot sample")
+        if not replace and k > total:
+            raise ValueError(
+                f"Without-replacement sampling failed for {pool_name}: "
+                f"requested {k} items but only {total} are available"
+            )
+        if replace and k > total:
+            return self._random.choices(pool, k=k)
+        return self._random.sample(pool, k=k)
+
+    def _load_external_benign_pools(self) -> None:
+        """Load and normalize benign rows from the configured external CSV files."""
+        for source in EXTERNAL_BENIGN_SOURCES:
+            if not source.path.is_file():
+                raise FileNotFoundError(
+                    f"External benign source does not exist: {source.path}"
+                )
+            with source.path.open(newline="", encoding="utf-8") as handle:
+                reader = csv.DictReader(handle)
+                fieldnames = set(reader.fieldnames or ())
+                required_columns = {source.sql_column, source.label_column}
+                if not required_columns.issubset(fieldnames):
+                    raise ValueError(
+                        f"External benign source has unexpected columns: {source.path}"
+                    )
+                benign_rows = [
+                    {"sql": sql, "label": True}
+                    for row in reader
+                    if str(row.get(source.label_column, "")).strip().casefold()
+                    == source.benign_label.casefold()
+                    and isinstance((sql := row.get(source.sql_column)), str)
+                    and sql.strip()
+                ]
+            if not benign_rows:
+                raise ValueError(f"External benign source has no benign SQL: {source.path}")
+            self.external_benign_pools[source.name] = benign_rows
+            self.external_benign_sources[source.name] = {
+                "path": str(source.path),
+                "sha256": hashlib.sha256(source.path.read_bytes()).hexdigest(),
+                "available_benign_examples": len(benign_rows),
+            }
+
+    def _sample_mixed_benign_sqls(
+        self, *, k: int, replace: bool
+    ) -> List[Dict[str, Any]]:
+        """Sample half local and half externally, balancing the external sources."""
+        local_count = k // 2
+        external_count = k - local_count
+        external_names = [source.name for source in EXTERNAL_BENIGN_SOURCES]
+        if set(self.external_benign_pools) != set(external_names):
+            raise RuntimeError("External benign pools were not initialized")
+
+        external_base, external_remainder = divmod(external_count, len(external_names))
+        round_robin_index = self._mixed_benign_round_index
+        external_counts = {name: external_base for name in external_names}
+        for offset in range(external_remainder):
+            name = external_names[(round_robin_index + offset) % len(external_names)]
+            external_counts[name] += 1
+
+        samples = self._sample_from_pool(
+            self.normal_sqls,
+            k=local_count,
+            replace=replace,
+            pool_name="normal_sqls",
+        )
+        for name in external_names:
+            samples.extend(
+                self._sample_from_pool(
+                    self.external_benign_pools[name],
+                    k=external_counts[name],
+                    replace=replace,
+                    pool_name=name,
+                )
+            )
+
+        self._mixed_benign_round_index += 1
+        self._last_benign_sampling_stats = {
+            "mode": "query_only_mixed_sources",
+            "requested_examples": k,
+            "source_counts": {
+                "normal_sqls_train": local_count,
+                **external_counts,
+            },
+            "external_round_robin_index": round_robin_index,
+            "external_sources": copy.deepcopy(self.external_benign_sources),
+        }
+        return samples
 
     # ------------------------------------------------------------------
     # MAB cluster probability distribution
@@ -636,6 +814,7 @@ class Attacker:
             "generated_attack_examples": len(injection_sql_examples),
             "requested_benign_examples": expected_normal_num,
             "generated_benign_examples": len(normal_sql_examples),
+            "benign_sampling": copy.deepcopy(self._last_benign_sampling_stats),
             "selected_clusters": target_clusters,
             "cluster_probability_distribution": dict(self.clusters_probability_distribution),
             "per_cluster": {

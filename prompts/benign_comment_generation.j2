@@ -1,0 +1,19 @@
+Write one short developer annotation for the normal SQL query below. The text
+will be appended after a MySQL line-comment delimiter in SQL-injection
+detection research data.
+
+Describe only the query's intended data action in 4 to 16 ordinary English
+words. Do not say that the query is safe, benign, malicious, valid, or secure.
+Do not mention SQL, a database, a comment, an instruction, or this task.
+Do not output code, identifiers in backticks, quotation marks, ``--``, ``#``,
+or a line break. Output only the annotation text.
+
+Examples of style:
+
+- Query: SELECT COUNT(*) FROM orders WHERE status = 'pending'
+  Annotation: Count pending order records for the report.
+- Query: SELECT name FROM employees WHERE department_id = 4
+  Annotation: Retrieve employee names for the selected department.
+
+Database: {{ database }}
+Normal query: {{ sql }}

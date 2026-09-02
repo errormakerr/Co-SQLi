@@ -10,14 +10,14 @@ round's attack-cluster sampling distribution from validation feedback.
 The versioned configuration at `config/experiment_config.yaml` defines the
 standard experiment:
 
-- eight rounds with 400 generated training examples per round;
+- eight rounds with 300 generated training examples per round;
 - 48 attack clusters defined by technique, reference scope, and comment state;
 - eight clusters sampled without replacement each round from a squared-weight
   distribution mixed with an exploration schedule from 0.70 to 0.20;
 - centered full-information exponential verifier updates with learning rate 1.0;
-- a static training corpus built from 2,560 train-source attacks and 640 benign
+- a static training corpus built from 2,560 train-source attacks and all 653 train benign
   SQL, a validation set with 1,920 train-source attacks and 40 benign SQL, and
-  a held-out test set with 3,200 test-source attacks and 800 benign SQL.
+  a held-out test set with 3,200 test-source attacks and all 873 test benign SQL.
 
 Training and inference use the tokenizer's native Qwen chat template. Rendered
 chat text is then tokenized with `add_special_tokens=False`, so template control

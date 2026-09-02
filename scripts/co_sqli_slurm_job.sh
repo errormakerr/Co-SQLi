@@ -120,15 +120,29 @@ case "${COSQLI_MODE:-db-check}" in
         "$PYTHON_BIN" "$PROJECT_ROOT/scripts/synthesis_smoke.py"
         ;;
     build-benchmarks)
-        "$PYTHON_BIN" "$PROJECT_ROOT/scripts/build_benchmarks.py" \
-            --output-dir "${COSQLI_BENCHMARK_OUTPUT_DIR:?Set COSQLI_BENCHMARK_OUTPUT_DIR.}" \
+        benchmark_args=(
+            "$PYTHON_BIN" "$PROJECT_ROOT/scripts/build_benchmarks.py"
+            --output-dir "${COSQLI_BENCHMARK_OUTPUT_DIR:?Set COSQLI_BENCHMARK_OUTPUT_DIR.}"
             --seed "${COSQLI_BENCHMARK_SEED:-20260827}"
+        )
+        case "${COSQLI_BENCHMARK_ALLOW_LLM_COMMENTS:-1}" in
+            1|true|TRUE|yes|YES)
+                ;;
+            0|false|FALSE|no|NO)
+                benchmark_args+=(--no-allow-llm-comments)
+                ;;
+            *)
+                echo "COSQLI_BENCHMARK_ALLOW_LLM_COMMENTS must be a boolean value" >&2
+                exit 2
+                ;;
+        esac
+        "${benchmark_args[@]}"
         ;;
     full)
         main_args=(
             --run-id "$RUN_ID"
             --num-rounds "${COSQLI_NUM_ROUNDS:-8}"
-            --num-training-sqls "${COSQLI_NUM_TRAINING_SQLS:-400}"
+            --num-training-sqls "${COSQLI_NUM_TRAINING_SQLS:-300}"
             --benchmark-dir "$BENCHMARK_DIR"
             --experiment-config "${COSQLI_EXPERIMENT_CONFIG:?Set COSQLI_EXPERIMENT_CONFIG through co-sqli-submit.}"
         )

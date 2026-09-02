@@ -2844,12 +2844,6 @@
         "set": "train"
     },
     {
-        "db": "thrombosis_prediction",
-        "sql": "SELECT COUNT(T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.GOT < 60 AND T1.SEX = 'M'",
-        "label": true,
-        "set": "train"
-    },
-    {
         "db": "formula_1",
         "sql": "SELECT T1.q1 FROM qualifying AS T1 INNER JOIN drivers AS T2 ON T2.driverId = T1.driverId WHERE T1.raceId = 345 AND T2.forename = 'Lucas' AND T2.surname = 'di Grassi'",
         "label": true,
@@ -3392,12 +3386,6 @@
     {
         "db": "codebase_community",
         "sql": "SELECT CAST(COUNT(T1.Id) AS FLOAT) / COUNT(DISTINCT T2.DisplayName) FROM badges AS T1 INNER JOIN users AS T2 ON T1.UserId = T2.Id WHERE T2.Views > 200",
-        "label": true,
-        "set": "test"
-    },
-    {
-        "db": "formula_1",
-        "sql": "SELECT T2.url FROM races AS T1 INNER JOIN seasons AS T2 ON T2.year = T1.year WHERE T1.raceId = 901",
         "label": true,
         "set": "test"
     },
@@ -4399,12 +4387,6 @@
     },
     {
         "db": "toxicology",
-        "sql": "SELECT COUNT(T.molecule_id) FROM molecule AS T WHERE T.label = '+'",
-        "label": true,
-        "set": "train"
-    },
-    {
-        "db": "toxicology",
         "sql": "SELECT T.atom_id FROM atom AS T WHERE T.molecule_id = 'TR186'",
         "label": true,
         "set": "train"
@@ -5050,12 +5032,6 @@
         "sql": "SELECT t2.name FROM `Match` AS t1 INNER JOIN League AS t2 ON t1.league_id = t2.id WHERE t1.season = '2015/2016' GROUP BY t2.name ORDER BY SUM(t1.home_team_goal + t1.away_team_goal) DESC LIMIT 1",
         "label": true,
         "set": "test"
-    },
-    {
-        "db": "superhero",
-        "sql": "SELECT superhero_name FROM superhero ORDER BY height_cm DESC LIMIT 1",
-        "label": true,
-        "set": "train"
     },
     {
         "db": "formula_1",
@@ -5814,12 +5790,6 @@
         "set": "train"
     },
     {
-        "db": "toxicology",
-        "sql": "SELECT T2.atom_id, T2.atom_id2 FROM bond AS T1 INNER JOIN connected AS T2 ON T1.bond_id = T2.bond_id WHERE T1.bond_type = '#'",
-        "label": true,
-        "set": "train"
-    },
-    {
         "db": "thrombosis_prediction",
         "sql": "SELECT COUNT(DISTINCT T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID INNER JOIN Examination AS T3 ON T3.ID = T2.ID WHERE (T2.RA = '-' OR T2.RA = '+-') AND T3.KCT = '+'",
         "label": true,
@@ -5936,12 +5906,6 @@
     {
         "db": "formula_1",
         "sql": "SELECT T1.fastestLap FROM results AS T1 INNER JOIN races AS T2 ON T1.raceId = T2.raceId INNER JOIN drivers AS T3 ON T1.driverId = T3.driverId WHERE T2.name = 'Australian Grand Prix' AND T2.year = 2008 AND T3.forename = 'Lewis' AND T3.surname = 'Hamilton'",
-        "label": true,
-        "set": "test"
-    },
-    {
-        "db": "european_football_2",
-        "sql": "SELECT DISTINCT t1.player_name FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE t2.overall_rating = (SELECT MAX(overall_rating) FROM Player_Attributes)",
         "label": true,
         "set": "test"
     },

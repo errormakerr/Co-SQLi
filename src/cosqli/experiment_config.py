@@ -23,6 +23,7 @@ class ExperimentConfig:
     num_rounds: int
     num_training_sqls: int
     initial_benign_ratio: float
+    mix_benign_sources: bool
     attacker_gamma_start: float
     attacker_gamma_end: float
     attacker_strategy: str
@@ -90,6 +91,9 @@ def load_experiment_config(path: str | Path | None = None) -> ExperimentConfig:
     attacker = _mapping(raw.get("attacker"), "attacker")
     verifier = _mapping(raw.get("verifier"), "verifier")
     mutation = _mapping(raw.get("payload_mutation"), "payload_mutation")
+    mix_benign_sources = raw.get("mix_benign_sources", False)
+    if not isinstance(mix_benign_sources, bool):
+        raise ValueError("mix_benign_sources must be a boolean")
     try:
         config = ExperimentConfig(
             schema_version=int(raw["schema_version"]),
@@ -98,6 +102,7 @@ def load_experiment_config(path: str | Path | None = None) -> ExperimentConfig:
             num_rounds=int(raw["num_rounds"]),
             num_training_sqls=int(raw["num_training_sqls"]),
             initial_benign_ratio=float(raw["initial_benign_ratio"]),
+            mix_benign_sources=mix_benign_sources,
             attacker_gamma_start=float(attacker["gamma_start"]),
             attacker_gamma_end=float(attacker["gamma_end"]),
             attacker_strategy=str(attacker["strategy"]),
@@ -119,6 +124,11 @@ def load_experiment_config(path: str | Path | None = None) -> ExperimentConfig:
         raise ValueError("num_rounds and num_training_sqls must be positive")
     if not 0.0 <= config.initial_benign_ratio <= 1.0:
         raise ValueError("initial_benign_ratio must be in [0, 1]")
+    if (
+        config.mix_benign_sources
+        and config.prompt_mode is not PromptMode.QUERY_ONLY
+    ):
+        raise ValueError("mix_benign_sources is only supported for query_only prompts")
     if not 0.0 < config.attacker_gamma_end <= config.attacker_gamma_start <= 1.0:
         raise ValueError("attacker gamma values must satisfy 0 < end <= start <= 1")
     if config.attacker_strategy not in {"by_probability", "top_k"}:

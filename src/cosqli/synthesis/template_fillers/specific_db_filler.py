@@ -59,6 +59,7 @@ class SpecificDatabaseTemplateFiller:
         self.db_schema = db_schema
         self.db_name = db_schema.get("database_name", "unknown")
         self.mysql_config = mysql_config
+        self.synthesis_warnings: List[Dict[str, Any]] = []
 
         # Pre-build table info index
         self.tables_info: Dict[str, Dict] = {}
@@ -92,8 +93,25 @@ class SpecificDatabaseTemplateFiller:
                 cursorclass=pymysql.cursors.DictCursor,
             )
         except Exception as e:
+            self._record_warning("mysql_connection_failed", error=e)
             print(f"MySQL connection failed: {e}")
             return None
+
+    def _record_warning(
+        self, kind: str, *, table: Optional[str] = None, error: Optional[Exception] = None
+    ) -> None:
+        """Retain compact, non-secret provenance for a degraded live-value fill."""
+        warning: Dict[str, Any] = {
+            "kind": kind,
+            "database": self.db_name,
+        }
+        if table is not None:
+            warning["table"] = table
+        if error is not None:
+            warning["error_type"] = type(error).__name__
+            if error.args and isinstance(error.args[0], int):
+                warning["mysql_error_code"] = error.args[0]
+        self.synthesis_warnings.append(warning)
 
     # ------------------------------------------------------------------
     # Public API
@@ -452,6 +470,7 @@ class SpecificDatabaseTemplateFiller:
                 return samples
 
         except Exception as e:
+            self._record_warning("table_sample_read_failed", table=table, error=e)
             print(f"Warning: failed to read table {table} ({e})")
             return {col: "NULL" for col in columns}
         finally:

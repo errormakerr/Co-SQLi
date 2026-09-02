@@ -15,17 +15,17 @@ both round-generated training data and static validation/test data.
 
 | Dataset | Attack source | Attacks | Benign SQL |
 | --- | --- | ---: | ---: |
-| Static training corpus | train | 2,560 | 640 |
+| Static training corpus | train | 2,560 | 653 |
 | Round training | train | generated each round | controlled by verifier |
 | Validation | train | 1,920 | 40 |
-| Test | test | 3,200 | 800 |
+| Test | test | 3,200 | 873 |
 
 Validation drives the verifier. The test set is held out from policy updates
 and is recorded for evaluation only.
 
 ## Eight-Round Loop
 
-The versioned experiment configuration defines eight rounds, 400 training
+The versioned experiment configuration defines eight rounds, 300 training
 examples per round, an initial benign ratio of 0.25, and eight attack clusters
 sampled without replacement per round. Let `w_k` be the current weight of
 cluster `k`, `q=2`, `N=48`, and `gamma_t` linearly decrease from 0.70 to 0.20.

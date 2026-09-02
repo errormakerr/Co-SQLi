@@ -241,7 +241,7 @@ def _validate_benchmark_contract(benchmark_dir: Path) -> None:
         "train_sqls.json": {
             "source_split": "train",
             "attack_count": 2560,
-            "benign_count": 640,
+            "benign_count": 653,
         },
         "valid_sqls.json": {
             "source_split": "train",
@@ -251,14 +251,16 @@ def _validate_benchmark_contract(benchmark_dir: Path) -> None:
         "test_sqls.json": {
             "source_split": "test",
             "attack_count": 3200,
-            "benign_count": 800,
+            "benign_count": 873,
         },
     }
     if not isinstance(datasets, dict):
         raise ValueError(f"Invalid benchmark manifest datasets section: {manifest_path}")
     for filename, expected_spec in expected.items():
         observed = datasets.get(filename)
-        if observed != expected_spec:
+        if not isinstance(observed, dict) or any(
+            observed.get(key) != value for key, value in expected_spec.items()
+        ):
             raise ValueError(
                 f"Benchmark contract mismatch for {filename}: "
                 f"expected={expected_spec}, observed={observed}"
@@ -334,6 +336,7 @@ def initialize_components(paths: ProjectPaths) -> Tuple[Attacker, Defender, Veri
         weight_exponent=ACTIVE_EXPERIMENT_CONFIG.attacker_weight_exponent,
         random_seed=ACTIVE_EXPERIMENT_CONFIG.random_seed,
         prompt_mode=PROMPT_MODE,
+        mix_benign_sources=ACTIVE_EXPERIMENT_CONFIG.mix_benign_sources,
     )
 
     defender = Defender(
@@ -429,6 +432,7 @@ def run_training_round(
         "attacker_k": ATTACKER_K,
         "num_training_sqls": NUM_TRAINING_SQLS,
         "prompt_mode": PROMPT_MODE.value,
+        "mix_benign_sources": ACTIVE_EXPERIMENT_CONFIG.mix_benign_sources,
         "verifier_update": ACTIVE_EXPERIMENT_CONFIG.verifier_update,
         "verifier_learning_rate": VERIFIER_LEARNING_RATE,
     }
@@ -582,9 +586,12 @@ def run_training_loop(
             round_metadata.get("taxonomy_version") != TAXONOMY_VERSION
             or round_metadata.get("attack_clusters") != verifier.cluster_list
             or round_metadata.get("prompt_mode") != PROMPT_MODE.value
+            or round_metadata.get("mix_benign_sources", False)
+            != ACTIVE_EXPERIMENT_CONFIG.mix_benign_sources
         ):
             raise ValueError(
-                "Checkpoint metadata does not match the current taxonomy or prompt mode."
+                "Checkpoint metadata does not match the current taxonomy, prompt mode, "
+                "or benign sampling mode."
             )
 
         weights_file = paths.run_dir / f"round_{breakpoint_round}" / "cluster_weights.jsonl"

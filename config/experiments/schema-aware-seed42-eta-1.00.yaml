@@ -1,6 +1,6 @@
 schema_version: 2
-random_seed: 20260827
-prompt_mode: query_only
+random_seed: 42
+prompt_mode: schema_aware
 num_rounds: 8
 num_training_sqls: 300
 initial_benign_ratio: 0.25

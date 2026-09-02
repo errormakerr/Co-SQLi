@@ -1,9 +1,10 @@
 schema_version: 2
-random_seed: 20260827
+random_seed: 123
 prompt_mode: query_only
 num_rounds: 8
 num_training_sqls: 300
 initial_benign_ratio: 0.25
+mix_benign_sources: true
 
 attacker:
   gamma_start: 0.70

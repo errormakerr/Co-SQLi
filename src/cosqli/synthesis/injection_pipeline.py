@@ -140,6 +140,33 @@ def _get_checker() -> SymbolChecker:
 # ---------------------------------------------------------------------------
 
 SQL_COMMENT_PREFIXES = ("-- ", "# ")
+CEPP_RATIONAL_EXPLANATION_PROBABILITY = 0.20
+"""Target share of LLM-generated, query-specific CEPP explanations."""
+
+CEPP_LLM_MAX_TOKENS = 96
+"""Hard cap appropriate for a one-line CEPP explanation."""
+
+CEPP_LLM_MAX_RETRIES = 0
+"""Avoid hidden SDK retry delays during per-sample benchmark synthesis."""
+
+BENIGN_COMMENT_PROBABILITY = 0.10
+"""Target share of benign records with an appended explanatory comment."""
+
+BENIGN_COMMENT_LLM_MAX_TOKENS = 48
+"""Hard cap for a short explanation of a normal SQL statement."""
+
+LOCAL_CEPP_COMMENT_TYPES = (
+    "Irrelevant text dilution",
+    "Authoritative statement",
+)
+"""The two repository-backed CEPP strategies, sampled by entry count."""
+
+_RATIONAL_CONTEXT_STOPWORDS = {
+    "ALL", "AND", "AS", "BETWEEN", "BY", "CASE", "CAST", "CREATE", "DELETE",
+    "DROP", "EXISTS", "FROM", "IF", "IN", "INSERT", "INTO", "IS", "LIKE", "NOT",
+    "NULL", "OR", "ORDER", "SELECT", "SET", "TABLE", "THEN", "UNION", "UPDATE",
+    "VALUES", "WHEN", "WHERE",
+}
 
 
 def choose_comment_prefix() -> str:
@@ -163,12 +190,111 @@ def _local_cepp_candidates(
     comment_list: List[Dict], comment_type: Optional[str] = None
 ) -> List[str]:
     """Return only local CEPP entries that satisfy the canonical contract."""
+    allowed_types = (
+        {comment_type}
+        if comment_type is not None
+        else set(LOCAL_CEPP_COMMENT_TYPES)
+    )
     return [
         entry["comment"].strip()
         for entry in comment_list
-        if (comment_type is None or entry.get("type") == comment_type)
+        if entry.get("type") in allowed_types
         and _is_safe_cepp_text(entry.get("comment"))
     ]
+
+
+def _contextual_rational_explanation(technique: str, payload: str) -> str:
+    """Create a safe, payload-specific CEPP explanation without an LLM call."""
+    identifiers = [
+        token.replace("_", " ")
+        for token in re.findall(r"[A-Za-z][A-Za-z0-9_]*", payload)
+        if token.upper() not in _RATIONAL_CONTEXT_STOPWORDS
+    ]
+    if identifiers:
+        return f"Validate the requested {identifiers[-1]} operation for the current query."
+
+    technique_subjects = {
+        "tautology": "condition",
+        "union_query": "report field",
+        "piggy_backed": "maintenance action",
+        "error_based": "database diagnostic",
+        "boolean_blind": "validation result",
+        "time_blind": "response timing check",
+    }
+    subject = technique_subjects.get(technique, "database operation")
+    return f"Validate the requested {subject} for the current query."
+
+
+def _contextual_benign_explanation(sql: str) -> str:
+    """Create a safe, query-specific benign explanation without an LLM call."""
+    table_match = re.search(
+        r"\bFROM\s+`?([A-Za-z_][A-Za-z0-9_$]*)", sql, flags=re.IGNORECASE
+    )
+    table = table_match.group(1) if table_match else "requested data"
+    normalized = sql.lstrip().upper()
+    if normalized.startswith("SELECT COUNT") or "COUNT(" in normalized:
+        return f"Count matching records in the {table} table."
+    if normalized.startswith("SELECT"):
+        return f"Retrieve the requested records from the {table} table."
+    if normalized.startswith("INSERT"):
+        return f"Create the requested record in the {table} table."
+    if normalized.startswith("UPDATE"):
+        return f"Update the requested record in the {table} table."
+    if normalized.startswith("DELETE"):
+        return f"Remove the requested record from the {table} table."
+    return "Process the requested database operation."
+
+
+def _is_safe_benign_comment_text(value: object) -> bool:
+    """Return whether a benign annotation satisfies its short-text contract."""
+    if not _is_safe_cepp_text(value):
+        return False
+    text = value.strip()
+    return (
+        len(text) <= 240
+        and 4 <= len(text.split()) <= 16
+        and not any(marker in text for marker in ('"', "'", "`"))
+    )
+
+
+def generate_benign_comment(
+    sql: str,
+    database: str,
+    *,
+    allow_llm: bool = True,
+    llm_timeout_seconds: Optional[float] = None,
+    llm_max_tokens: int = BENIGN_COMMENT_LLM_MAX_TOKENS,
+    llm_max_retries: int = CEPP_LLM_MAX_RETRIES,
+) -> tuple[str, str]:
+    """Generate a safe, short annotation for a benign SQL statement.
+
+    The LLM response must be a plain, single-line explanation. On a request
+    failure or an invalid response, retain the benign-comment branch by using
+    a deterministic explanation derived from the query itself.
+    """
+    fallback = _contextual_benign_explanation(sql)
+    if not allow_llm:
+        return fallback, "benign_template_explanation"
+
+    fallback_reason = "invalid_response"
+    try:
+        templates_dir = PROJECT_ROOT / "prompts"
+        gpt_config = _get_gpt_config()
+        response = _get_gpt().generate(
+            prompt=load_prompt_template(
+                str(templates_dir), "benign_comment_generation.j2"
+            ).render(sql=sql, database=database),
+            model=gpt_config.get("model", "gpt-3.5-turbo"),
+            temperature=gpt_config.get("temperature", 0.5),
+            max_tokens=min(int(gpt_config.get("max_tokens", 1024)), llm_max_tokens),
+            timeout_seconds=llm_timeout_seconds,
+            max_retries=llm_max_retries,
+        )
+        if _is_safe_benign_comment_text(response):
+            return response.strip(), "benign_rational_explanation"
+    except Exception as error:
+        fallback_reason = "exception_" + type(error).__name__
+    return fallback, "benign_rational_fallback_" + fallback_reason
 
 
 def identify_difficulty(reference_scope: str, comment_state: str) -> str:
@@ -186,47 +312,103 @@ def generate_comment(
     payload: str,
     comment_list: List[Dict],
     allow_llm: bool = True,
+    llm_timeout_seconds: Optional[float] = None,
+    llm_max_tokens: int = CEPP_LLM_MAX_TOKENS,
+    llm_max_retries: int = CEPP_LLM_MAX_RETRIES,
+    use_rational: Optional[bool] = None,
 ) -> str:
+    """Generate CEPP text while preserving the historical string-only API."""
+    comment, _ = _generate_comment_with_strategy(
+        technique,
+        payload_template_str,
+        payload,
+        comment_list,
+        allow_llm=allow_llm,
+        llm_timeout_seconds=llm_timeout_seconds,
+        llm_max_tokens=llm_max_tokens,
+        llm_max_retries=llm_max_retries,
+        use_rational=use_rational,
+    )
+    return comment
+
+
+def _generate_comment_with_strategy(
+    technique: str,
+    payload_template_str: str,
+    payload: str,
+    comment_list: List[Dict],
+    allow_llm: bool = True,
+    llm_timeout_seconds: Optional[float] = None,
+    llm_max_tokens: int = CEPP_LLM_MAX_TOKENS,
+    llm_max_retries: int = CEPP_LLM_MAX_RETRIES,
+    use_rational: Optional[bool] = None,
+) -> tuple[str, str]:
     """
     Generate a deceptive natural-language comment to append to the payload.
 
-    Randomly selects one of three strategies:
-    - **Irrelevant text dilution**: random benign-looking text
-    - **Authoritative statement**: authority-sounding assertion
-    - **Rational explanation**: LLM-generated contextual explanation
-    """
-    comment_types = ["Irrelevant text dilution", "Authoritative statement"]
-    if allow_llm:
-        comment_types.append("Rational explanation")
-    comment_type = random.choice(comment_types)
-    candidates = _local_cepp_candidates(comment_list, comment_type)
-    if candidates:
-        return random.choice(candidates)
+    When LLM generation is enabled, query-specific rational explanations are
+    selected with probability 20%. The remaining 80% is sampled uniformly
+    from the combined local candidate pool, preserving the repository's
+    relative proportions of irrelevant-text and authoritative entries.
 
-    fallback_candidates = _local_cepp_candidates(comment_list)
+    With LLM generation disabled, only the local pool is available; its two
+    strategies remain sampled in their repository proportions.
+    """
+    local_candidates_by_type = {
+        comment_type: _local_cepp_candidates(comment_list, comment_type)
+        for comment_type in LOCAL_CEPP_COMMENT_TYPES
+    }
+    fallback_candidates = [
+        candidate
+        for comment_type in LOCAL_CEPP_COMMENT_TYPES
+        for candidate in local_candidates_by_type[comment_type]
+    ]
     if not fallback_candidates:
         raise ValueError("CEPP generation requires a safe local comment candidate")
-    if comment_type != "Rational explanation" or not allow_llm:
-        return random.choice(fallback_candidates)
 
-    # Rational explanation uses the LLM only after a safe deterministic fallback
-    # has been established.  An invalid model response cannot escape the CEPP
-    # contract and falls back to locally curated text.
-    templates_dir = PROJECT_ROOT / "prompts"
-    gpt_config = _get_gpt_config()
-    response = _get_gpt().generate(
-        prompt=load_prompt_template(str(templates_dir), "comment_generation.j2").render(
-            technique=technique,
-            payload_template=payload_template_str,
-            payload=payload,
-        ),
-        model=gpt_config.get("model", "gpt-3.5-turbo"),
-        temperature=gpt_config.get("temperature", 0.5),
-        max_tokens=gpt_config.get("max_tokens", 1024),
+    def choose_local_comment() -> tuple[str, str]:
+        comment = random.choice(fallback_candidates)
+        for comment_type, candidates in local_candidates_by_type.items():
+            if comment in candidates:
+                return comment, "local_" + comment_type.lower().replace(" ", "_")
+        raise AssertionError("Chosen CEPP comment was not in the local candidate pool")
+
+    if use_rational is None:
+        use_rational = random.random() < CEPP_RATIONAL_EXPLANATION_PROBABILITY
+    if not use_rational:
+        return choose_local_comment()
+
+    if not allow_llm:
+        return (
+            _contextual_rational_explanation(technique, payload),
+            "rational_template_explanation",
+        )
+
+    # An unavailable or invalid LLM response must retain the rational CEPP class.
+    fallback_reason = "invalid_response"
+    try:
+        templates_dir = PROJECT_ROOT / "prompts"
+        gpt_config = _get_gpt_config()
+        response = _get_gpt().generate(
+            prompt=load_prompt_template(str(templates_dir), "comment_generation.j2").render(
+                technique=technique,
+                payload_template=payload_template_str,
+                payload=payload,
+            ),
+            model=gpt_config.get("model", "gpt-3.5-turbo"),
+            temperature=gpt_config.get("temperature", 0.5),
+            max_tokens=min(int(gpt_config.get("max_tokens", 1024)), llm_max_tokens),
+            timeout_seconds=llm_timeout_seconds,
+            max_retries=llm_max_retries,
+        )
+        if _is_safe_cepp_text(response):
+            return response.strip(), "rational_explanation"
+    except Exception as error:
+        fallback_reason = "exception_" + type(error).__name__
+    return (
+        _contextual_rational_explanation(technique, payload),
+        "rational_fallback_" + fallback_reason,
     )
-    if _is_safe_cepp_text(response):
-        return response.strip()
-    return random.choice(fallback_candidates)
 
 
 def insert_payload(sql: str, payload: str) -> Optional[str]:
@@ -334,10 +516,10 @@ def _fill_payload_core(
     db_schemas: List[Dict],
     sys_schemas: List[Dict],
     system_vars: List[Dict],
-) -> str:
+) -> tuple[str, List[Dict[str, Any]]]:
     """Fill a comment-free canonical payload template with live values."""
     if payload_template["expected_types"] is None:
-        return str(payload_template["payload"])
+        return str(payload_template["payload"]), []
 
     reference_scope = payload_template["reference_scope"]
     mysql_config = get_mysql_config().copy()
@@ -347,14 +529,15 @@ def _fill_payload_core(
             filler = SpecificDatabaseTemplateFiller(random.choice(sys_schemas), mysql_config)
         else:
             filler = SystemInformationTemplateFiller(system_vars, mysql_config)
-        return str(filler.fill_template(payload_template))
+        return str(filler.fill_template(payload_template)), filler.synthesis_warnings
     if reference_scope == "tsr":
         schema = next(
             (schema for schema in db_schemas if schema["database_name"] == sql_example["db"]),
             {},
         )
-        return str(SpecificDatabaseTemplateFiller(schema, mysql_config).fill_template(payload_template))
-    return str(payload_template["payload"])
+        filler = SpecificDatabaseTemplateFiller(schema, mysql_config)
+        return str(filler.fill_template(payload_template)), filler.synthesis_warnings
+    return str(payload_template["payload"]), []
 
 def pipeline(
     sql_example: Dict[str, Any],
@@ -365,6 +548,10 @@ def pipeline(
     comment_list: List[Dict],
     comment_state: str,
     allow_llm_comment: bool = True,
+    cepp_llm_timeout_seconds: Optional[float] = None,
+    cepp_llm_max_tokens: int = CEPP_LLM_MAX_TOKENS,
+    cepp_llm_max_retries: int = CEPP_LLM_MAX_RETRIES,
+    cepp_use_rational: Optional[bool] = None,
 ) -> Optional[Dict[str, Any]]:
     """
     Convert a raw SQL example + payload template into a labelled injection sample.
@@ -389,10 +576,11 @@ def pipeline(
     if sql_example.get("sql") is None:
         return None
 
-    payload_core = _fill_payload_core(
+    payload_core, synthesis_warnings = _fill_payload_core(
         sql_example, payload_template, db_schemas, sys_schemas, system_vars
     )
     cepp_text = ""
+    cepp_comment_strategy = ""
     comment_prefix = ""
     if comment_state == "no_comment":
         payload = payload_core
@@ -401,15 +589,18 @@ def pipeline(
         payload = payload_core + comment_prefix
     elif comment_state == "cepp":
         comment_prefix = choose_comment_prefix()
-        cepp_text = str(
-            generate_comment(
-                payload_template["technique"],
-                payload_template["payload"],
-                payload_core,
-                comment_list,
-                allow_llm=allow_llm_comment,
-            )
-        ).strip()
+        cepp_text, cepp_comment_strategy = _generate_comment_with_strategy(
+            payload_template["technique"],
+            payload_template["payload"],
+            payload_core,
+            comment_list,
+            allow_llm=allow_llm_comment,
+            llm_timeout_seconds=cepp_llm_timeout_seconds,
+            llm_max_tokens=cepp_llm_max_tokens,
+            llm_max_retries=cepp_llm_max_retries,
+            use_rational=cepp_use_rational,
+        )
+        cepp_text = str(cepp_text).strip()
         payload = payload_core + comment_prefix + cepp_text
     else:
         raise ValueError(f"Unsupported comment_state: {comment_state!r}")
@@ -439,6 +630,8 @@ def pipeline(
         "technique": payload_template["technique"],
         "reference_scope": payload_template["reference_scope"],
         "comment_state": comment_state,
+        "cepp_comment_strategy": cepp_comment_strategy or None,
+        "synthesis_warnings": synthesis_warnings,
         "difficulty": identify_difficulty(
             payload_template["reference_scope"], comment_state
         ),

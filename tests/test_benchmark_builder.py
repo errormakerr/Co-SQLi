@@ -38,9 +38,9 @@ class BenchmarkBuilderTests(unittest.TestCase):
         self.assertEqual(
             builder.BENCHMARK_SPECS,
             {
-                "train_sqls.json": ("train", 2560, 640),
+                "train_sqls.json": ("train", 2560, 653),
                 "valid_sqls.json": ("train", 1920, 40),
-                "test_sqls.json": ("test", 3200, 800),
+                "test_sqls.json": ("test", 3200, 873),
             },
         )
         self.assertEqual(set(builder.SFT_FILENAMES), set(PROMPT_MODES))
@@ -73,6 +73,118 @@ class BenchmarkBuilderTests(unittest.TestCase):
         self.assertEqual(records, [expected_record])
         self.assertEqual(mocked_pipeline.call_count, 2)
 
+    def test_synthesis_audit_reports_attempt_outcomes(self) -> None:
+        builder = _builder_module()
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            audit = builder.SynthesisAudit(Path(temporary_directory), seed=7)
+            for outcome in ("pipeline_returned_none", "success"):
+                audit.record(
+                    "attack_attempt",
+                    dataset="train_sqls.json",
+                    cluster=CLUSTER,
+                    payload_template_source_index=4,
+                    sql_carrier_source_index=2,
+                    outcome=outcome,
+                    cepp_comment_strategy=None,
+                    synthesis_warnings=[],
+                )
+            audit.record(
+                "final_record",
+                dataset="train_sqls.json",
+                output_index=0,
+                label=False,
+                record_sha256="record",
+            )
+            metadata = audit.write()
+            summary = json.loads(
+                (Path(temporary_directory) / metadata["summary_file"]).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+        self.assertEqual(summary["attack_attempt_count"], 2)
+        self.assertEqual(
+            summary["payload_template_source_index"]["4"],
+            {
+                "attempts": 2,
+                "successes": 1,
+                "failure_count": 1,
+                "success_rate": 0.5,
+                "outcomes": {"pipeline_returned_none": 1, "success": 1},
+            },
+        )
+        self.assertEqual(summary["final_records"]["train_sqls.json"], {"attack": 1})
+        self.assertEqual(summary["synthesis_warnings"]["total"], 0)
+
+    def test_cepp_rational_plan_has_an_exact_twenty_percent_allocation(self) -> None:
+        builder = _builder_module()
+        choices, rational_count, cepp_count = builder._cepp_rational_plan(1920)
+
+        self.assertEqual(cepp_count, 640)
+        self.assertEqual(rational_count, 128)
+        self.assertEqual(sum(choices), 128)
+
+    def test_benign_comments_have_an_exact_ten_percent_allocation(self) -> None:
+        builder = _builder_module()
+        self.assertEqual(builder._benign_comment_count(653), 65)
+        self.assertEqual(builder._benign_comment_count(40), 4)
+        self.assertEqual(builder._benign_comment_count(873), 87)
+
+    def test_pick_benign_appends_one_line_comment_without_raw_metadata(self) -> None:
+        builder = _builder_module()
+        normal_sqls = [
+            {
+                "db": "app",
+                "sql": f"SELECT name FROM employees WHERE id = {index}",
+                "label": True,
+                "set": "train",
+            }
+            for index in range(10)
+        ]
+        normal_sqls[0]["sql"] += " -- Existing source annotation"
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            audit = builder.SynthesisAudit(Path(temporary_directory), seed=3)
+            with patch.object(
+                builder,
+                "generate_benign_comment",
+                return_value=("Retrieve the requested employee record.", "test_strategy"),
+            ), patch.object(builder, "choose_comment_prefix", return_value="# "):
+                records = builder._pick_benign(
+                    normal_sqls,
+                    count=10,
+                    comment_count=1,
+                    allow_llm_comment=False,
+                    dataset="train_sqls.json",
+                    audit=audit,
+                )
+            metadata = audit.write()
+            summary = json.loads(
+                (Path(temporary_directory) / metadata["summary_file"]).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+        annotated = [
+            record
+            for record in records
+            if record["sql"].endswith("# Retrieve the requested employee record.")
+        ]
+        self.assertEqual(len(annotated), 1)
+        self.assertEqual(set(annotated[0]), {"db", "sql", "label", "set"})
+        self.assertIn(
+            "SELECT name FROM employees WHERE id = 0 -- Existing source annotation",
+            [record["sql"] for record in records],
+        )
+        self.assertEqual(
+            summary["benign_comments"]["train_sqls.json"],
+            {
+                "selected": 10,
+                "annotated": 1,
+                "strategies": {"test_strategy": 1},
+                "prefixes": {"# ": 1},
+            },
+        )
+
     def test_contract_rejects_modified_benchmark_artifact(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             benchmark_dir = Path(temporary_directory)
@@ -101,7 +213,7 @@ class BenchmarkBuilderTests(unittest.TestCase):
                     "train_sqls.json": {
                         "source_split": "train",
                         "attack_count": 2560,
-                        "benign_count": 640,
+                        "benign_count": 653,
                     },
                     "valid_sqls.json": {
                         "source_split": "train",
@@ -111,10 +223,15 @@ class BenchmarkBuilderTests(unittest.TestCase):
                     "test_sqls.json": {
                         "source_split": "test",
                         "attack_count": 3200,
-                        "benign_count": 800,
+                        "benign_count": 873,
                     },
                 },
             }
+            (benchmark_dir / "build_manifest.json").write_text(
+                json.dumps(manifest), encoding="utf-8"
+            )
+            _validate_benchmark_contract(benchmark_dir)
+            manifest["datasets"]["train_sqls.json"]["rational_cepp_count"] = 171
             (benchmark_dir / "build_manifest.json").write_text(
                 json.dumps(manifest), encoding="utf-8"
             )

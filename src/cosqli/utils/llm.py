@@ -81,6 +81,8 @@ class LLM:
         model: str,
         temperature: float = 0.5,
         max_tokens: int = 6000,
+        timeout_seconds: Optional[float] = None,
+        max_retries: Optional[int] = None,
     ) -> str:
         """
         Synchronous single-request generation via the OpenAI-compatible SDK.
@@ -101,7 +103,12 @@ class LLM:
         }
         if self.request_extra_body:
             request_kwargs["extra_body"] = self.request_extra_body
-        response = self.sync_client.chat.completions.create(
+        if timeout_seconds is not None:
+            request_kwargs["timeout"] = timeout_seconds
+        client = self.sync_client
+        if max_retries is not None:
+            client = client.with_options(max_retries=max_retries)
+        response = client.chat.completions.create(
             **request_kwargs,
         )
         return response.choices[0].message.content
@@ -112,6 +119,7 @@ class LLM:
         model: str,
         temperature: float = 0.5,
         max_tokens: int = 6000,
+        timeout_seconds: Optional[float] = None,
     ) -> str:
         """Synchronous single-request generation via the HKUST API gateway."""
         headers = {
@@ -125,7 +133,7 @@ class LLM:
                 url=self.base_url,
                 headers=headers,
                 data=json.dumps(data),
-                timeout=60,
+                timeout=timeout_seconds if timeout_seconds is not None else 60,
             )
             response.raise_for_status()
             return response.json()["choices"][0]["message"]["content"]
