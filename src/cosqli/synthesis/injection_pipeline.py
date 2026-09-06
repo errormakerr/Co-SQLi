@@ -4,7 +4,6 @@ SQL injection sample generation pipeline.
 This module provides:
 - ``pipeline``                      — end-to-end function that converts a raw SQL example +
                                        payload template into a labelled injection SQL sample
-- ``batch_generate_injection_sqls`` — convenience wrapper around ``pipeline``
 
 Extracted components (imported from sub-modules):
 - ``SymbolChecker``                 — see ``Attacker.symbol_checker``
@@ -141,19 +140,13 @@ def _get_checker() -> SymbolChecker:
 
 SQL_COMMENT_PREFIXES = ("-- ", "# ")
 CEPP_RATIONAL_EXPLANATION_PROBABILITY = 0.20
-"""Target share of LLM-generated, query-specific CEPP explanations."""
+"""Compatibility default; configured experiment runs use ``synthesis.cepp``."""
 
 CEPP_LLM_MAX_TOKENS = 96
-"""Hard cap appropriate for a one-line CEPP explanation."""
+"""Compatibility default; configured experiment runs use ``synthesis.cepp``."""
 
 CEPP_LLM_MAX_RETRIES = 0
-"""Avoid hidden SDK retry delays during per-sample benchmark synthesis."""
-
-BENIGN_COMMENT_PROBABILITY = 0.10
-"""Target share of benign records with an appended explanatory comment."""
-
-BENIGN_COMMENT_LLM_MAX_TOKENS = 48
-"""Hard cap for a short explanation of a normal SQL statement."""
+"""Compatibility default; configured experiment runs use ``synthesis.cepp``."""
 
 LOCAL_CEPP_COMMENT_TYPES = (
     "Irrelevant text dilution",
@@ -225,78 +218,6 @@ def _contextual_rational_explanation(technique: str, payload: str) -> str:
     return f"Validate the requested {subject} for the current query."
 
 
-def _contextual_benign_explanation(sql: str) -> str:
-    """Create a safe, query-specific benign explanation without an LLM call."""
-    table_match = re.search(
-        r"\bFROM\s+`?([A-Za-z_][A-Za-z0-9_$]*)", sql, flags=re.IGNORECASE
-    )
-    table = table_match.group(1) if table_match else "requested data"
-    normalized = sql.lstrip().upper()
-    if normalized.startswith("SELECT COUNT") or "COUNT(" in normalized:
-        return f"Count matching records in the {table} table."
-    if normalized.startswith("SELECT"):
-        return f"Retrieve the requested records from the {table} table."
-    if normalized.startswith("INSERT"):
-        return f"Create the requested record in the {table} table."
-    if normalized.startswith("UPDATE"):
-        return f"Update the requested record in the {table} table."
-    if normalized.startswith("DELETE"):
-        return f"Remove the requested record from the {table} table."
-    return "Process the requested database operation."
-
-
-def _is_safe_benign_comment_text(value: object) -> bool:
-    """Return whether a benign annotation satisfies its short-text contract."""
-    if not _is_safe_cepp_text(value):
-        return False
-    text = value.strip()
-    return (
-        len(text) <= 240
-        and 4 <= len(text.split()) <= 16
-        and not any(marker in text for marker in ('"', "'", "`"))
-    )
-
-
-def generate_benign_comment(
-    sql: str,
-    database: str,
-    *,
-    allow_llm: bool = True,
-    llm_timeout_seconds: Optional[float] = None,
-    llm_max_tokens: int = BENIGN_COMMENT_LLM_MAX_TOKENS,
-    llm_max_retries: int = CEPP_LLM_MAX_RETRIES,
-) -> tuple[str, str]:
-    """Generate a safe, short annotation for a benign SQL statement.
-
-    The LLM response must be a plain, single-line explanation. On a request
-    failure or an invalid response, retain the benign-comment branch by using
-    a deterministic explanation derived from the query itself.
-    """
-    fallback = _contextual_benign_explanation(sql)
-    if not allow_llm:
-        return fallback, "benign_template_explanation"
-
-    fallback_reason = "invalid_response"
-    try:
-        templates_dir = PROJECT_ROOT / "prompts"
-        gpt_config = _get_gpt_config()
-        response = _get_gpt().generate(
-            prompt=load_prompt_template(
-                str(templates_dir), "benign_comment_generation.j2"
-            ).render(sql=sql, database=database),
-            model=gpt_config.get("model", "gpt-3.5-turbo"),
-            temperature=gpt_config.get("temperature", 0.5),
-            max_tokens=min(int(gpt_config.get("max_tokens", 1024)), llm_max_tokens),
-            timeout_seconds=llm_timeout_seconds,
-            max_retries=llm_max_retries,
-        )
-        if _is_safe_benign_comment_text(response):
-            return response.strip(), "benign_rational_explanation"
-    except Exception as error:
-        fallback_reason = "exception_" + type(error).__name__
-    return fallback, "benign_rational_fallback_" + fallback_reason
-
-
 def identify_difficulty(reference_scope: str, comment_state: str) -> str:
     """Assign a display-only difficulty label from canonical taxonomy fields."""
     if reference_scope == "lor":
@@ -313,6 +234,7 @@ def generate_comment(
     comment_list: List[Dict],
     allow_llm: bool = True,
     llm_timeout_seconds: Optional[float] = None,
+    rational_explanation_probability: float = CEPP_RATIONAL_EXPLANATION_PROBABILITY,
     llm_max_tokens: int = CEPP_LLM_MAX_TOKENS,
     llm_max_retries: int = CEPP_LLM_MAX_RETRIES,
     use_rational: Optional[bool] = None,
@@ -325,6 +247,7 @@ def generate_comment(
         comment_list,
         allow_llm=allow_llm,
         llm_timeout_seconds=llm_timeout_seconds,
+        rational_explanation_probability=rational_explanation_probability,
         llm_max_tokens=llm_max_tokens,
         llm_max_retries=llm_max_retries,
         use_rational=use_rational,
@@ -339,6 +262,7 @@ def _generate_comment_with_strategy(
     comment_list: List[Dict],
     allow_llm: bool = True,
     llm_timeout_seconds: Optional[float] = None,
+    rational_explanation_probability: float = CEPP_RATIONAL_EXPLANATION_PROBABILITY,
     llm_max_tokens: int = CEPP_LLM_MAX_TOKENS,
     llm_max_retries: int = CEPP_LLM_MAX_RETRIES,
     use_rational: Optional[bool] = None,
@@ -347,9 +271,10 @@ def _generate_comment_with_strategy(
     Generate a deceptive natural-language comment to append to the payload.
 
     When LLM generation is enabled, query-specific rational explanations are
-    selected with probability 20%. The remaining 80% is sampled uniformly
-    from the combined local candidate pool, preserving the repository's
-    relative proportions of irrelevant-text and authoritative entries.
+    selected with the configured probability. The remaining samples are drawn
+    uniformly from the combined local candidate pool, preserving the
+    repository's relative proportions of irrelevant-text and authoritative
+    entries.
 
     With LLM generation disabled, only the local pool is available; its two
     strategies remain sampled in their repository proportions.
@@ -365,6 +290,8 @@ def _generate_comment_with_strategy(
     ]
     if not fallback_candidates:
         raise ValueError("CEPP generation requires a safe local comment candidate")
+    if not 0.0 <= rational_explanation_probability <= 1.0:
+        raise ValueError("rational_explanation_probability must be in [0, 1]")
 
     def choose_local_comment() -> tuple[str, str]:
         comment = random.choice(fallback_candidates)
@@ -374,7 +301,7 @@ def _generate_comment_with_strategy(
         raise AssertionError("Chosen CEPP comment was not in the local candidate pool")
 
     if use_rational is None:
-        use_rational = random.random() < CEPP_RATIONAL_EXPLANATION_PROBABILITY
+        use_rational = random.random() < rational_explanation_probability
     if not use_rational:
         return choose_local_comment()
 
@@ -549,6 +476,7 @@ def pipeline(
     comment_state: str,
     allow_llm_comment: bool = True,
     cepp_llm_timeout_seconds: Optional[float] = None,
+    cepp_rational_explanation_probability: float = CEPP_RATIONAL_EXPLANATION_PROBABILITY,
     cepp_llm_max_tokens: int = CEPP_LLM_MAX_TOKENS,
     cepp_llm_max_retries: int = CEPP_LLM_MAX_RETRIES,
     cepp_use_rational: Optional[bool] = None,
@@ -596,6 +524,7 @@ def pipeline(
             comment_list,
             allow_llm=allow_llm_comment,
             llm_timeout_seconds=cepp_llm_timeout_seconds,
+            rational_explanation_probability=cepp_rational_explanation_probability,
             llm_max_tokens=cepp_llm_max_tokens,
             llm_max_retries=cepp_llm_max_retries,
             use_rational=cepp_use_rational,
@@ -636,54 +565,3 @@ def pipeline(
             payload_template["reference_scope"], comment_state
         ),
     }
-
-
-def batch_generate_injection_sqls(
-    expected_example_num: int,
-    raw_sqls: List[Dict],
-    payloads: List[Dict],
-    db_schemas: List[Dict],
-    sys_schemas: List[Dict],
-    system_vars: List[Dict],
-    comment_list: List[Dict],
-    comment_rate: float,
-) -> List[Dict]:
-    """
-    Generate *expected_example_num* injection SQL samples by randomly sampling
-    from *raw_sqls* and *payloads*.
-
-    Args:
-        expected_example_num: Target number of generated samples.
-        raw_sqls:             List of raw SQL example dicts.
-        payloads:             List of payload template dicts.
-        db_schemas:           Database schemas list.
-        sys_schemas:          System-table schemas list.
-        system_vars:          System variable definitions.
-        comment_list:         Deceptive comment repository.
-        comment_rate:         Probability (0-1) of choosing ``cepp`` instead
-                              of ``clean_comment`` where a delimiter is required.
-
-    Returns:
-        List of successfully generated injection SQL sample dicts.
-    """
-    count = 0
-    injection_sql_examples = []
-    while count < expected_example_num:
-        sql_example = random.choice(raw_sqls)
-        if sql_example.get("requires_comment_delimiter"):
-            comment_state = "cepp" if random.random() < comment_rate else "clean_comment"
-        else:
-            comment_state = "no_comment"
-        sample = pipeline(
-            sql_example,
-            random.choice(payloads),
-            db_schemas,
-            sys_schemas,
-            system_vars,
-            comment_list,
-            comment_state,
-        )
-        if sample is not None:
-            injection_sql_examples.append(sample)
-        count += 1
-    return injection_sql_examples

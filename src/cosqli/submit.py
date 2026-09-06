@@ -83,9 +83,15 @@ def main() -> None:
         help="Override the model-visible SQL prompt context for this run.",
     )
     parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Override random_seed in the experiment configuration.",
+    )
+    parser.add_argument(
         "--benchmark-dir",
         required=True,
-        help="External benchmark directory built by scripts/build_benchmarks.py.",
+        help="External benchmark directory built by the Co-SQLi-Benchmark project.",
     )
     parser.add_argument("--breakpoint-round", type=int, default=-1)
     parser.add_argument("--job-name", default="co-sqli")
@@ -100,6 +106,7 @@ def main() -> None:
         num_rounds=args.num_rounds,
         num_training_sqls=args.num_training_sqls,
         prompt_mode=args.prompt_mode,
+        random_seed=args.seed,
     )
 
     if experiment_config.num_rounds <= 0 or experiment_config.num_training_sqls <= 0:
@@ -133,6 +140,7 @@ def main() -> None:
             "COSQLI_NUM_ROUNDS": str(experiment_config.num_rounds),
             "COSQLI_NUM_TRAINING_SQLS": str(experiment_config.num_training_sqls),
             "COSQLI_PROMPT_MODE": experiment_config.prompt_mode.value,
+            "COSQLI_SEED": str(experiment_config.random_seed),
             "COSQLI_BREAKPOINT_ROUND": str(args.breakpoint_round),
             "COSQLI_BENCHMARK_DIR": str(benchmark_dir),
             "PYTHONDONTWRITEBYTECODE": "1",
@@ -162,6 +170,7 @@ def main() -> None:
                 "submitted_at": datetime.now(timezone.utc).isoformat(),
                 "benchmark_dir": str(benchmark_dir),
                 "prompt_mode": experiment_config.prompt_mode.value,
+                "random_seed": experiment_config.random_seed,
                 "experiment_config_source_sha256": experiment_config_sha256(
                     experiment_config_path
                 ),

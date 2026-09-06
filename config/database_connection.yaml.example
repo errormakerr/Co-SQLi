@@ -1,4 +1,5 @@
-# Copy this file to database_connection.yaml and set the read-only account.
+# The repository's database_connection.yaml contains the deployment values.
+# Keep the password in the environment rather than in versioned YAML.
 host: '127.0.0.1'
 port: 13306
 user: 'YOUR_READ_ONLY_USER'

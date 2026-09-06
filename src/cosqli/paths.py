@@ -12,7 +12,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 def get_config_dir() -> Path:
-    """Return the optional external config directory or the checked-in template directory."""
+    """Return an explicit override or the repository's default config directory."""
     configured_dir = os.environ.get("COSQLI_CONFIG_DIR")
     if configured_dir:
         return Path(configured_dir).expanduser().resolve()
@@ -42,7 +42,7 @@ def require_artifacts_root(path: Path | str) -> Path:
 
 
 def resolve_runtime_base_model_path(runtime_config: dict) -> Path:
-    """Resolve the base model from its declared environment variable."""
+    """Resolve the base model from an environment variable or inline path."""
     environment_key = runtime_config.get("base_model_path_env")
     if isinstance(environment_key, str) and environment_key:
         value = os.environ.get(environment_key)
@@ -56,14 +56,18 @@ def resolve_runtime_base_model_path(runtime_config: dict) -> Path:
     if value:
         return Path(value).expanduser().resolve()
 
+    inline_path = runtime_config.get("base_model_path")
+    if isinstance(inline_path, str) and inline_path:
+        return Path(inline_path).expanduser().resolve()
+
     raise ValueError(
-        "runtime_config.yaml must provide a non-empty base_model_path_env or "
-        "COSQLI_BASE_MODEL_PATH must be set."
+        "runtime_config.yaml must provide base_model_path or a non-empty "
+        "base_model_path_env; COSQLI_BASE_MODEL_PATH may also be set."
     )
 
 
 def resolve_runtime_artifacts_root(runtime_config: dict) -> Path:
-    """Resolve the external artifact root from its declared environment variable."""
+    """Resolve the external artifact root from an environment variable or inline path."""
     environment_key = runtime_config.get("artifacts_root_env")
     if isinstance(environment_key, str) and environment_key:
         value = os.environ.get(environment_key)
@@ -77,9 +81,13 @@ def resolve_runtime_artifacts_root(runtime_config: dict) -> Path:
     if value:
         return require_artifacts_root(value)
 
+    inline_path = runtime_config.get("artifacts_root", runtime_config.get("run_output_dir"))
+    if isinstance(inline_path, str) and inline_path:
+        return require_artifacts_root(inline_path)
+
     raise ValueError(
-        "runtime_config.yaml must provide a non-empty artifacts_root_env or "
-        "COSQLI_ARTIFACTS_ROOT must be set."
+        "runtime_config.yaml must provide artifacts_root/run_output_dir or a "
+        "non-empty artifacts_root_env; COSQLI_ARTIFACTS_ROOT may also be set."
     )
 
 
@@ -108,5 +116,5 @@ def require_secret(config: dict, key: str) -> str:
 
     raise ValueError(
         f"Configuration must provide a non-empty {key}_env; set "
-        "COSQLI_ALLOW_INLINE_SECRETS=1 to use an inline value from an external config."
+        "COSQLI_ALLOW_INLINE_SECRETS=1 to use an inline value from config."
     )

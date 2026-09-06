@@ -14,6 +14,10 @@ import sys
 from typing import Dict, List, Optional, Any
 
 
+DEFAULT_LLM_TEMPERATURE = 0.3
+DEFAULT_MAX_TOKENS = 500
+
+
 # ============================================================
 # Security Declaration
 # ============================================================
@@ -201,7 +205,13 @@ class ExpectedTypesInferrer:
     Provides fallback heuristic rules when LLM is unavailable.
     """
     
-    def __init__(self, llm=None, model: str = None):
+    def __init__(
+        self,
+        llm=None,
+        model: str = None,
+        temperature: float = DEFAULT_LLM_TEMPERATURE,
+        max_tokens: int = DEFAULT_MAX_TOKENS,
+    ):
         """
         Initialize the inferrer.
         
@@ -211,6 +221,8 @@ class ExpectedTypesInferrer:
         """
         self.llm = llm
         self.model = model
+        self.temperature = float(temperature)
+        self.max_tokens = int(max_tokens)
         self._stats = {"attempts": 0, "llm_success": 0, "fallback_used": 0}
     
     def infer(
@@ -288,7 +300,12 @@ class ExpectedTypesInferrer:
         )
         
         try:
-            response = self.llm.chat(prompt, self.model, temperature=0.3, max_tokens=500)
+            response = self.llm.chat(
+                prompt,
+                self.model,
+                temperature=self.temperature,
+                max_tokens=self.max_tokens,
+            )
             
             if not response:
                 return None

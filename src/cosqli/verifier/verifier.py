@@ -64,6 +64,13 @@ class Verifier:
         self,
         cluster_list: List[str],
         benign_ratio: float = DEFAULT_BENIGN_RATIO,
+        reward_smoothing_alpha: float = REWARD_SMOOTHING_ALPHA,
+        reward_smoothing_beta: float = REWARD_SMOOTHING_BETA,
+        benign_fpr_target: float = BENIGN_FPR_TARGET,
+        benign_ratio_step_size: float = BENIGN_RATIO_STEP_SIZE,
+        benign_error_ema_decay: float = BENIGN_ERROR_EMA_DECAY,
+        benign_ratio_min: float = BENIGN_RATIO_MIN,
+        benign_ratio_max: float = BENIGN_RATIO_MAX,
     ) -> None:
         """
         Initialise the Verifier with uniform weights.
@@ -72,6 +79,14 @@ class Verifier:
             cluster_list: List of attack-only cluster key strings. Benign
                           samples are handled separately from the MAB.
             benign_ratio: Initial benign sample share for the ratio controller.
+            reward_smoothing_alpha: Additive prior for false-negative and
+                                    false-positive rates.
+            reward_smoothing_beta: Denominator prior for those rates.
+            benign_fpr_target: Target validation false-positive rate.
+            benign_ratio_step_size: Controller gain for the benign ratio.
+            benign_error_ema_decay: EMA decay for benign validation error.
+            benign_ratio_min: Lower bound for the benign ratio.
+            benign_ratio_max: Upper bound for the benign ratio.
         """
         if not cluster_list:
             raise ValueError("cluster_list must not be empty")
@@ -80,6 +95,17 @@ class Verifier:
                 "cluster_list must contain attack clusters only; "
                 "the benign cluster is not a sampled attack cluster"
             )
+        self._validate_smoothing_prior(reward_smoothing_alpha, "reward_smoothing_alpha")
+        self._validate_smoothing_prior(reward_smoothing_beta, "reward_smoothing_beta")
+        self._validate_unit_interval(benign_fpr_target, "benign_fpr_target")
+        self._validate_positive(benign_ratio_step_size, "benign_ratio_step_size")
+        self._validate_unit_interval(benign_error_ema_decay, "benign_error_ema_decay")
+        self._validate_unit_interval(benign_ratio_min, "benign_ratio_min")
+        self._validate_unit_interval(benign_ratio_max, "benign_ratio_max")
+        if benign_ratio_min > benign_ratio_max:
+            raise ValueError("benign_ratio_min must not exceed benign_ratio_max")
+        self.benign_ratio_min = float(benign_ratio_min)
+        self.benign_ratio_max = float(benign_ratio_max)
         self._validate_benign_ratio(benign_ratio)
         self.cluster_list = list(cluster_list)
         self.cluster_rewards: Dict[str, float] = {k: 0.0 for k in cluster_list}
@@ -87,6 +113,11 @@ class Verifier:
         self.last_reward_baseline = 0.0
         self.benign_ratio = float(benign_ratio)
         self.benign_error_ema = 0.0
+        self.reward_smoothing_alpha = float(reward_smoothing_alpha)
+        self.reward_smoothing_beta = float(reward_smoothing_beta)
+        self.benign_fpr_target = float(benign_fpr_target)
+        self.benign_ratio_step_size = float(benign_ratio_step_size)
+        self.benign_error_ema_decay = float(benign_error_ema_decay)
 
     # ------------------------------------------------------------------
     # Accessors
@@ -185,11 +216,11 @@ class Verifier:
         for key in self.cluster_list:
             stat = cluster_stats[key]
             self.cluster_rewards[key] = (
-                stat.false_negatives + REWARD_SMOOTHING_ALPHA
+                stat.false_negatives + self.reward_smoothing_alpha
             ) / (
                 stat.total
-                + REWARD_SMOOTHING_ALPHA
-                + REWARD_SMOOTHING_BETA
+                + self.reward_smoothing_alpha
+                + self.reward_smoothing_beta
             )
 
     def update_weight(
@@ -252,29 +283,42 @@ class Verifier:
             )
 
         benign_error = (
-            benign_stat.false_positives + REWARD_SMOOTHING_ALPHA
+            benign_stat.false_positives + self.reward_smoothing_alpha
         ) / (
             benign_stat.total
-            + REWARD_SMOOTHING_ALPHA
-            + REWARD_SMOOTHING_BETA
+            + self.reward_smoothing_alpha
+            + self.reward_smoothing_beta
         )
         self.benign_error_ema = (
-            BENIGN_ERROR_EMA_DECAY * self.benign_error_ema
-            + (1.0 - BENIGN_ERROR_EMA_DECAY) * benign_error
+            self.benign_error_ema_decay * self.benign_error_ema
+            + (1.0 - self.benign_error_ema_decay) * benign_error
         )
-        proposed_ratio = self.benign_ratio + BENIGN_RATIO_STEP_SIZE * (
-            self.benign_error_ema - BENIGN_FPR_TARGET
+        proposed_ratio = self.benign_ratio + self.benign_ratio_step_size * (
+            self.benign_error_ema - self.benign_fpr_target
         )
         self.benign_ratio = min(
-            max(proposed_ratio, BENIGN_RATIO_MIN),
-            BENIGN_RATIO_MAX,
+            max(proposed_ratio, self.benign_ratio_min),
+            self.benign_ratio_max,
         )
         return self.benign_ratio
 
-    @staticmethod
-    def _validate_benign_ratio(benign_ratio: float) -> None:
-        if not BENIGN_RATIO_MIN <= benign_ratio <= BENIGN_RATIO_MAX:
+    def _validate_benign_ratio(self, benign_ratio: float) -> None:
+        if not self.benign_ratio_min <= benign_ratio <= self.benign_ratio_max:
             raise ValueError(
                 "benign_ratio must be in "
-                f"[{BENIGN_RATIO_MIN}, {BENIGN_RATIO_MAX}], got {benign_ratio}"
+                f"[{self.benign_ratio_min}, {self.benign_ratio_max}], got {benign_ratio}"
             )
+
+    @staticmethod
+    def _validate_positive(value: float, name: str) -> None:
+        if not math.isfinite(value) or value <= 0.0:
+            raise ValueError(f"{name} must be finite and positive, got {value}")
+
+    @staticmethod
+    def _validate_smoothing_prior(value: float, name: str) -> None:
+        Verifier._validate_positive(value, name)
+
+    @staticmethod
+    def _validate_unit_interval(value: float, name: str) -> None:
+        if not math.isfinite(value) or not 0.0 <= value <= 1.0:
+            raise ValueError(f"{name} must be in [0, 1], got {value}")

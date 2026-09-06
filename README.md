@@ -15,9 +15,16 @@ standard experiment:
 - eight clusters sampled without replacement each round from a squared-weight
   distribution mixed with an exploration schedule from 0.70 to 0.20;
 - centered full-information exponential verifier updates with learning rate 1.0;
-- a static training corpus built from 2,560 train-source attacks and all 653 train benign
-  SQL, a validation set with 1,920 train-source attacks and 40 benign SQL, and
-  a held-out test set with 3,200 test-source attacks and all 873 test benign SQL.
+- the canonical static training corpus built from 2,560 train-source attacks
+  and all 653 train benign SQL, a validation set with 1,920 train-source
+  attacks and 40 benign SQL, and a held-out test set with 3,200 test-source
+  attacks and all 873 test benign SQL.
+
+A smaller static train corpus is represented as a separate schema-v3 derived
+benchmark, never by editing the canonical benchmark in place. Its manifest
+binds the parent artifacts, the deterministic sampling seed and selection
+records, while validation/test remain fixed. Co-SQLi validates this provenance
+and all artifact checksums before a run starts.
 
 Training and inference use the tokenizer's native Qwen chat template. Rendered
 chat text is then tokenized with `add_special_tokens=False`, so template control
@@ -34,6 +41,11 @@ additionally supplies the database DDL.
 The benchmark builder writes both mode-specific SFT artifacts from the same raw
 SQL splits, so mode comparisons retain identical SQL, labels, ordering, and
 seed. Select a mode in an experiment YAML or override it for a run:
+
+The default `query_only` experiment mixes benign samples from the local train
+corpus and the configured external benign pools. `schema_aware` runs resolve
+benign-pool mixing off because those external rows do not include database
+schema metadata.
 
 ```bash
 co-sqli --run-id query-only-001 --benchmark-dir "$COSQLI_BENCHMARK_DIR" \
@@ -57,7 +69,7 @@ output path is rejected if it points inside the repository.
 ```text
 data/source/                 Versioned SQL, payload, schema, and comment inputs
 config/experiment_config.yaml  Versioned experiment definition
-scripts/build_benchmarks.py  Deterministic external benchmark builder
+scripts/                     Runtime helpers and scheduler entry points
 src/cosqli/                  Training, inference, synthesis, and reporting code
 tests/                       Regression suite
 ```
@@ -70,21 +82,18 @@ Install the package in a Python environment with the training dependencies:
 python -m pip install -e '.[training,dev]'
 ```
 
-Set `COSQLI_CONFIG_DIR` to an external directory containing these runtime
+The repository `config/` directory contains the deployment runtime
 configuration files:
 
-- `runtime_config.yaml`, based on `config/runtime_config.yaml.example`, with
-  `base_model_path_env` and `artifacts_root_env` keys;
-- `database_connection.yaml`, based on `config/database_connection.yaml.example`;
-- `gpt_config.yaml`, based on `config/gpt_config.yaml.example`.
+- `runtime_config.yaml`, with the base model and external artifact root;
+- `database_connection.yaml`, with the local MySQL endpoint and password env key;
+- `gpt_config.yaml`, with the OpenAI-compatible endpoint/model and API-key env key.
 
-The runtime configuration names environment variables; it does not store model
-locations or secrets. Export the corresponding values before a run:
+`COSQLI_CONFIG_DIR` remains available as an explicit override for another
+deployment. The checked-in runtime configuration does not store secrets; export
+the two sensitive values before a run:
 
 ```bash
-export COSQLI_CONFIG_DIR=/path/to/runtime-config
-export COSQLI_BASE_MODEL_PATH=/path/to/qwen-model
-export COSQLI_ARTIFACTS_ROOT=/path/to/experiment-results
 export COSQLI_LLM_API_KEY=...
 export COSQLI_MYSQL_PASSWORD=...
 ```
@@ -95,9 +104,11 @@ never contain secret values.
 
 ## Build A Benchmark
 
-The benchmark builder writes to a new, empty external directory and records
-SHA-256 checksums for every source input and generated artifact. It requires the
-same MySQL-backed synthesis environment as a full run.
+The benchmark builder is maintained in the separate
+`/hpc2hdd/home/hpan285/project/Co-SQLi-Benchmark` project. It writes to a new,
+empty external directory and records SHA-256 checksums for every source input
+and generated artifact. It requires the same MySQL-backed synthesis environment
+as a full run.
 
 The standard benchmark artifact for this deployment is
 `/hpc2hdd/home/hpan285/data/co-sqli/benchmarks/v2-prompt-modes-seed-20260827`. Build a fresh
@@ -107,15 +118,17 @@ canonical artifact.
 ```bash
 export COSQLI_BENCHMARK_DIR=/hpc2hdd/home/hpan285/data/co-sqli/benchmarks/v2-prompt-modes-seed-20260827
 
-python scripts/build_benchmarks.py \
+export COSQLI_BENCHMARK_PROJECT_ROOT=/hpc2hdd/home/hpan285/project/Co-SQLi-Benchmark
+PYTHONPATH="$COSQLI_BENCHMARK_PROJECT_ROOT/src" \
+  python "$COSQLI_BENCHMARK_PROJECT_ROOT/scripts/build_benchmarks.py" \
   --output-dir "$COSQLI_BENCHMARK_DIR" \
   --seed 20260827
 ```
 
-For a Slurm job, set `COSQLI_MODE=build-benchmarks`,
-`COSQLI_BENCHMARK_OUTPUT_DIR`, `COSQLI_PROJECT_ROOT`, `COSQLI_ENV_PREFIX`, and
-`COSQLI_RUNTIME_ROOT`, then submit `scripts/co_sqli_slurm_job.sh` with the
-resources appropriate for synthesis.
+The external project contains the benchmark-only tests and annotation prompt.
+Run the builder with the `cosqli` environment and this repository's `src/` on
+`PYTHONPATH`; it consumes the versioned source data and shared synthesis
+pipeline from this repository.
 
 ## Run An Experiment
 
@@ -145,6 +158,15 @@ co-sqli --run-id smoke-001 --benchmark-dir "$COSQLI_BENCHMARK_DIR" \
   --num-rounds 1 --num-training-sqls 16
 ```
 
+Use `--seed` to run a different random-seed replicate without editing the
+versioned YAML. The override is applied to attacker sampling, fine-tuning, and
+inference, and is recorded in the resolved run configuration:
+
+```bash
+co-sqli-submit --run-id seed-123 --benchmark-dir "$COSQLI_BENCHMARK_DIR" \
+  --seed 123 --partition <partition> --gres gpu:1
+```
+
 Each run records its resolved configuration, Git revision, benchmark-manifest
 checksum, per-round sampling probabilities, selected clusters, weights,
 evaluation metrics, stage timings, and resource measurements. See
@@ -157,6 +179,7 @@ evaluation metrics, stage timings, and resource measurements. See
 python -m pytest -q
 ```
 
-The suite verifies taxonomy stability, benchmark construction guards, current
-configuration validation, Qwen chat rendering and tokenization, verifier
-updates, checkpoint boundaries, reporting, telemetry, and scheduler log paths.
+The suite verifies taxonomy stability, current configuration validation, Qwen
+chat rendering and tokenization, verifier updates, checkpoint boundaries,
+reporting, telemetry, and scheduler log paths. Benchmark construction guards
+are tested in the external `Co-SQLi-Benchmark/tests/` project.

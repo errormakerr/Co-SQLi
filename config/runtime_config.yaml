@@ -1,0 +1,4 @@
+# Deployment paths migrated from co-sqli-runtime/config/legacy-pre-cosqli.
+# The model directory and run artifacts intentionally remain outside the source tree.
+base_model_path: '/hpc2hdd/home/hpan285/models/Qwen2.5-Coder-1.5B-Instruct'
+run_output_dir: '/hpc2hdd/home/hpan285/experiment_results/temp'

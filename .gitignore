@@ -13,12 +13,9 @@ eggs/
 venv/
 env/
 
-# Local runtime configuration and credentials
+# Local credentials and optional overrides
 .env
 .env.*
-config/runtime_config.yaml
-config/database_connection.yaml
-config/gpt_config.yaml
 
 # Generated local artifacts
 data/benchmark/

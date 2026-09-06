@@ -1,0 +1,7 @@
+# Local read-only MySQL account used by the data-generation pipeline.
+# The password is supplied through the environment and is not stored in Git.
+host: '127.0.0.1'
+port: 13306
+user: 'cosqli'
+password_env: 'COSQLI_MYSQL_PASSWORD'
+charset: 'utf8mb4'

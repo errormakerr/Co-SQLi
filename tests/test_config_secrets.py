@@ -62,6 +62,20 @@ class SecretConfigurationTests(unittest.TestCase):
                 self.assertEqual(resolve_runtime_base_model_path({}), Path(temporary_directory))
                 self.assertEqual(resolve_runtime_artifacts_root({}), Path(temporary_directory))
 
+    def test_runtime_paths_accept_migrated_inline_configuration(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            config = {
+                "base_model_path": temporary_directory,
+                "run_output_dir": temporary_directory,
+            }
+            with patch.dict(os.environ, {}, clear=True):
+                self.assertEqual(
+                    resolve_runtime_base_model_path(config), Path(temporary_directory)
+                )
+                self.assertEqual(
+                    resolve_runtime_artifacts_root(config), Path(temporary_directory)
+                )
+
     def test_mysql_port_can_be_overridden_for_an_isolated_job(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             config_path = Path(temporary_directory) / "database_connection.yaml"

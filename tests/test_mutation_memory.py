@@ -59,6 +59,13 @@ class MutationMemoryTests(unittest.TestCase):
         self.assertEqual(len(category.mutated_templates), 8)
         self.assertEqual(memory.get_prompt_addons(TECHNIQUE, REFERENCE_SCOPE).count("Example "), 5)
 
+    def test_fewshot_count_is_configurable(self) -> None:
+        memory = MutationMemory(
+            source_templates=[source_template(index) for index in range(6)],
+            fewshot_examples=2,
+        )
+        self.assertEqual(len(memory.get_fewshot_templates(TECHNIQUE, REFERENCE_SCOPE)), 2)
+
     def test_memory_rejects_comment_delimiters_and_incompatible_checkpoints(self) -> None:
         invalid = source_template(0)
         invalid["payload"] += "-- "
@@ -117,6 +124,42 @@ class MutationMemoryTests(unittest.TestCase):
         self.assertTrue(REQUIRED_TEMPLATE_FIELDS <= set(result["template"]))
         stored = memory.get_category(TECHNIQUE, REFERENCE_SCOPE).mutated_templates
         self.assertEqual(stored, [result["template"]])
+
+    def test_mutator_uses_configured_generation_limits(self) -> None:
+        class RecordingLlm:
+            def __init__(self) -> None:
+                self.kwargs = None
+
+            def chat(self, *_args, **kwargs) -> str:
+                self.kwargs = kwargs
+                return "' OR 2=2"
+
+        llm = RecordingLlm()
+        original = source_template(1)
+        memory = MutationMemory(source_templates=[original])
+        mutator = PayloadMutator(
+            llm=llm,
+            model="test-model",
+            memory=memory,
+            infer_types=False,
+            mutation_temperature=0.2,
+            mutation_max_tokens=17,
+        )
+
+        class FakeValidator:
+            def validate(self, _template, _mutated) -> SimpleNamespace:
+                return SimpleNamespace(is_valid=True, reason="")
+
+            def clean(self, mutated: str) -> str:
+                return mutated
+
+        with patch(
+            "cosqli.synthesis.payload_mutation.payload_mutator.PayloadValidator",
+            return_value=FakeValidator(),
+        ):
+            mutator.mutate(original)
+
+        self.assertEqual(llm.kwargs, {"temperature": 0.2, "max_tokens": 17})
 
 
 if __name__ == "__main__":

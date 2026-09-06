@@ -3,14 +3,16 @@
 import argparse
 from datetime import datetime, timezone
 import hashlib
+import json
 import os
 import random
+import re
 import shutil
 import subprocess
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Mapping, Tuple
 
 from cosqli.attacker.attacker import Attacker
 from cosqli.defender.defender import Defender
@@ -42,6 +44,7 @@ from cosqli.utils.cluster import (
     TAXONOMY_VERSION,
     all_attack_cluster_keys,
     cluster_injection_sqls,
+    get_single_key_of_injection_sql,
     get_injection_cluster_keys,
 )
 from cosqli.utils.json_operation import read_json_file, read_jsonl_file, write_jsonl_file, write_json_file
@@ -67,6 +70,13 @@ BENCHMARK_ARTIFACT_FILENAMES = {
     "test_sqls.json",
 } | all_sft_filenames()
 
+_LEGACY_BENCHMARK_SCHEMA_VERSION = 2
+_DERIVED_BENCHMARK_SCHEMA_VERSION = 3
+_DERIVED_BENCHMARK_TYPE = "derived_train_subsample"
+_DERIVED_SELECTION_FILENAME = "train_selection.json"
+_DERIVED_SAMPLING_METHOD = "uniform_stratified_by_attack_cluster"
+_SHA256_PATTERN = re.compile(r"[0-9a-f]{64}")
+
 @dataclass
 class ProjectPaths:
     """Project directory paths configuration."""
@@ -91,8 +101,8 @@ class ProjectPaths:
         if not runtime_config_path.is_file():
             raise FileNotFoundError(
                 "Missing runtime configuration: "
-                f"{runtime_config_path}. Copy config/runtime_config.yaml.example "
-                "to COSQLI_CONFIG_DIR and set the required environment variables."
+                f"{runtime_config_path}. Add it to the repository config directory "
+                "or set COSQLI_CONFIG_DIR to an explicit override."
             )
 
         runtime_config = load_yaml_to_dict(str(runtime_config_path))
@@ -214,30 +224,20 @@ def delete_folder_if_exists(folder_path: Path) -> None:
 
 # ==================== Core Logic ====================
 
-def _validate_benchmark_contract(benchmark_dir: Path) -> None:
-    """Require the externally built benchmark to match the experiment split plan."""
-    manifest_path = benchmark_dir / "build_manifest.json"
-    if not manifest_path.is_file():
-        raise FileNotFoundError(
-            "Benchmark directory is missing build_manifest.json. "
-            "Build a fresh external benchmark with scripts/build_benchmarks.py."
-        )
-    manifest = read_json_file(str(manifest_path))
-    if not isinstance(manifest, dict):
-        raise ValueError(f"Benchmark manifest must be a JSON object: {manifest_path}")
-    if manifest.get("schema_version") != 2:
-        raise ValueError(f"Unsupported benchmark manifest schema: {manifest_path}")
-    expected_prompt_modes = [mode.value for mode in PROMPT_MODES]
-    if manifest.get("prompt_modes") != expected_prompt_modes:
-        raise ValueError(f"Invalid benchmark prompt modes: {manifest_path}")
-    expected_sft_files = {
-        mode.value: dict(SFT_FILENAMES_BY_PROMPT_MODE[mode])
-        for mode in PROMPT_MODES
-    }
-    if manifest.get("sft_files") != expected_sft_files:
-        raise ValueError(f"Invalid benchmark SFT file mapping: {manifest_path}")
-    datasets = manifest.get("datasets")
-    expected: Dict[str, Dict[str, Any]] = {
+def _json_fingerprint(value: Any) -> str:
+    """Return a stable content fingerprint for an in-memory JSON value."""
+    serialized = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
+
+
+def _require_sha256(value: Any, *, field: str, manifest_path: Path) -> str:
+    if not isinstance(value, str) or _SHA256_PATTERN.fullmatch(value) is None:
+        raise ValueError(f"Invalid {field} checksum: {manifest_path}")
+    return value
+
+
+def _canonical_split_specs() -> Dict[str, Dict[str, Any]]:
+    return {
         "train_sqls.json": {
             "source_split": "train",
             "attack_count": 2560,
@@ -254,8 +254,181 @@ def _validate_benchmark_contract(benchmark_dir: Path) -> None:
             "benign_count": 873,
         },
     }
+
+
+def _validate_derived_train_spec(
+    manifest: Mapping[str, Any],
+    datasets: Mapping[str, Any],
+    manifest_path: Path,
+) -> None:
+    """Validate schema-v3 provenance before accepting a sampled train split."""
+    if manifest.get("benchmark_type") != _DERIVED_BENCHMARK_TYPE:
+        raise ValueError(f"Invalid derived benchmark type: {manifest_path}")
+    derivation = manifest.get("derivation")
+    if not isinstance(derivation, dict):
+        raise ValueError(f"Missing derived benchmark provenance: {manifest_path}")
+    if derivation.get("method") != _DERIVED_SAMPLING_METHOD:
+        raise ValueError(f"Unsupported derived benchmark sampling method: {manifest_path}")
+    if derivation.get("content_generation") != "none":
+        raise ValueError(f"Derived benchmark must not claim new content generation: {manifest_path}")
+    if not isinstance(derivation.get("sampling_seed"), int) or isinstance(
+        derivation.get("sampling_seed"), bool
+    ):
+        raise ValueError(f"Derived benchmark must declare an integer sampling seed: {manifest_path}")
+
+    parent = derivation.get("parent")
+    if not isinstance(parent, dict) or not isinstance(parent.get("directory_name"), str):
+        raise ValueError(f"Invalid parent benchmark provenance: {manifest_path}")
+    _require_sha256(
+        parent.get("build_manifest_sha256"),
+        field="parent build manifest",
+        manifest_path=manifest_path,
+    )
+    _require_sha256(
+        parent.get("train_sqls_sha256"),
+        field="parent train SQL",
+        manifest_path=manifest_path,
+    )
+
+    train_spec = datasets.get("train_sqls.json")
+    target_train = derivation.get("target_train")
+    if not isinstance(train_spec, dict) or not isinstance(target_train, dict):
+        raise ValueError(f"Invalid derived train specification: {manifest_path}")
+    if train_spec.get("source_split") != "train" or target_train != {
+        "attack_count": train_spec.get("attack_count"),
+        "benign_count": train_spec.get("benign_count"),
+    }:
+        raise ValueError(f"Derived train target does not match datasets: {manifest_path}")
+    attack_count = train_spec.get("attack_count")
+    benign_count = train_spec.get("benign_count")
+    cluster_count = len(all_attack_cluster_keys())
+    if (
+        not isinstance(attack_count, int)
+        or isinstance(attack_count, bool)
+        or attack_count < cluster_count
+        or attack_count % cluster_count != 0
+        or not isinstance(benign_count, int)
+        or isinstance(benign_count, bool)
+        or benign_count < 0
+    ):
+        raise ValueError(
+            "Derived train split must have a non-negative benign count and an equal, "
+            f"non-zero attack quota for each of {cluster_count} clusters: {manifest_path}"
+        )
+
+    if derivation.get("selection_file") != _DERIVED_SELECTION_FILENAME:
+        raise ValueError(f"Invalid derived selection filename: {manifest_path}")
+    _require_sha256(
+        derivation.get("selection_file_sha256"),
+        field="derived selection",
+        manifest_path=manifest_path,
+    )
+
+
+def _validate_derived_train_selection(
+    benchmark_dir: Path,
+    manifest: Mapping[str, Any],
+) -> None:
+    """Bind every derived train record to a declared parent-record fingerprint."""
+    manifest_path = benchmark_dir / "build_manifest.json"
+    derivation = manifest["derivation"]
+    selection_path = benchmark_dir / _DERIVED_SELECTION_FILENAME
+    if (
+        not selection_path.is_file()
+        or _sha256(selection_path) != derivation["selection_file_sha256"]
+    ):
+        raise ValueError(f"Derived selection checksum mismatch: {selection_path}")
+    selection = read_json_file(str(selection_path))
+    if not isinstance(selection, dict) or selection.get("schema_version") != 1:
+        raise ValueError(f"Invalid derived selection manifest: {selection_path}")
+    if (
+        selection.get("method") != derivation["method"]
+        or selection.get("sampling_seed") != derivation["sampling_seed"]
+        or selection.get("parent") != derivation["parent"]
+    ):
+        raise ValueError(f"Derived selection provenance mismatch: {selection_path}")
+
+    records = read_json_file(str(benchmark_dir / "train_sqls.json"))
+    selected_records = selection.get("records")
+    if not isinstance(records, list) or not isinstance(selected_records, list):
+        raise ValueError(f"Invalid derived train records: {manifest_path}")
+    train_spec = manifest["datasets"]["train_sqls.json"]
+    if len(records) != len(selected_records) or len(records) != (
+        train_spec["attack_count"] + train_spec["benign_count"]
+    ):
+        raise ValueError(f"Derived train selection count mismatch: {selection_path}")
+
+    parent_indices = set()
+    observed_attack_counts = {cluster: 0 for cluster in all_attack_cluster_keys()}
+    observed_benign_count = 0
+    for output_index, (record, selected) in enumerate(zip(records, selected_records)):
+        if not isinstance(record, dict) or not isinstance(selected, dict):
+            raise ValueError(f"Invalid derived selection record: {selection_path}")
+        parent_index = selected.get("parent_index")
+        label = record.get("label")
+        if (
+            selected.get("output_index") != output_index
+            or not isinstance(parent_index, int)
+            or isinstance(parent_index, bool)
+            or parent_index < 0
+            or parent_index in parent_indices
+            or selected.get("record_sha256") != _json_fingerprint(record)
+            or not isinstance(label, bool)
+            or selected.get("label") != label
+        ):
+            raise ValueError(f"Derived selection record mismatch at index {output_index}")
+        parent_indices.add(parent_index)
+        cluster = get_single_key_of_injection_sql(record)
+        if selected.get("cluster") != cluster:
+            raise ValueError(f"Derived selection cluster mismatch at index {output_index}")
+        if label:
+            observed_benign_count += 1
+        else:
+            observed_attack_counts[cluster] = observed_attack_counts.get(cluster, 0) + 1
+
+    expected_quota = train_spec["attack_count"] // len(observed_attack_counts)
+    if (
+        observed_benign_count != train_spec["benign_count"]
+        or set(observed_attack_counts) != set(all_attack_cluster_keys())
+        or any(count != expected_quota for count in observed_attack_counts.values())
+    ):
+        raise ValueError(f"Derived train stratification mismatch: {selection_path}")
+
+
+def _validate_benchmark_contract(benchmark_dir: Path) -> None:
+    """Require a canonical or provenance-bound derived external benchmark."""
+    manifest_path = benchmark_dir / "build_manifest.json"
+    if not manifest_path.is_file():
+        raise FileNotFoundError(
+            "Benchmark directory is missing build_manifest.json. "
+            "Build a fresh external benchmark with the Co-SQLi-Benchmark project."
+        )
+    manifest = read_json_file(str(manifest_path))
+    if not isinstance(manifest, dict):
+        raise ValueError(f"Benchmark manifest must be a JSON object: {manifest_path}")
+    schema_version = manifest.get("schema_version")
+    if schema_version not in {
+        _LEGACY_BENCHMARK_SCHEMA_VERSION,
+        _DERIVED_BENCHMARK_SCHEMA_VERSION,
+    }:
+        raise ValueError(f"Unsupported benchmark manifest schema: {manifest_path}")
+    expected_prompt_modes = [mode.value for mode in PROMPT_MODES]
+    if manifest.get("prompt_modes") != expected_prompt_modes:
+        raise ValueError(f"Invalid benchmark prompt modes: {manifest_path}")
+    expected_sft_files = {
+        mode.value: dict(SFT_FILENAMES_BY_PROMPT_MODE[mode])
+        for mode in PROMPT_MODES
+    }
+    if manifest.get("sft_files") != expected_sft_files:
+        raise ValueError(f"Invalid benchmark SFT file mapping: {manifest_path}")
+    datasets = manifest.get("datasets")
     if not isinstance(datasets, dict):
         raise ValueError(f"Invalid benchmark manifest datasets section: {manifest_path}")
+
+    expected = _canonical_split_specs()
+    if schema_version == _DERIVED_BENCHMARK_SCHEMA_VERSION:
+        _validate_derived_train_spec(manifest, datasets, manifest_path)
+        expected.pop("train_sqls.json")
     for filename, expected_spec in expected.items():
         observed = datasets.get(filename)
         if not isinstance(observed, dict) or any(
@@ -282,6 +455,8 @@ def _validate_benchmark_contract(benchmark_dir: Path) -> None:
         artifact = benchmark_dir / filename
         if not artifact.is_file() or artifact_hashes.get(filename) != _sha256(artifact):
             raise ValueError(f"Benchmark artifact checksum mismatch: {artifact}")
+    if schema_version == _DERIVED_BENCHMARK_SCHEMA_VERSION:
+        _validate_derived_train_selection(benchmark_dir, manifest)
 
 
 def _sha256(path: Path) -> str:
@@ -337,6 +512,30 @@ def initialize_components(paths: ProjectPaths) -> Tuple[Attacker, Defender, Veri
         random_seed=ACTIVE_EXPERIMENT_CONFIG.random_seed,
         prompt_mode=PROMPT_MODE,
         mix_benign_sources=ACTIVE_EXPERIMENT_CONFIG.mix_benign_sources,
+        mutation_weight_scale_min=ACTIVE_EXPERIMENT_CONFIG.payload_mutation_weight_scale_min,
+        mutation_effective_probability_max=(
+            ACTIVE_EXPERIMENT_CONFIG.payload_mutation_effective_probability_max
+        ),
+        mutation_llm_temperature=ACTIVE_EXPERIMENT_CONFIG.payload_mutation_llm_temperature,
+        mutation_llm_max_tokens=ACTIVE_EXPERIMENT_CONFIG.payload_mutation_llm_max_tokens,
+        mutation_info_focused_probability=(
+            ACTIVE_EXPERIMENT_CONFIG.payload_mutation_info_focused_probability
+        ),
+        mutation_infer_expected_types=(
+            ACTIVE_EXPERIMENT_CONFIG.payload_mutation_infer_expected_types
+        ),
+        mutation_types_inference_temperature=(
+            ACTIVE_EXPERIMENT_CONFIG.payload_mutation_types_inference_temperature
+        ),
+        mutation_types_inference_max_tokens=(
+            ACTIVE_EXPERIMENT_CONFIG.payload_mutation_types_inference_max_tokens
+        ),
+        mutation_fewshot_examples=ACTIVE_EXPERIMENT_CONFIG.payload_mutation_fewshot_examples,
+        cepp_rational_explanation_probability=(
+            ACTIVE_EXPERIMENT_CONFIG.synthesis_cepp_rational_explanation_probability
+        ),
+        cepp_llm_max_tokens=ACTIVE_EXPERIMENT_CONFIG.synthesis_cepp_llm_max_tokens,
+        cepp_llm_max_retries=ACTIVE_EXPERIMENT_CONFIG.synthesis_cepp_llm_max_retries,
     )
 
     defender = Defender(
@@ -350,6 +549,13 @@ def initialize_components(paths: ProjectPaths) -> Tuple[Attacker, Defender, Veri
     verifier = Verifier(
         cluster_list=cluster_list,
         benign_ratio=INITIAL_BENIGN_RATIO,
+        reward_smoothing_alpha=ACTIVE_EXPERIMENT_CONFIG.verifier_reward_smoothing_alpha,
+        reward_smoothing_beta=ACTIVE_EXPERIMENT_CONFIG.verifier_reward_smoothing_beta,
+        benign_fpr_target=ACTIVE_EXPERIMENT_CONFIG.verifier_benign_fpr_target,
+        benign_ratio_step_size=ACTIVE_EXPERIMENT_CONFIG.verifier_benign_ratio_step_size,
+        benign_error_ema_decay=ACTIVE_EXPERIMENT_CONFIG.verifier_benign_error_ema_decay,
+        benign_ratio_min=ACTIVE_EXPERIMENT_CONFIG.verifier_benign_ratio_min,
+        benign_ratio_max=ACTIVE_EXPERIMENT_CONFIG.verifier_benign_ratio_max,
     )
 
     return attacker, defender, verifier
@@ -731,10 +937,16 @@ def parse_args() -> argparse.Namespace:
         help="Override the model-visible SQL prompt context for this run.",
     )
     parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Override random_seed in the experiment configuration.",
+    )
+    parser.add_argument(
         "--benchmark-dir",
         type=str,
         default=os.environ.get("COSQLI_BENCHMARK_DIR"),
-        help="External benchmark directory built by scripts/build_benchmarks.py.",
+        help="External benchmark directory built by the Co-SQLi-Benchmark project.",
     )
     return parser.parse_args()
 
@@ -747,6 +959,7 @@ def main() -> None:
         num_rounds=args.num_rounds,
         num_training_sqls=args.num_training_sqls,
         prompt_mode=args.prompt_mode,
+        random_seed=args.seed,
     )
     if config.num_rounds <= 0 or config.num_training_sqls <= 0:
         raise ValueError("--num-rounds and --num-training-sqls must be positive")

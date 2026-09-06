@@ -54,7 +54,14 @@ class CategoryMemory:
 class MutationMemory:
     """Category-scoped successes plus immutable source-template pools."""
 
-    def __init__(self, source_templates: Iterable[Dict[str, Any]] | None = None) -> None:
+    def __init__(
+        self,
+        source_templates: Iterable[Dict[str, Any]] | None = None,
+        fewshot_examples: int = NUM_FEWSHOT_EXAMPLES,
+    ) -> None:
+        if fewshot_examples < 0:
+            raise ValueError("fewshot_examples must be non-negative")
+        self.fewshot_examples = int(fewshot_examples)
         self.categories: Dict[str, CategoryMemory] = {}
         self.global_fingerprints: Set[str] = set()
         self._source_templates: Dict[str, List[Dict[str, Any]]] = {}
@@ -100,8 +107,10 @@ class MutationMemory:
         key = self._get_key(technique, reference_scope)
         category = self.categories.get(key)
         mutated = category.mutated_templates if category else []
-        selected_mutated = random.sample(mutated, k=min(NUM_FEWSHOT_EXAMPLES, len(mutated)))
-        remainder = NUM_FEWSHOT_EXAMPLES - len(selected_mutated)
+        selected_mutated = random.sample(
+            mutated, k=min(self.fewshot_examples, len(mutated))
+        )
+        remainder = self.fewshot_examples - len(selected_mutated)
         source = self._source_templates.get(key, [])
         selected_source = random.sample(source, k=min(remainder, len(source)))
         return [

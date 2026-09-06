@@ -97,6 +97,9 @@ class TaxonomyAndMABTests(unittest.TestCase):
         with patch(
             "cosqli.synthesis.injection_pipeline.choose_comment_prefix",
             side_effect=("-- ", "# "),
+        ), patch(
+            "cosqli.synthesis.injection_pipeline.random.random",
+            return_value=0.5,
         ):
             clean = pipeline(
                 trailing_carrier, template, [], [], [], [], "clean_comment"
@@ -275,6 +278,7 @@ class TaxonomyAndMABTests(unittest.TestCase):
                     "taxonomy_version": TAXONOMY_VERSION,
                     "attack_clusters": [ATTACK_CLUSTER_A],
                     "prompt_mode": "query_only",
+                    "mix_benign_sources": True,
                 },
             )
             write_jsonl_file(str(round_dir / "cluster_weights.jsonl"), [{"cluster": ATTACK_CLUSTER_A, "weight": 1.75}])

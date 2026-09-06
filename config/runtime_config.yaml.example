@@ -1,3 +1,4 @@
-# Copy this file to an external directory and set COSQLI_CONFIG_DIR to it.
+# The repository includes a deployment-specific runtime_config.yaml. For a
+# portable deployment, replace these paths with environment-variable entries.
 base_model_path_env: COSQLI_BASE_MODEL_PATH
 artifacts_root_env: COSQLI_ARTIFACTS_ROOT

@@ -17,6 +17,7 @@ from __future__ import annotations
 import copy
 import csv
 import hashlib
+import math
 import random
 from dataclasses import dataclass
 from pathlib import Path
@@ -30,7 +31,13 @@ from cosqli.utils.llm import LLM
 from cosqli.prompting import PromptMode, parse_prompt_mode
 from cosqli.synthesis.sft_formatter import batch_process_to_sft
 
-from cosqli.synthesis.injection_pipeline import get_gpt_config, pipeline
+from cosqli.synthesis.injection_pipeline import (
+    CEPP_LLM_MAX_RETRIES,
+    CEPP_LLM_MAX_TOKENS,
+    CEPP_RATIONAL_EXPLANATION_PROBABILITY,
+    get_gpt_config,
+    pipeline,
+)
 from cosqli.synthesis.payload_mutation import MutationMemory, PayloadMutator
 
 # ---------------------------------------------------------------------------
@@ -65,7 +72,7 @@ EXTERNAL_BENIGN_SOURCES: Tuple[ExternalBenignSource, ...] = (
     ExternalBenignSource(
         name="rbsqli",
         path=Path(
-            "/hpc2hdd/home/hpan285/project/public_sqli_dataset/rbsqli/"
+            "/hpc2hdd/home/hpan285/data/public_sqli_dataset/rbsqli/"
             "rbsqli_final_train.csv"
         ),
         sql_column="sql_query",
@@ -75,7 +82,7 @@ EXTERNAL_BENIGN_SOURCES: Tuple[ExternalBenignSource, ...] = (
     ExternalBenignSource(
         name="SQLiV3",
         path=Path(
-            "/hpc2hdd/home/hpan285/project/public_sqli_dataset/SQLiV3/"
+            "/hpc2hdd/home/hpan285/data/public_sqli_dataset/SQLiV3/"
             "SQLiV3_final_train.csv"
         ),
         sql_column="Sentence",
@@ -85,7 +92,7 @@ EXTERNAL_BENIGN_SOURCES: Tuple[ExternalBenignSource, ...] = (
     ExternalBenignSource(
         name="Superviz25",
         path=Path(
-            "/hpc2hdd/home/hpan285/project/public_sqli_dataset/Superviz25/"
+            "/hpc2hdd/home/hpan285/data/public_sqli_dataset/Superviz25/"
             "Superviz25_final_train.csv"
         ),
         sql_column="full_query",
@@ -117,6 +124,9 @@ class Attacker:
         random_seed:             Seed for local sampling decisions.
         mix_benign_sources:      In query-only mode, draw half of each round's
             benign samples from the three external CSV corpora.
+        mutation_*:              Payload mutation scaling, LLM, type-inference,
+            and few-shot settings for the current experiment.
+        cepp_*:                  CEPP explanation probability and LLM limits.
     """
 
     # ------------------------------------------------------------------
@@ -136,6 +146,18 @@ class Attacker:
         random_seed: Optional[int] = None,
         prompt_mode: PromptMode | str = PromptMode.QUERY_ONLY,
         mix_benign_sources: bool = False,
+        mutation_weight_scale_min: float = MUTATION_PROB_LOWER_SCALE,
+        mutation_effective_probability_max: float = MUTATION_PROB_UPPER_BOUND,
+        mutation_llm_temperature: float = 0.7,
+        mutation_llm_max_tokens: int = 2000,
+        mutation_info_focused_probability: float = 0.3,
+        mutation_infer_expected_types: bool = True,
+        mutation_types_inference_temperature: float = 0.3,
+        mutation_types_inference_max_tokens: int = 500,
+        mutation_fewshot_examples: int = 5,
+        cepp_rational_explanation_probability: float = CEPP_RATIONAL_EXPLANATION_PROBABILITY,
+        cepp_llm_max_tokens: int = CEPP_LLM_MAX_TOKENS,
+        cepp_llm_max_retries: int = CEPP_LLM_MAX_RETRIES,
     ) -> None:
         if not cluster_list:
             raise ValueError("cluster_list must not be empty")
@@ -156,6 +178,34 @@ class Attacker:
             raise ValueError(f"weight_exponent must be positive, got {weight_exponent}")
         if not isinstance(mix_benign_sources, bool):
             raise TypeError("mix_benign_sources must be a boolean")
+        if not math.isfinite(mutation_weight_scale_min) or mutation_weight_scale_min < 0.0:
+            raise ValueError("mutation_weight_scale_min must be finite and non-negative")
+        if not 0.0 <= mutation_effective_probability_max <= 1.0:
+            raise ValueError("mutation_effective_probability_max must be in [0, 1]")
+        if not math.isfinite(mutation_llm_temperature) or mutation_llm_temperature < 0.0:
+            raise ValueError("mutation_llm_temperature must be finite and non-negative")
+        if mutation_llm_max_tokens <= 0:
+            raise ValueError("mutation_llm_max_tokens must be positive")
+        if not 0.0 <= mutation_info_focused_probability <= 1.0:
+            raise ValueError("mutation_info_focused_probability must be in [0, 1]")
+        if not isinstance(mutation_infer_expected_types, bool):
+            raise TypeError("mutation_infer_expected_types must be a boolean")
+        if not math.isfinite(mutation_types_inference_temperature) or mutation_types_inference_temperature < 0.0:
+            raise ValueError(
+                "mutation_types_inference_temperature must be finite and non-negative"
+            )
+        if mutation_types_inference_max_tokens <= 0:
+            raise ValueError("mutation_types_inference_max_tokens must be positive")
+        if mutation_fewshot_examples < 0:
+            raise ValueError("mutation_fewshot_examples must be non-negative")
+        if not 0.0 <= cepp_rational_explanation_probability <= 1.0:
+            raise ValueError(
+                "cepp_rational_explanation_probability must be in [0, 1]"
+            )
+        if cepp_llm_max_tokens <= 0:
+            raise ValueError("cepp_llm_max_tokens must be positive")
+        if cepp_llm_max_retries < 0:
+            raise ValueError("cepp_llm_max_retries must be non-negative")
 
         self.cluster_list = cluster_list
         self.number_of_training_sqls = number_of_training_sqls
@@ -164,6 +214,28 @@ class Attacker:
         self.random_seed = random_seed
         self.prompt_mode = parse_prompt_mode(prompt_mode)
         self.mix_benign_sources = mix_benign_sources
+        self.mutation_weight_scale_min = float(mutation_weight_scale_min)
+        self.mutation_effective_probability_max = float(
+            mutation_effective_probability_max
+        )
+        self.mutation_llm_temperature = float(mutation_llm_temperature)
+        self.mutation_llm_max_tokens = int(mutation_llm_max_tokens)
+        self.mutation_info_focused_probability = float(
+            mutation_info_focused_probability
+        )
+        self.mutation_infer_expected_types = mutation_infer_expected_types
+        self.mutation_types_inference_temperature = float(
+            mutation_types_inference_temperature
+        )
+        self.mutation_types_inference_max_tokens = int(
+            mutation_types_inference_max_tokens
+        )
+        self.mutation_fewshot_examples = int(mutation_fewshot_examples)
+        self.cepp_rational_explanation_probability = float(
+            cepp_rational_explanation_probability
+        )
+        self.cepp_llm_max_tokens = int(cepp_llm_max_tokens)
+        self.cepp_llm_max_retries = int(cepp_llm_max_retries)
         if (
             self.mix_benign_sources
             and self.prompt_mode is not PromptMode.QUERY_ONLY
@@ -547,8 +619,19 @@ class Attacker:
 
             self.mutation_memory = MutationMemory(
                 source_templates=self.train_payloads,
+                fewshot_examples=self.mutation_fewshot_examples,
             )
-            self.payload_mutator = PayloadMutator(llm, model, self.mutation_memory)
+            self.payload_mutator = PayloadMutator(
+                llm,
+                model,
+                self.mutation_memory,
+                infer_types=self.mutation_infer_expected_types,
+                mutation_temperature=self.mutation_llm_temperature,
+                mutation_max_tokens=self.mutation_llm_max_tokens,
+                info_focused_probability=self.mutation_info_focused_probability,
+                types_inference_temperature=self.mutation_types_inference_temperature,
+                types_inference_max_tokens=self.mutation_types_inference_max_tokens,
+            )
 
             print(f"✓ PayloadMutator initialised with model: {model}")
 
@@ -728,8 +811,8 @@ class Attacker:
                 effective_prob = float(
                     np.clip(
                         modify_payload_prob * scale,
-                        modify_payload_prob * MUTATION_PROB_LOWER_SCALE,
-                        MUTATION_PROB_UPPER_BOUND,
+                        modify_payload_prob * self.mutation_weight_scale_min,
+                        self.mutation_effective_probability_max,
                     )
                 )
 
@@ -757,6 +840,11 @@ class Attacker:
                     system_vars=self.system_vars,
                     comment_list=self.comment_list,
                     comment_state=comment_state,
+                    cepp_rational_explanation_probability=(
+                        self.cepp_rational_explanation_probability
+                    ),
+                    cepp_llm_max_tokens=self.cepp_llm_max_tokens,
+                    cepp_llm_max_retries=self.cepp_llm_max_retries,
                 )
                 if injection_sql_example is not None:
                     injection_sql_examples.append(injection_sql_example)

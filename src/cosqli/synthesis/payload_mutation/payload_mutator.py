@@ -51,6 +51,14 @@ class PayloadMutator:
                                successful mutation.
         types_inference_model: Override model for the type-inference call.
                                Defaults to *model*.
+        mutation_temperature:  Sampling temperature for mutation generation.
+        mutation_max_tokens:   Maximum mutation response length.
+        info_focused_probability: Probability of structure-focused routing for
+                                  target-schema payloads.
+        types_inference_temperature: Sampling temperature for type inference.
+        types_inference_max_tokens: Maximum type-inference response length.
+        fewshot_examples:      Number of memory examples used when creating a
+                               default mutation memory.
     """
 
     def __init__(
@@ -60,14 +68,28 @@ class PayloadMutator:
         memory: Optional[MutationMemory] = None,
         infer_types: bool = True,
         types_inference_model: Optional[str] = None,
+        mutation_temperature: float = MUTATION_LLM_TEMPERATURE,
+        mutation_max_tokens: int = MUTATION_MAX_TOKENS,
+        info_focused_probability: float = INFO_FOCUSED_PROMPT_PROBABILITY,
+        types_inference_temperature: float = 0.3,
+        types_inference_max_tokens: int = 500,
+        fewshot_examples: int = 5,
     ):
         self.llm = llm
         self.model = model
-        self.memory = memory or MutationMemory()
+        self.memory = memory or MutationMemory(fewshot_examples=fewshot_examples)
 
         self.infer_types = infer_types
+        self.mutation_temperature = float(mutation_temperature)
+        self.mutation_max_tokens = int(mutation_max_tokens)
+        self.info_focused_probability = float(info_focused_probability)
         self.types_inferrer: Optional[ExpectedTypesInferrer] = (
-            ExpectedTypesInferrer(llm=llm, model=types_inference_model or model)
+            ExpectedTypesInferrer(
+                llm=llm,
+                model=types_inference_model or model,
+                temperature=types_inference_temperature,
+                max_tokens=types_inference_max_tokens,
+            )
             if infer_types
             else None
         )
@@ -120,7 +142,12 @@ class PayloadMutator:
 
         # Step 4 — LLM call
         try:
-            response = self.llm.chat(prompt, self.model, temperature=MUTATION_LLM_TEMPERATURE, max_tokens=MUTATION_MAX_TOKENS)
+            response = self.llm.chat(
+                prompt,
+                self.model,
+                temperature=self.mutation_temperature,
+                max_tokens=self.mutation_max_tokens,
+            )
             mutated = response.strip() if response else ""
         except Exception as e:
             self._stats["failed"] += 1
@@ -249,7 +276,11 @@ class PayloadMutator:
         if reference_scope == ReferenceScope.LOR:
             return "type_focused"
         if reference_scope == ReferenceScope.TSR:
-            return "info_focused" if random.random() < INFO_FOCUSED_PROMPT_PROBABILITY else "type_focused"
+            return (
+                "info_focused"
+                if random.random() < self.info_focused_probability
+                else "type_focused"
+            )
         # SYSTEM_INFO
         return "type_focused"
 

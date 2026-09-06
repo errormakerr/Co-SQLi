@@ -1,3 +1,5 @@
+# The repository's gpt_config.yaml contains the deployment endpoint/model.
+# Keep the API key in the environment rather than in versioned YAML.
 base_url: https://your-api-endpoint/v1
 api_key_env: COSQLI_LLM_API_KEY
 model: YOUR_OPENAI_COMPATIBLE_MODEL
